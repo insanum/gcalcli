@@ -134,6 +134,9 @@ gcalcli [options] command [command args]
   --date-color             brightmagenta, cyan, brightcyan, white,
   --border-color           brightwhite ]
 
+  --tsv                    tab-separated output for 'agenda'. Format is:
+                           'date' 'start' 'end' 'title' 'location' 'description'
+
  Commands:
 
   list                     list all calendars
@@ -256,6 +259,7 @@ class gcalcli:
     calMonday     = False
     command       = \
         'gxmessage -display :0 -center -title "Ding, Ding, Ding!" %s'
+    tsv           = False
 
     calOwnerColor       = CLR_CYN()
     calEditorColor      = CLR_NRM()
@@ -296,7 +300,8 @@ class gcalcli:
                  calReadColor=CLR_MAG(),
                  calFreeBusyColor=CLR_NRM(),
                  dateColor=CLR_GRN(),
-                 borderColor=CLR_WHT()):
+                 borderColor=CLR_WHT(),
+                 tsv=False):
 
         self.gcal          = CalendarService()
         self.username      = username
@@ -313,6 +318,7 @@ class gcalcli:
         self.ignoreStarted = ignoreStarted
         self.calWidth      = calWidth
         self.calMonday     = calMonday
+        self.tsv           = tsv
 
         self.calOwnerColor       = calOwnerColor
         self.calEditorColor      = calEditorColor
@@ -699,6 +705,19 @@ class gcalcli:
 
             PrintMsg(CLR_NRM(), weekDivider + "\n")
 
+    def _tsv(self, startDateTime, eventList):
+        # tab-separated output for easier shellscripting.
+        # Format:
+        # "Date" "start" "end" "Event-Title" "Location" "Eventdescription"
+        dayFormat = '%F'
+
+        for event in eventList:
+            tmpDayStr = event.s.strftime(dayFormat)
+            tmpTimeStr = event.s.strftime("%H:%M")
+            tmpTimeStp = event.e.strftime("%H:%M")
+            str = "%s\t%s\t%s\t%s\t%s\t%s" % (tmpDayStr, tmpTimeStr, tmpTimeStp, self._ValidTitle(event.title.text).strip(), event.where[0].value_string, event.content.text )
+            str2 = "%s" % str.replace('\n', '''\\n''')
+            print(str2)
 
     def _PrintEvents(self, startDateTime, eventList):
 
@@ -943,7 +962,10 @@ class gcalcli:
 
         eventList = self._SearchForCalEvents(start, end, None)
 
-        self._PrintEvents(start, eventList)
+        if self.tsv:
+            self._tsv(start, eventList)
+        else:
+            self._PrintEvents(start, eventList)
 
 
     def CalQuery(self, cmd, startText='', count=1):
@@ -1254,6 +1276,7 @@ def BowChickaWowWow():
                                     "cal=",
                                     "24hr",
                                     "details",
+                                    "tsv",
                                     "ignore-started",
                                     "width=",
                                     "mon",
@@ -1287,6 +1310,7 @@ def BowChickaWowWow():
     ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
     calWidth      = int(GetConfig(cfg, 'width', '10'))
     calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
+    tsv           = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
 
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
@@ -1371,6 +1395,9 @@ def BowChickaWowWow():
         elif opt == "--border-color":
             borderColor = GetColor(arg, True)
 
+        elif opt == "--tsv":
+            tsv = True
+
     if usr == None:
         PrintErrMsg('Error: must specify a username\n')
         sys.exit(1)
@@ -1409,7 +1436,8 @@ def BowChickaWowWow():
                    calReadColor=calReadColor,
                    calFreeBusyColor=calFreeBusyColor,
                    dateColor=dateColor,
-                   borderColor=borderColor)
+                   borderColor=borderColor,
+                   tsv=tsv)
 
     if args[0] == 'list':
         gcal.ListAllCalendars()
@@ -1435,7 +1463,8 @@ def BowChickaWowWow():
             PrintErrMsg('Error: invalid agenda arguments\n')
             sys.exit(1)
 
-        sys.stdout.write('\n')
+        if not tsv:
+            sys.stdout.write('\n')
 
     elif args[0] == 'calw':
         if not calWidth:

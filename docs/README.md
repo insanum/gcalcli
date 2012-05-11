@@ -116,6 +116,9 @@ gcalcli [options] command [command args]
   --date-color             brightmagenta, cyan, brightcyan, white,
   --border-color           brightwhite ]
 
+  --tsv                    tab-separated output for 'agenda'. Format is:
+                           'date' 'start' 'end' 'title' 'location' 'description'
+
  Commands:
 
   list                     list all calendars
