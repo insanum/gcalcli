@@ -30,16 +30,20 @@
 #
 # Author: Eric Davis <http://www.insanum.com>
 #
+#
 # Requirements:
 #  - Python 2
 #        http://www.python.org
 #  - Google's GData Python module (for Python 2)
 #        http://code.google.com/p/gdata-python-client
+#  - ElementTree Python module
+#        http://effbot.org/zone/element-index.htm
 #  - dateutil Python module
 #        http://www.labix.org/python-dateutil
 #  - vobject Python module (optional, needed for importing ics/vcal files)
 #        http://vobject.skyhouseconsulting.com
 #
+ 
 
 __program__ = 'gcalcli'
 __version__ = 'v2.1'
@@ -56,7 +60,6 @@ from datetime import *
 from dateutil.tz import *
 from dateutil.parser import *
 from unicodedata import east_asian_width
-
 
 def Version():
     sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
@@ -240,22 +243,23 @@ def DebugPrint(msg):
 
 class gcalcli:
 
-    gcal          = None
-    allCals       = None
-    cals          = []
-    now           = datetime.now(tzlocal())
-    feedPrefix    = None
-    agendaLength  = 5
-    username      = None
-    password      = None
-    access        = ''
-    military      = False
-    details       = False
-    ignoreStarted = False
-    calWidth      = 10
-    calMonday     = False
-    command       = \
+    gcal           = None
+    allCals        = None
+    cals           = []
+    now            = datetime.now(tzlocal())
+    feedPrefix     = None
+    agendaLength   = 5
+    username       = None
+    password       = None
+    access         = ''
+    military       = False
+    details        = False
+    ignoreStarted  = False
+    calWidth       = 10
+    calMonday      = False
+    command        = \
         'gxmessage -display :0 -center -title "Ding, Ding, Ding!" %s'
+    tsv = False
 
     calOwnerColor       = CLR_CYN()
     calEditorColor      = CLR_NRM()
@@ -296,7 +300,8 @@ class gcalcli:
                  calReadColor=CLR_MAG(),
                  calFreeBusyColor=CLR_NRM(),
                  dateColor=CLR_GRN(),
-                 borderColor=CLR_WHT()):
+                 borderColor=CLR_WHT(),
+                 tsv=False):
 
         self.gcal          = CalendarService()
         self.username      = username
@@ -307,12 +312,13 @@ class gcalcli:
         else:     self.feedPrefix = 'http://'
         self.feedPrefix = self.feedPrefix + 'www.google.com/calendar/feeds/'
 
-        self.access        = access
-        self.military      = military
-        self.details       = details
-        self.ignoreStarted = ignoreStarted
-        self.calWidth      = calWidth
-        self.calMonday     = calMonday
+        self.access         = access
+        self.military       = military
+        self.details        = details
+        self.ignoreStarted  = ignoreStarted
+        self.calWidth       = calWidth
+        self.calMonday      = calMonday
+        self.tsv = tsv
 
         self.calOwnerColor       = calOwnerColor
         self.calEditorColor      = calEditorColor
@@ -699,6 +705,19 @@ class gcalcli:
 
             PrintMsg(CLR_NRM(), weekDivider + "\n")
 
+    def _tsv(self, startDateTime, eventList):
+        # tab-separated output for easier shellscripting.
+        # Format:
+        # "Date" "start" "end" "Event-Title" "Location" "Eventdescription"
+        dayFormat = '%F'
+
+        for event in eventList:
+            tmpDayStr = event.s.strftime(dayFormat)
+            tmpTimeStr = event.s.strftime("%H:%M")
+            tmpTimeStp = event.e.strftime("%H:%M")
+            str = "%s\t%s\t%s\t%s\t%s\t%s" % (tmpDayStr, tmpTimeStr, tmpTimeStp, self._ValidTitle(event.title.text).strip(), event.where[0].value_string, event.content.text )
+            str2 = "%s" % str.replace('\n', '''\\n''')
+            print(str2)
 
     def _PrintEvents(self, startDateTime, eventList):
 
@@ -943,7 +962,10 @@ class gcalcli:
 
         eventList = self._SearchForCalEvents(start, end, None)
 
-        self._PrintEvents(start, eventList)
+        if self.tsv:
+            self._tsv(start, eventList)
+        else:
+            self._PrintEvents(start, eventList)
 
 
     def CalQuery(self, cmd, startText='', count=1):
@@ -1254,6 +1276,7 @@ def BowChickaWowWow():
                                     "cal=",
                                     "24hr",
                                     "details",
+                                    "skript",
                                     "ignore-started",
                                     "width=",
                                     "mon",
@@ -1277,16 +1300,17 @@ def BowChickaWowWow():
 
     cfg = LoadConfig(configFile)
 
-    usr           = GetConfig(cfg, 'user', None)
-    pwd           = GetConfig(cfg, 'pw', None)
-    https         = GetTrueFalse(GetConfig(cfg, 'https', 'false'))
-    access        = GetConfig(cfg, 'cals', 'all')
-    calNames      = GetConfigMultiple(cfg, 'cal', None)
-    military      = GetTrueFalse(GetConfig(cfg, '24hr', 'false'))
-    details       = GetTrueFalse(GetConfig(cfg, 'details', 'false'))
-    ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
-    calWidth      = int(GetConfig(cfg, 'width', '10'))
-    calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
+    usr            = GetConfig(cfg, 'user', None)
+    pwd            = GetConfig(cfg, 'pw', None)
+    https          = GetTrueFalse(GetConfig(cfg, 'https', 'false'))
+    access         = GetConfig(cfg, 'cals', 'all')
+    calNames       = GetConfigMultiple(cfg, 'cal', None)
+    military       = GetTrueFalse(GetConfig(cfg, '24hr', 'false'))
+    details        = GetTrueFalse(GetConfig(cfg, 'details', 'false'))
+    ignoreStarted  = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
+    calWidth       = int(GetConfig(cfg, 'width', '10'))
+    calMonday      = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
+    tsv = GetTrueFalse(GetConfig(cfg, 'skript', 'false'))
 
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
@@ -1371,6 +1395,9 @@ def BowChickaWowWow():
         elif opt == "--border-color":
             borderColor = GetColor(arg, True)
 
+        elif opt == "--skript":
+            tsv = True
+
     if usr == None:
         PrintErrMsg('Error: must specify a username\n')
         sys.exit(1)
@@ -1409,7 +1436,8 @@ def BowChickaWowWow():
                    calReadColor=calReadColor,
                    calFreeBusyColor=calFreeBusyColor,
                    dateColor=dateColor,
-                   borderColor=borderColor)
+                   borderColor=borderColor,
+                   tsv=tsv)
 
     if args[0] == 'list':
         gcal.ListAllCalendars()
