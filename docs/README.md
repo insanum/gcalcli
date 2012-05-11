@@ -1,7 +1,7 @@
 gcalcli
 =======
 
-*Google Calendar Command Line Interface*
+#### Google Calendar Command Line Interface
 
 gcalcli is a Python application that allows you to access your Google
 Calendar(s) from a command line. It's easy to get your agenda, search for
@@ -9,7 +9,7 @@ events, quickly add new events, and even import those annoying vCal invites
 from Microsoft Exchange. Additionally, gcalcli can be used as a reminder
 service to execute any application you want.
 
-*Check your OS Distribution for packages*
+#### Check your OS Distribution for packages
 
 Requirements
 ------------
@@ -17,7 +17,7 @@ Requirements
  * [Python 2](http://www.python.org)
  * Google's [GData](http://code.google.com/p/gdata-python-client) Python 2 module
  * [dateutil](http://www.labix.org/python-dateutil) Python module
- * [vobject](http://gcalcli.googlecode.com/files/screenshot.png) Python module
+ * [vobject](http://vobject.skyhouseconsulting.com) Python module
  * A love for the command line!
 
 Features
@@ -46,8 +46,9 @@ Screenshots
 HowTo
 -----
 
-*Usage*
+#### Usage
 
+```
     gcalcli [options] command [command args]
 
      Options:
@@ -163,8 +164,9 @@ HowTo
                                - default command:
                                   'gxmessage -display :0 -center \
                                              -title "Ding, Ding, Ding!" %s'
+```
 
-*Login Information*
+#### Login Information
 
 You can provide gcalcli with your Google Calendar login information via one of
 the following:
@@ -175,7 +177,7 @@ the following:
 
 In any case make sure you protect the information.
 
-*HTTP Proxy Support*
+#### HTTP Proxy Support
 
 gcalcli will automatically work with an HTTP Proxy simply by setting up some
 environment variables used by the gdata Python module:
@@ -187,21 +189,24 @@ environment variables used by the gdata Python module:
 
 Note that these environment variables must be lowercase.
 
-*Config File*
+#### Config File
 
 gcalcli is able to read default configuration information from a config file.
 This file is location, by default, at '~/.gcalclirc' and must be formatted as
 follows:
 
+```
    [gcalcli]
    <config-option>: <value>
    <config-option>: <value>
    ...
+```
 
 The available config items are the same as those that can be specified on the
 command line.  Note that any value specified on the command line overrides the
 config file.
 
+```
    user: <username>
    pw: <password>
    cals: <type>
@@ -219,8 +224,9 @@ config file.
    cal-freebusy-color: <color>
    date-color: <color>
    border-color: <color>
+```
 
-*Event Popup Reminders Using Cron*
+#### Event Popup Reminders Using Cron
 
 Run gcalcli using cron and generate xmessage-like popups for reminders.
 
@@ -230,7 +236,7 @@ Then add the following line:
 
    */10 * * * * gcalcli remind
 
-*Agenda On Your Root Desktop*
+#### Agenda On Your Root Desktop
 
 Put your agenda on your desktop using Conky. Add the following to your
 .conkyrc:
@@ -241,7 +247,15 @@ To also get a graphical calendar that shows the next three weeks add:
 
    ${execi 300 gcalcli --nc --cals=owner calw 3}
 
-*Agenda Integration With GNU Screen*
+#### Agenda Integration With tmux
+
+Put your next event in the left of your 'tmux' status line.  Add the following
+to your tmux.conf file:
+
+   set-option -g status-interval 60
+   set-option -g status-left "#[fg=blue,bright]#(gcalcli | head -2 | tail -1)#[default]"
+
+#### Agenda Integration With screen
 
 Put your next event in your 'screen' hardstatus line.  First add a cron job
 that will dump you agenda to a text file:
@@ -264,12 +278,4 @@ is!):
 
    backtick 1 60 60 screen_agenda
    hardstatus "[ %1` ]"
-
-*Agenda Integration With Tmux*
-
-Put your next event in the left of your 'tmux' status line.  Add the following
-to your tmux.conf file:
-
-   set-option -g status-interval 60
-   set-option -g status-left "#[fg=blue,bright]#(gcalcli | head -2 | tail -1)#[default]"
 
