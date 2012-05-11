@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 # ** The MIT License **
 #
@@ -225,10 +225,10 @@ def PrintErrMsg(msg):
 def PrintMsg(color, msg):
     if CLR.useColor:
         sys.stdout.write(str(color))
-        sys.stdout.write(msg)
+        print msg,
         sys.stdout.write(str(CLR_NRM()))
     else:
-        sys.stdout.write(msg)
+        print msg,
 
 
 def DebugPrint(msg):
@@ -255,7 +255,7 @@ class gcalcli:
     calWidth      = 10
     calMonday     = False
     command       = \
-        'gxmessage -display :0 -center -title "Ding, Ding, Ding!" %s'
+        'growlnotify -n "Google Calendar" -s -a "Google Notifier" -t "Calendar Event" -m "%s"'
 
     calOwnerColor       = CLR_CYN()
     calEditorColor      = CLR_NRM()
@@ -303,8 +303,11 @@ class gcalcli:
         self.password      = password
         self.https         = https
 
-        if https: self.feedPrefix = 'https://'
-        else:     self.feedPrefix = 'http://'
+        if https:
+            self.feedPrefix = 'https://'
+            self.gcal.ssl = https
+        else:
+            self.feedPrefix = 'http://'
         self.feedPrefix = self.feedPrefix + 'www.google.com/calendar/feeds/'
 
         self.access        = access
