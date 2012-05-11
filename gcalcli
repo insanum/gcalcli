@@ -1395,7 +1395,7 @@ def BowChickaWowWow():
         elif opt == "--border-color":
             borderColor = GetColor(arg, True)
 
-        elif opt == "--skript":
+        elif opt == "--tsv":
             tsv = True
 
     if usr == None:
