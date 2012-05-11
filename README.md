@@ -1,4 +1,1 @@
-gcalcli
-=======
-
-Google Calendar Command Line Interface
+docs/README.md

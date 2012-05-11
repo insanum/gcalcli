@@ -1,0 +1,41 @@
+
+v2.1
+  * Enhancements
+    - new import command for importing ics/vcal files to a calendar
+    - add events to any calendar instead of just the default
+    - ability to override the color for a specific calendar
+    - added ability to specify calendars and colors in the config file
+    - new --https option to force using SSL
+    - new --mon option to display calw and calm weeks starting with Monday
+    - new --24hr option for displaying timestamps in 24 hour format
+    - all day events are no longer shown with a timestamp
+    - interactively prompt for a password if none is found
+    - calendar data gathering is now multi-threaded for performance
+  * Fixes
+    - all unicode problems should now be fixed
+    - calw and calm displays can now handle wide east asian unicode characters
+    - use only ANSI C strftime formats for cross platform compatibility
+    - --ignore-events now works for the agenda and search commands
+    - all day events on Sunday no longer show again on the next week
+    - fixed calw and calm layout issues with events that have no titles
+    - dump events that are beyond year 2038 (really?)
+
+v1.4
+  - colors are now supported in the 'calw' and 'calm' displays
+  - new --border-color switch
+
+v1.3
+  - new '--cal' switch used to specify a single calendar or multiple using a regex
+  - config file support (~/.gcalclirc or override on command line)
+  - new 'calm' and 'calw' command that displays a nice graphical representation of your calendar
+  - new '--ignore-started' switch
+  - fixed time display (am/pm) for Mac OSX
+  - the 'remind' command now works against all specified calendars
+  - support for 'editor' calendars
+
+v1.2
+  - support unicode input and output
+
+v1.1
+  - initial release
+
