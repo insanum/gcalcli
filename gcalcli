@@ -49,6 +49,7 @@ import inspect
 
 import sys, os, re, urllib, getopt, shlex
 import codecs, locale, csv, threading, getpass
+import platform
 from Queue import Queue
 from ConfigParser import RawConfigParser
 from gdata.calendar.service import *
@@ -254,9 +255,12 @@ class gcalcli:
     ignoreStarted = False
     calWidth      = 10
     calMonday     = False
-    command       = \
-        'gxmessage -display :0 -center -title "Ding, Ding, Ding!" %s'
-
+    if platform.system() == "Darwin":
+        command       = \
+            'growlnotify -n "Google Calendar" -s -a "iCal" -t "Calendar Event" -m "%s"'
+    else:
+        command       = \
+            'gxmessage -display :0 -center -title "Ding, Ding, Ding!" %s'
     calOwnerColor       = CLR_CYN()
     calEditorColor      = CLR_NRM()
     calContributorColor = CLR_NRM()
