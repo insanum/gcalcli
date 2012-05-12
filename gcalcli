@@ -81,8 +81,6 @@ gcalcli [options] command [command args]
 
   --pw <password>          password
 
-  --https                  use HTTPS when communicating with Google
-
   --cals [all,             'calendars' to work with (default is all calendars)
           default,         - default (your default main calendar)
           owner,           - owner (your owned calendars)
@@ -281,7 +279,6 @@ class gcalcli:
     def __init__(self,
                  username=None,
                  password=None,
-                 https=False,
                  access='all',
                  calNames=[],
                  calNameColors=[],
@@ -299,13 +296,12 @@ class gcalcli:
                  borderColor=CLR_WHT()):
 
         self.gcal          = CalendarService()
+        self.gcal.ssl      = True
+
         self.username      = username
         self.password      = password
-        self.https         = https
 
-        if https: self.feedPrefix = 'https://'
-        else:     self.feedPrefix = 'http://'
-        self.feedPrefix = self.feedPrefix + 'www.google.com/calendar/feeds/'
+        self.feedPrefix = 'https://www.google.com/calendar/feeds/'
 
         self.access        = access
         self.military      = military
@@ -355,7 +351,7 @@ class gcalcli:
 
             cal.gcalcli_altLink = cal.GetAlternateLink().href
 
-            if self.https == False and cal.gcalcli_altLink[0:5] == "https":
+            if cal.gcalcli_altLink[0:5] != "https":
                 PrintErrMsg("Error: Unable to connect, https required!\n")
                 sys.exit(1)
 
@@ -412,9 +408,7 @@ class gcalcli:
     def _TargetCalendar(self):
 
         if len(self.cals) == 1:
-            if self.https: prefix = 'https://'
-            else:          prefix = 'http://'
-            match = re.match('^' + prefix + 'www.google.com(.*)$',
+            match = re.match('^https://www.google.com(.*)$',
                              self.cals[0].gcalcli_altLink)
             return match.group(1)
         else:
@@ -1249,7 +1243,6 @@ def BowChickaWowWow():
                                     "config=",
                                     "user=",
                                     "pw=",
-                                    "https",
                                     "cals=",
                                     "cal=",
                                     "24hr",
@@ -1279,7 +1272,6 @@ def BowChickaWowWow():
 
     usr           = GetConfig(cfg, 'user', None)
     pwd           = GetConfig(cfg, 'pw', None)
-    https         = GetTrueFalse(GetConfig(cfg, 'https', 'false'))
     access        = GetConfig(cfg, 'cals', 'all')
     calNames      = GetConfigMultiple(cfg, 'cal', None)
     military      = GetTrueFalse(GetConfig(cfg, '24hr', 'false'))
@@ -1291,7 +1283,7 @@ def BowChickaWowWow():
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
     calEditorColor = \
-        GetColor(GetConfig(cfg, 'cal-editor-color', 'green'), True) 
+        GetColor(GetConfig(cfg, 'cal-editor-color', 'green'), True)
     calContributorColor = \
         GetColor(GetConfig(cfg, 'cal-contributor-color', 'default'), True)
     calReadColor = \
@@ -1322,9 +1314,6 @@ def BowChickaWowWow():
 
         elif opt == "--pw":
             pwd = arg
-
-        elif opt == "--https":
-            https = True
 
         elif opt == "--cals":
             access = arg
@@ -1394,7 +1383,6 @@ def BowChickaWowWow():
 
     gcal = gcalcli(username=usr,
                    password=pwd,
-                   https=https,
                    access=access,
                    calNames=calNames,
                    calNameColors=calNameColors,
