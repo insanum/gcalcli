@@ -36,8 +36,6 @@
 #        http://www.python.org
 #  - Google's GData Python module (for Python 2)
 #        http://code.google.com/p/gdata-python-client
-#  - ElementTree Python module
-#        http://effbot.org/zone/element-index.htm
 #  - dateutil Python module
 #        http://www.labix.org/python-dateutil
 #  - vobject Python module (optional, needed for importing ics/vcal files)
@@ -1276,7 +1274,7 @@ def BowChickaWowWow():
                                     "cal=",
                                     "24hr",
                                     "details",
-                                    "skript",
+                                    "tsv",
                                     "ignore-started",
                                     "width=",
                                     "mon",
@@ -1310,7 +1308,7 @@ def BowChickaWowWow():
     ignoreStarted  = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
     calWidth       = int(GetConfig(cfg, 'width', '10'))
     calMonday      = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
-    tsv = GetTrueFalse(GetConfig(cfg, 'skript', 'false'))
+    tsv = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
 
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
