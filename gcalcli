@@ -245,7 +245,7 @@ class gcalcli:
     allCals       = None
     cals          = []
     now           = datetime.now(tzlocal())
-    feedPrefix    = None
+    feedPrefix    = 'https://www.google.com/calendar/feeds/'
     agendaLength  = 5
     username      = None
     password      = None
@@ -306,8 +306,6 @@ class gcalcli:
         self.username      = username
         self.password      = password
 
-        self.feedPrefix = 'https://www.google.com/calendar/feeds/'
-
         self.access        = access
         self.military      = military
         self.details       = details
@@ -356,10 +354,6 @@ class gcalcli:
         for cal in self.allCals.entry:
 
             cal.gcalcli_altLink = cal.GetAlternateLink().href
-
-            if cal.gcalcli_altLink[0:5] != "https":
-                PrintErrMsg("Error: Unable to connect, https required!\n")
-                sys.exit(1)
 
             match = re.match('^' + self.feedPrefix + '(.*?)/(.*?)/(.*)$',
                              cal.gcalcli_altLink)

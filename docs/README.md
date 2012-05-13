@@ -63,8 +63,6 @@ gcalcli [options] command [command args]
 
   --pw <password>          password
 
-  --https                  use HTTPS when communicating with Google
-
   --cals [all,             'calendars' to work with (default is all calendars)
           default,         - default (your default main calendar)
           owner,           - owner (your owned calendars)
