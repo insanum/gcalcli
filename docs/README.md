@@ -231,6 +231,14 @@ date-color: <color>
 border-color: <color>
 ```
 
+Note that you can specify a shell command and the output will be the value for
+the config variable. A shell command is determined if the first character is a
+backtick (i.e. '`'). An example is pulling a password from gpg:
+
+```
+pw: `gpg --decrypt ~/mypw.gpg`
+```
+
 #### Event Popup Reminders Using Cron
 
 Run gcalcli using cron and generate xmessage-like popups for reminders.
