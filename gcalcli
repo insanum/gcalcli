@@ -216,7 +216,7 @@ class CLR_BRWHT(CLR): color = "\033[37;1m"
 def PrintErrMsg(msg):
     if CLR.useColor:
         sys.stdout.write(str(CLR_BRRED()))
-        sys.stdout.write(msg)
+        print msg,
         sys.stdout.write(str(CLR_NRM()))
     else:
         sys.stdout.write(msg)
@@ -225,16 +225,16 @@ def PrintErrMsg(msg):
 def PrintMsg(color, msg):
     if CLR.useColor:
         sys.stdout.write(str(color))
-        sys.stdout.write(msg)
+        print msg,
         sys.stdout.write(str(CLR_NRM()))
     else:
-        sys.stdout.write(msg)
+        print msg,
 
 
 def DebugPrint(msg):
     return
     sys.stdout.write(str(CLR_YLW()))
-    sys.stdout.write(msg)
+    print msg,
     sys.stdout.write(str(CLR_NRM()))
 
 
