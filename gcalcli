@@ -303,7 +303,9 @@ class gcalcli:
         self.password      = password
         self.https         = https
 
-        if https: self.feedPrefix = 'https://'
+        if https: 
+            self.feedPrefix = 'https://'
+            self.gcal.ssl = https
         else:     self.feedPrefix = 'http://'
         self.feedPrefix = self.feedPrefix + 'www.google.com/calendar/feeds/'
 
