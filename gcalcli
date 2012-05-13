@@ -47,7 +47,7 @@ __author__  = 'Eric Davis'
 
 import inspect
 
-import sys, os, re, urllib, getopt, shlex
+import sys, os, re, urllib, getopt, shlex, subprocess
 import codecs, locale, csv, threading, getpass
 from Queue import Queue
 from ConfigParser import RawConfigParser
@@ -1190,6 +1190,14 @@ def GetConfig(config, key, default):
     except:
         value = default
 
+    if value and value.startswith('`'):
+        # Value is a shell command
+        cmd = value.strip()[1:-1]
+        parts = []
+        for part in cmd.split():
+            parts.append(os.path.expanduser(part))
+        value = subprocess.check_output(parts).strip()
+
     return value
 
 
@@ -1315,7 +1323,7 @@ def BowChickaWowWow():
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
     calEditorColor = \
-        GetColor(GetConfig(cfg, 'cal-editor-color', 'green'), True) 
+        GetColor(GetConfig(cfg, 'cal-editor-color', 'green'), True)
     calContributorColor = \
         GetColor(GetConfig(cfg, 'cal-contributor-color', 'default'), True)
     calReadColor = \
