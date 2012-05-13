@@ -264,7 +264,7 @@ to your tmux.conf file:
 
 ```
 set-option -g status-interval 60
-set-option -g status-left "#[fg=blue,bright]#(gcalcli | head -2 | tail -1)#[default]"
+set-option -g status-left "#[fg=blue,bright]#(gcalcli agenda | head -2 | tail -1)#[default]"
 ```
 
 #### Agenda Integration With screen
