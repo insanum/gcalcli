@@ -187,56 +187,57 @@ gcalcli [options] command [command args]
     sys.exit(1)
 
 
-class CLR:
+useClr = True
 
-    useColor = True
+class CLR:
+    clr = None
+
+    def __init__(self, clr):
+        try:
+            from colorama import Fore, Style
+            colors = { 'default'       : Fore.RESET + Style.RESET_ALL,
+                       'black'         : Fore.BLACK,
+                       'brightblack'   : Fore.BLACK + Style.BRIGHT,
+                       'red'           : Fore.RED,
+                       'brightred'     : Fore.RED + Style.BRIGHT,
+                       'green'         : Fore.GREEN,
+                       'brightgreen'   : Fore.GREEN + Style.BRIGHT,
+                       'yellow'        : Fore.YELLOW,
+                       'brightyellow'  : Fore.YELLOW + Style.BRIGHT,
+                       'blue'          : Fore.BLUE,
+                       'brightblue'    : Fore.BLUE + Style.BRIGHT,
+                       'magenta'       : Fore.MAGENTA,
+                       'brightmagenta' : Fore.MAGENTA + Style.BRIGHT,
+                       'cyan'          : Fore.CYAN,
+                       'brightcyan'    : Fore.CYAN + Style.BRIGHT,
+                       'white'         : Fore.WHITE,
+                       'brightwhite'   : Fore.WHITE + Style.BRIGHT }
+            try:
+                self.clr = colors[clr]
+            except:
+                self.clr = colors['default']
+        except ImportError:
+            return
 
     def __str__(self):
-        if self.useColor: return self.color
-        else: return ""
-
-class CLR_NRM(CLR):   color = "\033[0m"
-class CLR_BLK(CLR):   color = "\033[0;30m"
-class CLR_BRBLK(CLR): color = "\033[30;1m"
-class CLR_RED(CLR):   color = "\033[0;31m"
-class CLR_BRRED(CLR): color = "\033[31;1m"
-class CLR_GRN(CLR):   color = "\033[0;32m"
-class CLR_BRGRN(CLR): color = "\033[32;1m"
-class CLR_YLW(CLR):   color = "\033[0;33m"
-class CLR_BRYLW(CLR): color = "\033[33;1m"
-class CLR_BLU(CLR):   color = "\033[0;34m"
-class CLR_BRBLU(CLR): color = "\033[34;1m"
-class CLR_MAG(CLR):   color = "\033[0;35m"
-class CLR_BRMAG(CLR): color = "\033[35;1m"
-class CLR_CYN(CLR):   color = "\033[0;36m"
-class CLR_BRCYN(CLR): color = "\033[36;1m"
-class CLR_WHT(CLR):   color = "\033[0;37m"
-class CLR_BRWHT(CLR): color = "\033[37;1m"
+        if useClr and self.clr: return self.clr
+        else:                   return ""
 
 
 def PrintErrMsg(msg):
-    if CLR.useColor:
-        sys.stdout.write(str(CLR_BRRED()))
-        sys.stdout.write(msg)
-        sys.stdout.write(str(CLR_NRM()))
-    else:
-        sys.stdout.write(msg)
+    sys.stdout.write(str(CLR('brightred')) + msg + str(CLR('default')))
+    sys.stdout.flush()
 
 
 def PrintMsg(color, msg):
-    if CLR.useColor:
-        sys.stdout.write(str(color))
-        sys.stdout.write(msg)
-        sys.stdout.write(str(CLR_NRM()))
-    else:
-        sys.stdout.write(msg)
+    sys.stdout.write(str(color) + msg + str(CLR('default')))
+    sys.stdout.flush()
 
 
 def DebugPrint(msg):
     return
-    sys.stdout.write(str(CLR_YLW()))
-    sys.stdout.write(msg)
-    sys.stdout.write(str(CLR_NRM()))
+    sys.stdout.write(str(CLR('yellow')) + msg + str(CLR('default')))
+    sys.stdout.flush()
 
 
 class gcalcli:
@@ -259,13 +260,13 @@ class gcalcli:
         'gxmessage -display :0 -center -title "Ding, Ding, Ding!" %s'
     tsv           = False
 
-    calOwnerColor       = CLR_CYN()
-    calEditorColor      = CLR_NRM()
-    calContributorColor = CLR_NRM()
-    calReadColor        = CLR_MAG()
-    calFreeBusyColor    = CLR_NRM()
-    dateColor           = CLR_YLW()
-    borderColor         = CLR_WHT()
+    calOwnerColor       = CLR('cyan')
+    calEditorColor      = CLR('green')
+    calContributorColor = CLR('default')
+    calReadColor        = CLR('magenta')
+    calFreeBusyColor    = CLR('default')
+    dateColor           = CLR('yellow')
+    borderColor         = CLR('white')
 
     ACCESS_ALL         = 'all'      # non-google access level
     ACCESS_DEFAULT     = 'default'  # non-google access level
@@ -291,13 +292,13 @@ class gcalcli:
                  ignoreStarted=False,
                  calWidth=10,
                  calMonday=False,
-                 calOwnerColor=CLR_CYN(),
-                 calEditorColor=CLR_GRN(),
-                 calContributorColor=CLR_NRM(),
-                 calReadColor=CLR_MAG(),
-                 calFreeBusyColor=CLR_NRM(),
-                 dateColor=CLR_GRN(),
-                 borderColor=CLR_WHT(),
+                 calOwnerColor=CLR('cyan'),
+                 calEditorColor=CLR('green'),
+                 calContributorColor=CLR('default'),
+                 calReadColor=CLR('magenta'),
+                 calFreeBusyColor=CLR('default'),
+                 dateColor=CLR('yellow'),
+                 borderColor=CLR('white'),
                  tsv=False):
 
         self.gcal          = CalendarService()
@@ -387,11 +388,12 @@ class gcalcli:
 
     def _CalendarColor(self, cal):
 
-        if cal == None:
-            return CLR_NRM()
+        if not cal:
+            return CLR('white')
         elif hasattr(cal, 'colorSpec') and cal.colorSpec != None:
             return cal.colorSpec
-        elif cal.access_level.value == self.ACCESS_OWNER:
+        elif cal.access_level.value == self.ACCESS_OWNER or \
+             cal.access_level.value == self.ACCESS_ROOT:
             return self.calOwnerColor
         elif cal.access_level.value == self.ACCESS_EDITOR:
             return self.calEditorColor
@@ -401,8 +403,11 @@ class gcalcli:
             return self.calFreeBusyColor
         elif cal.access_level.value == self.ACCESS_READ:
             return self.calReadColor
+        #elif cal.access_level.value == ACCESS_OVERRIDE:
+        #elif cal.access_level.value == ACCESS_RESPOND:
         else:
-            return CLR_NRM()
+            return CLR('white')
+
 
 
     def _TargetCalendar(self):
@@ -551,7 +556,7 @@ class gcalcli:
             weekDivider += '+'
             weekDivider += dayDivider
         weekDivider += '+'
-        weekDivider = str(self.borderColor) + weekDivider + str(CLR_NRM())
+        weekDivider = str(self.borderColor) + weekDivider + str(CLR('default'))
 
         empty = ''
         for i in xrange(self.calWidth):
@@ -563,7 +568,7 @@ class gcalcli:
         dayNames = [ date(2001, 1, i+1).strftime('%A') for i in range(7) ]
         dayNames = dayNames[6:] + dayNames[:6]
 
-        dayHeader = str(self.borderColor) + '|' + str(CLR_NRM())
+        dayHeader = str(self.borderColor) + '|' + str(CLR('default'))
         for i in xrange(7):
             if self.calMonday:
                 if i == 6:
@@ -572,21 +577,21 @@ class gcalcli:
                     dayName = dayFormat % (dayNames[i+1])
             else:
                 dayName = dayFormat % (dayNames[i])
-            dayHeader += str(self.dateColor) + dayName + str(CLR_NRM())
-            dayHeader += str(self.borderColor) + '|' + str(CLR_NRM())
+            dayHeader += str(self.dateColor) + dayName + str(CLR('default'))
+            dayHeader += str(self.borderColor) + '|' + str(CLR('default'))
 
-        PrintMsg(CLR_NRM(), "\n" + weekDivider + "\n")
+        PrintMsg(CLR('default'), "\n" + weekDivider + "\n")
         if cmd == 'calm':
             m = startDateTime.strftime('%B %Y')
             mw = str((self.calWidth * 7) + 6)
             mwf = '%-' + mw + '.' + mw + 's'
-            PrintMsg(CLR_NRM(),
-                     str(self.borderColor) + '|' + str(CLR_NRM()) +
-                     str(self.dateColor) + mwf % (m) + str(CLR_NRM()) +
-                     str(self.borderColor) + '|' + str(CLR_NRM()) + '\n')
-            PrintMsg(CLR_NRM(), weekDivider + "\n")
-        PrintMsg(CLR_NRM(), dayHeader + "\n")
-        PrintMsg(CLR_NRM(), weekDivider + "\n")
+            PrintMsg(CLR('default'),
+                     str(self.borderColor) + '|' + str(CLR('default')) +
+                     str(self.dateColor) + mwf % (m) + str(CLR('default')) +
+                     str(self.borderColor) + '|' + str(CLR('default')) + '\n')
+            PrintMsg(CLR('default'), weekDivider + "\n")
+        PrintMsg(CLR('default'), dayHeader + "\n")
+        PrintMsg(CLR('default'), weekDivider + "\n")
 
         curMonth = startDateTime.strftime("%b")
 
@@ -604,7 +609,7 @@ class gcalcli:
         for i in xrange(count):
 
             # create/print date line
-            line = str(self.borderColor) + '|' + str(CLR_NRM())
+            line = str(self.borderColor) + '|' + str(CLR('default'))
             for j in xrange(7):
                 if cmd == 'calw':
                     d = (startWeekDateTime +
@@ -621,11 +626,11 @@ class gcalcli:
                     todayMarker = " **"
                 line += str(self.dateColor) + \
                             dayFormat % (d + todayMarker) + \
-                        str(CLR_NRM()) + \
+                        str(CLR('default')) + \
                         str(self.borderColor) + \
                             '|' + \
-                        str(CLR_NRM())
-            PrintMsg(CLR_NRM(), line + "\n")
+                        str(CLR('default'))
+            PrintMsg(CLR('default'), line + "\n")
 
             weekColorStrings = [ '', '', '', '', '', '', '' ]
             weekEventStrings = self._GetWeekEventStrings(cmd, curMonth,
@@ -645,14 +650,14 @@ class gcalcli:
             while 1:
 
                 done = True
-                line = str(self.borderColor) + '|' + str(CLR_NRM())
+                line = str(self.borderColor) + '|' + str(CLR('default'))
 
                 for j in xrange(7):
 
                     if weekEventStrings[j] == '':
                         weekColorStrings[j] = ''
                         line += empty + \
-                                str(self.borderColor) + '|' + str(CLR_NRM())
+                                str(self.borderColor) + '|' + str(CLR('default'))
                         continue
 
                     if weekEventStrings[j][0] == '\033':
@@ -668,7 +673,7 @@ class gcalcli:
                         weekColorStrings[j] = ''
                         weekEventStrings[j] = weekEventStrings[j][1:]
                         line += empty + \
-                                str(self.borderColor) + '|' + str(CLR_NRM())
+                                str(self.borderColor) + '|' + str(CLR('default'))
                         done = False
                         continue
 
@@ -680,18 +685,18 @@ class gcalcli:
                     line += weekColorStrings[j] + \
                             weekEventStrings[j][:cut] + \
                             padding + \
-                            str(CLR_NRM())
+                            str(CLR('default'))
                     weekEventStrings[j] = weekEventStrings[j][cut:]
 
                     done = False
-                    line += str(self.borderColor) + '|' + str(CLR_NRM())
+                    line += str(self.borderColor) + '|' + str(CLR('default'))
 
                 if done:
                     break
 
-                PrintMsg(CLR_NRM(), line + "\n")
+                PrintMsg(CLR('default'), line + "\n")
 
-            PrintMsg(CLR_NRM(), weekDivider + "\n")
+            PrintMsg(CLR('default'), weekDivider + "\n")
 
     def _tsv(self, startDateTime, eventList):
         # tab-separated output for easier shellscripting.
@@ -710,7 +715,7 @@ class gcalcli:
     def _PrintEvents(self, startDateTime, eventList):
 
         if len(eventList) == 0:
-            PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
+            PrintMsg(CLR('yellow'), "\nNo Events Found...\n")
             return
 
         dayFormat = '\n%a %b %d' # 10 chars for day
@@ -749,7 +754,7 @@ class gcalcli:
 
             if self.details:
 
-                clr = CLR_NRM()
+                clr = CLR('default')
 
                 if event.where[0].value_string:
                     str = "%s  Location: %s\n" % (detailsIndent,
@@ -888,8 +893,8 @@ class gcalcli:
 
         format = ' %0' + str(accessLen) + 's  %s\n'
 
-        PrintMsg(CLR_BRYLW(), "\n" + format % ('Access', 'Title'))
-        PrintMsg(CLR_BRYLW(), format % ('------', '-----'))
+        PrintMsg(CLR('brightyellow'), "\n" + format % ('Access', 'Title'))
+        PrintMsg(CLR('brightyellow'), format % ('------', '-----'))
 
         for cal in self.allCals.entry:
             PrintMsg(self._CalendarColor(cal),
@@ -1212,42 +1217,12 @@ def GetTrueFalse(value):
     else: return True
 
 
-def GetColor(value, exitFlag):
-
-    colors = { 'default'       : CLR_NRM(),
-               'black'         : CLR_BLK(),
-               'brightblack'   : CLR_BRBLK(),
-               'red'           : CLR_RED(),
-               'brightred'     : CLR_BRRED(),
-               'green'         : CLR_GRN(),
-               'brightgreen'   : CLR_BRGRN(),
-               'yellow'        : CLR_YLW(),
-               'brightyellow'  : CLR_BRYLW(),
-               'blue'          : CLR_BLU(),
-               'brightblue'    : CLR_BRBLU(),
-               'magenta'       : CLR_MAG(),
-               'brightmagenta' : CLR_BRMAG(),
-               'cyan'          : CLR_CYN(),
-               'brightcyan'    : CLR_BRCYN(),
-               'white'         : CLR_WHT(),
-               'brightwhite'   : CLR_BRWHT() }
-
-    try:
-        return colors[value]
-    except:
-        if exitFlag:
-            PrintErrMsg('Error: invalid color name\n')
-            sys.exit(1)
-        else:
-            return None
-
-
 def GetCalColors(calNames):
     calNameColors = []
     for idx in xrange(len(calNames)):
         i = calNames[idx].rfind('#')
         if i != -1:
-            c = GetColor(calNames[idx][(i+1):], False)
+            c = CLR(calNames[idx][(i+1):])
             if c:
                 calNameColors.append(c)
                 calNames[idx] = calNames[idx][:i]
@@ -1259,6 +1234,7 @@ def GetCalColors(calNames):
 
 
 def BowChickaWowWow():
+    global useClr
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "",
@@ -1307,19 +1283,19 @@ def BowChickaWowWow():
     tsv           = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
 
     calOwnerColor = \
-        GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
+        CLR(GetConfig(cfg, 'cal-owner-color', 'cyan'))
     calEditorColor = \
-        GetColor(GetConfig(cfg, 'cal-editor-color', 'green'), True)
+        CLR(GetConfig(cfg, 'cal-editor-color', 'green'))
     calContributorColor = \
-        GetColor(GetConfig(cfg, 'cal-contributor-color', 'default'), True)
+        CLR(GetConfig(cfg, 'cal-contributor-color', 'default'))
     calReadColor = \
-        GetColor(GetConfig(cfg, 'cal-read-color', 'magenta'), True)
+        CLR(GetConfig(cfg, 'cal-read-color', 'magenta'))
     calFreeBusyColor = \
-        GetColor(GetConfig(cfg, 'cal-freebusy-color', 'default'), True)
+        CLR(GetConfig(cfg, 'cal-freebusy-color', 'default'))
     dateColor = \
-        GetColor(GetConfig(cfg, 'date-color', 'yellow'), True)
+        CLR(GetConfig(cfg, 'date-color', 'yellow'))
     borderColor = \
-        GetColor(GetConfig(cfg, 'border-color', 'white'), True)
+        CLR(GetConfig(cfg, 'border-color', 'white'))
 
     # fix wokCalNames when not specified in config file
     if len(calNames) == 1 and calNames[0] == None:
@@ -1363,28 +1339,28 @@ def BowChickaWowWow():
             calMonday = True
 
         elif opt == "--nc":
-            CLR.useColor = False
+            useClr = False
 
         elif opt == "--cal-owner-color":
-            calOwnerColor = GetColor(arg, True)
+            calOwnerColor = CLR(arg)
 
         elif opt == "--cal-editor-color":
-            calEditorColor = GetColor(arg, True)
+            calEditorColor = CLR(arg)
 
         elif opt == "--cal-contributor-color":
-            calContributorColor = GetColor(arg, True)
+            calContributorColor = CLR(arg)
 
         elif opt == "--cal-read-color":
-            calReadColor = GetColor(arg, True)
+            calReadColor = CLR(arg)
 
         elif opt == "--cal-freebusy-color":
-            calFreeBusyColor = GetColor(arg, True)
+            calFreeBusyColor = CLR(arg)
 
         elif opt == "--date-color":
-            dateColor = GetColor(arg, True)
+            dateColor = CLR(arg)
 
         elif opt == "--border-color":
-            borderColor = GetColor(arg, True)
+            borderColor = CLR(arg)
 
         elif opt == "--tsv":
             tsv = True
