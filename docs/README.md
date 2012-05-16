@@ -63,8 +63,6 @@ gcalcli [options] command [command args]
 
   --pw <password>          password
 
-  --https                  use HTTPS when communicating with Google
-
   --cals [all,             'calendars' to work with (default is all calendars)
           default,         - default (your default main calendar)
           owner,           - owner (your owned calendars)
@@ -231,6 +229,14 @@ date-color: <color>
 border-color: <color>
 ```
 
+Note that you can specify a shell command and the output will be the value for
+the config variable. A shell command is determined if the first character is a
+backtick (i.e. '`'). An example is pulling a password from gpg:
+
+```
+pw: `gpg --decrypt ~/mypw.gpg`
+```
+
 #### Event Popup Reminders Using Cron
 
 Run gcalcli using cron and generate xmessage-like popups for reminders.
@@ -267,7 +273,7 @@ to your tmux.conf file:
 
 ```
 set-option -g status-interval 60
-set-option -g status-left "#[fg=blue,bright]#(gcalcli | head -2 | tail -1)#[default]"
+set-option -g status-left "#[fg=blue,bright]#(gcalcli agenda | head -2 | tail -1)#[default]"
 ```
 
 #### Agenda Integration With screen
