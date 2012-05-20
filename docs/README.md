@@ -38,10 +38,10 @@ Features
 Screenshots
 -----------
 
-![gcalcli](gcalcli/raw/master/docs/gcalcli_1.png)
-![gcalcli](gcalcli/raw/master/docs/gcalcli_2.png)
-![gcalcli](gcalcli/raw/master/docs/gcalcli_3.png)
-![gcalcli](gcalcli/raw/master/docs/gcalcli_4.png)
+![gcalcli](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_1.png)
+![gcalcli](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_2.png)
+![gcalcli](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_3.png)
+![gcalcli](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_4.png)
 
 HowTo
 -----
