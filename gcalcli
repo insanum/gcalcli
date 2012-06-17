@@ -707,7 +707,7 @@ class gcalcli:
             tmpTimeStr = event.s.strftime("%H:%M")
             tmpTimeStp = event.e.strftime("%H:%M")
             str = "%s\t%s\t%s\t%s\t%s\t%s" % (tmpDayStr, tmpTimeStr, tmpTimeStp, self._ValidTitle(event.title.text).strip(), event.where[0].value_string, event.content.text )
-            str2 = "%s" % str.replace('\n', '''\\n''')
+            str2 = "%s\n" % str.replace('\n', '''\\n''')
             sys.stdout.write(str2)
 
     def _PrintEvents(self, startDateTime, eventList):
