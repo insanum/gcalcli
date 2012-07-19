@@ -42,24 +42,28 @@
 #
 
 __program__ = 'gcalcli'
-__version__ = 'v2.1'
+__version__ = 'v2.2'
 __author__  = 'Eric Davis'
 
 import inspect
 
 import sys, os, re, urllib, getopt, shlex, subprocess
-import codecs, locale, csv, threading, getpass
+import codecs, locale, csv, threading
 from Queue import Queue
 from ConfigParser import RawConfigParser
-from gdata.calendar.service import *
+from gdata.gauth import *
+from gdata.client import *
+from gdata.calendar.client import *
 from datetime import *
 from dateutil.tz import *
 from dateutil.parser import *
 from unicodedata import east_asian_width
 
+#XXX
+from pprint import pprint
 
 def Version():
-    sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
+    sys.stdout.write(__program__+'-'+__version__+'\n')
     sys.exit(1)
 
 
@@ -78,8 +82,6 @@ gcalcli [options] command [command args]
   --config <file>          config file to read (default is '~/.gcalclirc')
 
   --user <username>        google username
-
-  --pw <password>          password
 
   --cals [all,             'calendars' to work with (default is all calendars)
           default,         - default (your default main calendar)
@@ -181,8 +183,7 @@ gcalcli [options] command [command args]
                            event start time and title text)
                            - <mins> default is 10
                            - default command:
-                              'gxmessage -display :0 -center \\
-                                         -title "Ding, Ding, Ding!" %s'
+                              'notify-send -a gcalcli -u critical %s'
 ''')
     sys.exit(1)
 
@@ -248,15 +249,14 @@ class gcalcli:
     feedPrefix    = 'https://www.google.com/calendar/feeds/'
     agendaLength  = 5
     username      = None
-    password      = None
+    token         = None
     access        = ''
     military      = False
     details       = False
     ignoreStarted = False
     calWidth      = 10
     calMonday     = False
-    command       = \
-        'gxmessage -display :0 -center -title "Ding, Ding, Ding!" %s'
+    command       = 'notify-send -a gcalcli -u critical %s'
     tsv           = False
 
     calOwnerColor       = CLR_CYN()
@@ -282,7 +282,7 @@ class gcalcli:
 
     def __init__(self,
                  username=None,
-                 password=None,
+                 token=None,
                  access='all',
                  calNames=[],
                  calNameColors=[],
@@ -300,11 +300,15 @@ class gcalcli:
                  borderColor=CLR_WHT(),
                  tsv=False):
 
-        self.gcal          = CalendarService()
+       #self.gcal          = CalendarService()
+
+        self.gcal          = CalendarClient(token.user_agent)
+        token.authorize(self.gcal)
+
         self.gcal.ssl      = True
 
         self.username      = username
-        self.password      = password
+        self.token         = token
 
         self.access        = access
         self.military      = military
@@ -323,15 +327,15 @@ class gcalcli:
         self.borderColor         = borderColor
 
         # authenticate and login to google calendar
-        try:
-            self.gcal.ClientLogin(
-                            username=self.username,
-                            password=self.password,
-                            service='cl',
-                            source=__author__+'-'+__program__+'-'+__version__)
-        except Exception, e:
-            PrintErrMsg("Error: " + str(e) + "!\n")
-            sys.exit(1)
+        #try:
+        #    self.gcal.ClientLogin(
+        #                    username=self.username,
+        #                    password=self.password,
+        #                    service='cl',
+        #                    source=__program__+'-'+__version__)
+        #except Exception, e:
+        #    PrintErrMsg("Error: " + str(e) + "!\n")
+        #    sys.exit(1)
 
         # get the list of calendars
         self.allCals = self.gcal.GetAllCalendarsFeed()
@@ -348,8 +352,8 @@ class gcalcli:
                   self.ACCESS_NONE        : 9 }
 
         self.allCals.entry.sort(lambda x, y:
-                                cmp(order[x.access_level.value],
-                                    order[y.access_level.value]))
+                                cmp(order[x.accesslevel.value],
+                                    order[y.accesslevel.value]))
 
         for cal in self.allCals.entry:
 
@@ -379,7 +383,7 @@ class gcalcli:
         elif self.access == self.ACCESS_DEFAULT and \
              cal.gcalcli_username == self.username:
             return True
-        elif self.access != cal.access_level.value:
+        elif self.access != cal.accesslevel.value:
             return False
         else:
             return True
@@ -391,15 +395,15 @@ class gcalcli:
             return CLR_NRM()
         elif hasattr(cal, 'colorSpec') and cal.colorSpec != None:
             return cal.colorSpec
-        elif cal.access_level.value == self.ACCESS_OWNER:
+        elif cal.accesslevel.value == self.ACCESS_OWNER:
             return self.calOwnerColor
-        elif cal.access_level.value == self.ACCESS_EDITOR:
+        elif cal.accesslevel.value == self.ACCESS_EDITOR:
             return self.calEditorColor
-        elif cal.access_level.value == self.ACCESS_CONTRIBUTOR:
+        elif cal.accesslevel.value == self.ACCESS_CONTRIBUTOR:
             return self.calContributorColor
-        elif cal.access_level.value == self.ACCESS_FREEBUSY:
+        elif cal.accesslevel.value == self.ACCESS_FREEBUSY:
             return self.calFreeBusyColor
-        elif cal.access_level.value == self.ACCESS_READ:
+        elif cal.accesslevel.value == self.ACCESS_READ:
             return self.calReadColor
         else:
             return CLR_NRM()
@@ -791,11 +795,11 @@ class gcalcli:
 
                 event.gcalcli_cal = cal
 
-                event.s = parse(event.when[0].start_time)
+                event.s = parse(event.when[0].start)
                 if event.s.tzinfo == None:
                     event.s = event.s.replace(tzinfo=tzlocal())
 
-                event.e = parse(event.when[0].end_time)
+                event.e = parse(event.when[0].end)
                 if event.e.tzinfo == None:
                     event.e = event.e.replace(tzinfo=tzlocal())
 
@@ -830,29 +834,37 @@ class gcalcli:
         threads = []
 
         def worker(cal, query):
-            feed = self.gcal.CalendarQuery(query)
+            feed = self.gcal.GetCalendarEventFeed(q=query)
             queue.put((cal, feed))
 
         for cal in self.cals:
+
+            print "***** " + cal.title.text + " " + cal.gcalcli_altLink
+            print cal.gcalcli_username + " " + cal.gcalcli_visibility + " " + cal.gcalcli_projection
 
             if not self._CalendarWithinAccess(cal):
                 continue
 
             # see http://code.google.com/apis/calendar/reference.html
             if not searchText:
-                query = CalendarEventQuery(cal.gcalcli_username,
-                                           cal.gcalcli_visibility,
-                                           cal.gcalcli_projection)
-                query.start_min = start.isoformat()
-                query.start_max = end.isoformat()
+                #query = CalendarEventQuery(cal.gcalcli_username,
+                #                           cal.gcalcli_visibility,
+                #                           cal.gcalcli_projection)
+                query = gdata.calendar.service.CalendarEventQuery(start_min=start.isoformat(),
+                                           start_max=end.isoformat())
             else:
-                query = CalendarEventQuery(cal.gcalcli_username,
-                                           cal.gcalcli_visibility,
-                                           cal.gcalcli_projection,
-                                           searchText)
+                #query = CalendarEventQuery(cal.gcalcli_username,
+                #                           cal.gcalcli_visibility,
+                #                           cal.gcalcli_projection,
+                #                           searchText)
+                query = gdata.calendar.service.CalendarEventQuery(text_query=searchText)
                 if start: # flagged by --ignore-started
                     # weeds out old but still pulls in started events
                     query.futureevents = 'true'
+
+            query.__dict__['feed'] = cal.gcalcli_altLink
+
+            pprint(vars(query))
 
             query.singleevents = 'true'
 
@@ -881,7 +893,7 @@ class gcalcli:
         accessLen = 0
 
         for cal in self.allCals.entry:
-            length = len(cal.access_level.value)
+            length = len(cal.accesslevel.value)
             if length > accessLen: accessLen = length
 
         if accessLen < len('Access'): accessLen = len('Access')
@@ -893,7 +905,7 @@ class gcalcli:
 
         for cal in self.allCals.entry:
             PrintMsg(self._CalendarColor(cal),
-                     format % (cal.access_level.value, cal.title.text))
+                     format % (cal.accesslevel.value, cal.title.text))
 
 
     def TextQuery(self, searchText=''):
@@ -1258,7 +1270,7 @@ def GetCalColors(calNames):
     return calNames, calNameColors
 
 
-def BowChickaWowWow():
+def BowChickaWowWow(token):
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "",
@@ -1266,7 +1278,6 @@ def BowChickaWowWow():
                                     "version",
                                     "config=",
                                     "user=",
-                                    "pw=",
                                     "cals=",
                                     "cal=",
                                     "24hr",
@@ -1286,7 +1297,7 @@ def BowChickaWowWow():
     except getopt.error:
         sys.exit(1)
 
-    configFile = '~/.gcalclirc'
+    configFile = os.path.expanduser('~') + '/.gcalclirc'
 
     # look for config file override then load the config file
     # we do this first because command line args take precedence
@@ -1296,7 +1307,6 @@ def BowChickaWowWow():
     cfg = LoadConfig(configFile)
 
     usr           = GetConfig(cfg, 'user', None)
-    pwd           = GetConfig(cfg, 'pw', None)
     access        = GetConfig(cfg, 'cals', 'all')
     calNames      = GetConfigMultiple(cfg, 'cal', None)
     military      = GetTrueFalse(GetConfig(cfg, '24hr', 'false'))
@@ -1337,9 +1347,6 @@ def BowChickaWowWow():
 
         elif opt == "--user":
             usr = arg
-
-        elif opt == "--pw":
-            pwd = arg
 
         elif opt == "--cals":
             access = arg
@@ -1393,17 +1400,6 @@ def BowChickaWowWow():
         PrintErrMsg('Error: must specify a username\n')
         sys.exit(1)
 
-    try:
-        if pwd == None:
-            pwd = getpass.getpass("Password: ")
-    except Exception, e:
-        PrintErrMsg("Error: " + str(e) + "!\n")
-        sys.exit(1)
-
-    if pwd == None or pwd == '':
-        PrintErrMsg('Error: must specify a password\n')
-        sys.exit(1)
-
     if len(args) == 0:
         PrintErrMsg('Error: no command (--help)\n')
         sys.exit(1)
@@ -1411,7 +1407,7 @@ def BowChickaWowWow():
     calNames, calNameColors = GetCalColors(calNames)
 
     gcal = gcalcli(username=usr,
-                   password=pwd,
+                   token=token,
                    access=access,
                    calNames=calNames,
                    calNameColors=calNameColors,
@@ -1525,6 +1521,30 @@ def BowChickaWowWow():
         sys.exit(1)
 
 
+import pickle
+authFile = os.path.expanduser('~') + '/.gcalcli_auth'
+try:
+    af = open(authFile)
+    token = pickle.load(af)
+    af.close()
+except IOError:
+    token = OAuth2Token(client_id='232867676714.apps.googleusercontent.com',
+                        client_secret='3tZSxItw6_VnZMezQwC8lUqy',
+                        scope='https://www.google.com/calendar/feeds',
+                        user_agent=__program__+'-'+__version__)
+    uri = token.generate_authorize_url()
+    print 'Please visit this URL to authorize the application:'
+    print uri
+    code = raw_input('What is the verification code? ').strip()
+    token.get_access_token(code)
+    af = open(authFile, 'w')
+    pickle.dump(token, af)
+    af.close()
+
+# Authorize the client.
+#client = gdata.calendar.client.CalendarClient(token.user_agent)
+#token.authorize(client)
+
 if __name__ == '__main__':
-    BowChickaWowWow()
+    BowChickaWowWow(token)
 
