@@ -30,6 +30,7 @@
 #
 # Author: Eric Davis <http://www.insanum.com>
 #
+#
 # Requirements:
 #  - Python 2
 #        http://www.python.org
@@ -40,6 +41,7 @@
 #  - vobject Python module (optional, needed for importing ics/vcal files)
 #        http://vobject.skyhouseconsulting.com
 #
+ 
 
 __program__ = 'gcalcli'
 __version__ = 'v2.2'
@@ -57,7 +59,6 @@ from dateutil.tz import *
 from dateutil.parser import *
 from dateutil.rrule import *
 from unicodedata import east_asian_width
-
 
 def Version():
     sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
@@ -132,6 +133,8 @@ gcalcli [options] command [command args]
   --cal-freebusy-color     brightyellow, blue, brightblue, magenta,
   --date-color             brightmagenta, cyan, brightcyan, white,
   --border-color           brightwhite ]
+  --tsv                    tab-separated output for 'agenda'. Format is:
+                           'date' 'start' 'end' 'title' 'location' 'description'
 
   --tsv                    tab-separated output for 'agenda'. Format is:
                            'date' 'start' 'end' 'title' 'location' 'description'
@@ -707,8 +710,8 @@ class gcalcli:
             tmpTimeStr = event.s.strftime("%H:%M")
             tmpTimeStp = event.e.strftime("%H:%M")
             str = "%s\t%s\t%s\t%s\t%s\t%s" % (tmpDayStr, tmpTimeStr, tmpTimeStp, self._ValidTitle(event.title.text).strip(), event.where[0].value_string, event.content.text )
-            str2 = "%s" % str.replace('\n', '''\\n''')
-            print(str2)
+            str2 = "%s\n" % str.replace('\n', '''\\n''')
+            sys.stdout.write(str2)
 
     def _PrintEvents(self, startDateTime, eventList):
 
