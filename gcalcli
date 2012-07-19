@@ -42,7 +42,7 @@
 #
 
 __program__ = 'gcalcli'
-__version__ = 'v2.1'
+__version__ = 'v2.2'
 __author__  = 'Eric Davis'
 
 import inspect
@@ -55,6 +55,7 @@ from gdata.calendar.service import *
 from datetime import *
 from dateutil.tz import *
 from dateutil.parser import *
+from dateutil.rrule import *
 from unicodedata import east_asian_width
 
 
@@ -170,19 +171,22 @@ gcalcli [options] command [command args]
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
 
-  import [file]            import an ics/vcal file to a calendar
+  import [-v] [file]       import an ics/vcal file to a calendar
                            - if a --cal is not specified then the event is
                              added to the default calendar
                            - if a file is not specified then the data is read
                              from standard input
+                           - if -v is given then each event in the file is
+                             displayed and you're given the option to import
+                             or skip it, by default everything is imported
+                             quietly without any interaction
 
   remind <mins> <command>  execute command if event occurs within <mins>
                            minutes time ('%s' in <command> is replaced with
                            event start time and title text)
                            - <mins> default is 10
                            - default command:
-                              'gxmessage -display :0 -center \\
-                                         -title "Ding, Ding, Ding!" %s'
+                              'notify-send -u critical -a gcalcli %s'
 ''')
     sys.exit(1)
 
@@ -255,8 +259,7 @@ class gcalcli:
     ignoreStarted = False
     calWidth      = 10
     calMonday     = False
-    command       = \
-        'gxmessage -display :0 -center -title "Ding, Ding, Ding!" %s'
+    command       = 'notify-send -u critical -a gcalcli %s'
     tsv           = False
 
     calOwnerColor       = CLR_CYN()
@@ -1016,7 +1019,11 @@ class gcalcli:
         quickEvent.content = atom.Content(text=eventText)
         quickEvent.quick_add = gdata.calendar.QuickAdd(value='true')
 
-        self.gcal.InsertEvent(quickEvent, self._TargetCalendar())
+        try:
+            self.gcal.InsertEvent(quickEvent, self._TargetCalendar())
+        except Exception, e:
+            PrintErrMsg("Error: " + e["reason"] + "\n")
+            sys.exit(1)
 
 
     def Remind(self, minutes=10, command=None):
@@ -1052,8 +1059,6 @@ class gcalcli:
         if message == '':
             return
 
-        message = "Google Calendar Reminder:\n" + message
-
         cmd = shlex.split(command)
 
         for i, a in zip(xrange(len(cmd)), cmd):
@@ -1065,7 +1070,7 @@ class gcalcli:
             os.execvp(cmd[0], cmd)
 
 
-    def ImportICS(self, icsFile=None):
+    def ImportICS(self, verbose=False, icsFile=None):
         try:
             import vobject
         except:
@@ -1093,22 +1098,34 @@ class gcalcli:
 
             if hasattr(ve, 'summary'):
                 DebugPrint("SUMMARY: %s\n" % ve.summary.value)
+                if verbose:
+                    print "Event........%s" % ve.summary.value
                 event.title = atom.Title(text=ve.summary.value)
 
             if hasattr(ve, 'location'):
                 DebugPrint("LOCATION: %s\n" % ve.location.value)
+                if verbose:
+                    print "Location.....%s" % ve.location.value
                 event.where = gdata.calendar.Where(value_string=ve.location.value)
 
             if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
-                PrintErrMsg("Error: file does not have both dtstart and dtend!\n")
-                sys.exit(1)
+                PrintErrMsg("Error: event does not have a dtstart and dtend!\n")
+                continue
 
             DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
             DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
+            if verbose:
+                print "Start........%s" % datetime.ctime(ve.dtstart.value)
+                print "End..........%s" % datetime.ctime(ve.dtend.value)
 
             if hasattr(ve, 'rrule'):
 
                 DebugPrint("RRULE: %s\n" % ve.rrule.value)
+                if verbose:
+                    print "Recurrence...%s" % ve.rrule.value
+                    # XXX Need to print a NICE recurrence string
+                    #rr = rrulestr(ve.rrule.value)
+                    #print dir(rr)
 
                 #
                 # In order to add an RRULE using a DTSTART and DTEND in the
@@ -1159,9 +1176,34 @@ class gcalcli:
 
             if hasattr(ve, 'description'):
                 DebugPrint("DESCRIPTION: %s\n" % ve.description.value)
+                if verbose:
+                    print "Description:\n%s" % ve.description.value
                 event.content = atom.Content(text=ve.description.value)
 
-            self.gcal.InsertEvent(event, self._TargetCalendar())
+
+            if not verbose:
+                try:
+                    self.gcal.InsertEvent(event, self._TargetCalendar())
+                except Exception, e:
+                    PrintErrMsg("Error: " + e["reason"] + "\n")
+                    sys.exit(1)
+                continue
+
+            PrintMsg(CLR_YLW(), "[i]mport [s]kip [q]uit: ")
+            val = raw_input()
+            if val == 'i':
+                try:
+                    self.gcal.InsertEvent(event, self._TargetCalendar())
+                except Exception, e:
+                    PrintErrMsg("Error: " + e["reason"] + "\n")
+                    sys.exit(1)
+            elif val == 's':
+                continue
+            elif val == 'q':
+                sys.exit(0)
+            else:
+                PrintErrMsg('Error: invalid input\n')
+                sys.exit(1)
 
 
 def LoadConfig(configFile):
@@ -1515,10 +1557,18 @@ def BowChickaWowWow():
             sys.exit(1)
 
     elif args[0] == 'import':
-        if len(args) == 2: # ics file
-            gcal.ImportICS(args[1])
+        args = args[1:]
+        verbose = False
+        if len(args) >= 1 and args[0] == "-v":
+            verbose = True
+            args = args[1:]
+        if len(args) == 0: # stdin
+            gcal.ImportICS(verbose)
+        elif len(args) == 1: # ics file
+            gcal.ImportICS(verbose, args[0])
         else:
-            gcal.ImportICS() # stdin
+            PrintErrMsg('Error: invalid import arguments\n')
+            sys.exit(1)
 
     else:
         PrintErrMsg('Error: unknown command (--help)\n')
