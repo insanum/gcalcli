@@ -132,8 +132,6 @@ gcalcli [options] command [command args]
   --cal-freebusy-color     brightyellow, blue, brightblue, magenta,
   --date-color             brightmagenta, cyan, brightcyan, white,
   --border-color           brightwhite ]
-  --tsv                    tab-separated output for 'agenda'. Format is:
-                           'date' 'start' 'end' 'title' 'location' 'description'
 
   --tsv                    tab-separated output for 'agenda'. Format is:
                            'date' 'start' 'end' 'title' 'location' 'description'
