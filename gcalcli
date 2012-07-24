@@ -1115,8 +1115,10 @@ class gcalcli:
             DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
             DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
             if verbose:
-                print "Start........%s" % datetime.ctime(ve.dtstart.value)
-                print "End..........%s" % datetime.ctime(ve.dtend.value)
+                print "Start........%s" % ve.dtstart.value.isoformat(' ')
+                print "End..........%s" % ve.dtend.value.isoformat(' ')
+                print "Local Start..%s" % ve.dtstart.value.astimezone(tzlocal())
+                print "Local End....%s" % ve.dtend.value.astimezone(tzlocal())
 
             if hasattr(ve, 'rrule'):
 
@@ -1179,7 +1181,6 @@ class gcalcli:
                 if verbose:
                     print "Description:\n%s" % ve.description.value
                 event.content = atom.Content(text=ve.description.value)
-
 
             if not verbose:
                 try:

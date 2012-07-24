@@ -152,11 +152,15 @@ gcalcli [options] command [command args]
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
 
-  import [file]            import an ics/vcal file to a calendar
+  import [-v] [file]       import an ics/vcal file to a calendar
                            - if a --cal is not specified then the event is
                              added to the default calendar
                            - if a file is not specified then the data is read
                              from standard input
+                           - if -v is given then each event in the file is
+                             displayed and you're given the option to import
+                             or skip it, by default everything is imported
+                             quietly without any interaction
 
   remind <mins> <command>  execute command if event occurs within <mins>
                            minutes time ('%s' in <command> is replaced with
