@@ -137,7 +137,7 @@ gcalcli [options] command [command args]
   
   --locale                 set a custom locale (i.e. 'de_DE.UTF-8'). You can
                            find all supported locales of your system in
-                           /var/lib/locales/supported.d/local
+                           /var/lib/locales/supported.d
 
  Commands:
 
@@ -336,7 +336,7 @@ class gcalcli:
         	locale.setlocale(locale.LC_ALL, customLocale)
         except Exception, e:
         	PrintErrMsg("Error: " + str(e) + "!\n"
-        	    + "View '/var/lib/locales/supported.d/local' for all supported locales.\n")
+        	    + "View '/var/lib/locales/supported.d' for all supported locales.\n")
         	sys.exit(1)
 
         # authenticate and login to google calendar

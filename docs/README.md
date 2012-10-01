@@ -119,7 +119,7 @@ gcalcli [options] command [command args]
 
   --locale                 set a custom locale (i.e. 'de_DE.UTF-8'). You can
                            find all supported locales of your system in
-                           /var/lib/locales/supported.d/local
+                           /var/lib/locales/supported.d
 
  Commands:
 
