@@ -115,7 +115,7 @@ gcalcli [options] command [command args]
   --border-color           brightwhite ]
 
   --tsv                    tab-separated output for 'agenda'. Format is:
-                           'date' 'start' 'end' 'title' 'location' 'description'
+                           'date start' 'start time' 'date end' 'end time' 'title' 'location' 'description'
 
  Commands:
 
