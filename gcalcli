@@ -135,9 +135,8 @@ gcalcli [options] command [command args]
   --tsv                    tab-separated output for 'agenda'. Format is:
                            'date' 'start' 'end' 'title' 'location' 'description'
   
-  --locale                 set a custom locale (i.e. 'de_DE.UTF-8'). You can
-                           find all supported locales of your system in
-                           /var/lib/locales/supported.d
+  --locale                 set a custom locale (i.e. 'de_DE.UTF-8'). Check the
+                           supported locales of your system first.
 
  Commands:
 
@@ -336,7 +335,7 @@ class gcalcli:
         	locale.setlocale(locale.LC_ALL, customLocale)
         except Exception, e:
         	PrintErrMsg("Error: " + str(e) + "!\n"
-        	    + "View '/var/lib/locales/supported.d' for all supported locales.\n")
+        	    + "Check supported locales of your system.\n")
         	sys.exit(1)
 
         # authenticate and login to google calendar
