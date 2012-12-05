@@ -1286,19 +1286,18 @@ def GetColor(value, exitFlag):
 
 
 def GetCalColors(calNames):
-    calNameColors = []
-    for idx in xrange(len(calNames)):
-        i = calNames[idx].rfind('#')
-        if i != -1:
-            c = GetColor(calNames[idx][(i+1):], False)
-            if c:
-                calNameColors.append(c)
-                calNames[idx] = calNames[idx][:i]
-            else:
-                calNameColors.append(None)
-        else:
-            calNameColors.append(None)
-    return calNames, calNameColors
+    calColors = {}
+    for calName in calNames:
+        calNameParts = calName.split("#")
+        calNameSimple = calNameParts[0]
+        calColor = calColors.get(calNameSimple)
+        if len(calNameParts) > 0:
+            calColorRaw = calNameParts[-1]
+            calColorNew = GetColor(calColorRaw, False)
+            if calColorNew is not None:
+                calColor = calColorNew
+        calColors[calNameSimple] = calColor
+    return calColors
 
 
 def BowChickaWowWow():
@@ -1369,6 +1368,8 @@ def BowChickaWowWow():
         calNames      = []
         calNameColors = []
 
+    calNamesCommandLine = []
+
     # Process options
     for opt, arg in opts:
 
@@ -1389,6 +1390,7 @@ def BowChickaWowWow():
 
         elif opt == "--cal":
             calNames.append(arg)
+            calNamesCommandLine.append(arg)
 
         elif opt == "--24hr":
             military = True
@@ -1451,7 +1453,17 @@ def BowChickaWowWow():
         PrintErrMsg('Error: no command (--help)\n')
         sys.exit(1)
 
-    calNames, calNameColors = GetCalColors(calNames)
+    calColors = GetCalColors(calNames)
+    if len(calNamesCommandLine) > 0:
+        calNames = calNamesCommandLine
+
+    calNamesFiltered = []
+    calNameColors = []
+    for calName in calNames:
+        calNameSimple = calName.split("#")[0]
+        calNamesFiltered.append(calNameSimple)
+        calNameColors.append(calColors[calNameSimple])
+    calNames = calNamesFiltered
 
     gcal = gcalcli(username=usr,
                    password=pwd,
