@@ -136,6 +136,12 @@ gcalcli [options] command [command args]
   --tsv                    tab-separated output for 'agenda'. Format is:
                            'date' 'start' 'end' 'title' 'location' 'description'
 
+  --reminder-minutes       number of minutes to use when setting reminders for
+                           quick add; if not specified, Google code's default
+                           behavior occurs: no reminder is set (documented,
+                           incorrectly, otherwise: as using the default for
+                           the calendar, but this does not actually happen)
+
  Commands:
 
   list                     list all calendars
@@ -1010,7 +1016,7 @@ class gcalcli:
         self._GraphEvents(cmd, start, count, eventList)
 
 
-    def QuickAdd(self, eventText):
+    def QuickAdd(self, eventText, reminderMinutes=None):
 
         if eventText == '':
             return
@@ -1020,7 +1026,19 @@ class gcalcli:
         quickEvent.quick_add = gdata.calendar.QuickAdd(value='true')
 
         try:
-            self.gcal.InsertEvent(quickEvent, self._TargetCalendar())
+            newEvent = self.gcal.InsertEvent(quickEvent, self._TargetCalendar())
+
+            if reminderMinutes is not None:
+                if len(newEvent.when) > 0:
+                    for when in newEvent.when:
+                        if len(when.reminder) > 0:
+                            when.reminder[0].minutes = reminderMinutes
+                        else:
+                            when.reminder.append(gdata.calendar.Reminder(minutes=str(reminderMinutes)))
+                    self.gcal.UpdateEvent(newEvent.GetEditLink().href, newEvent)
+                else:
+                    pass # should not happen
+
         except Exception, e:
             PrintErrMsg("Error: " + e["reason"] + "\n")
             sys.exit(1)
@@ -1324,7 +1342,8 @@ def BowChickaWowWow():
                                     "cal-read-color=",
                                     "cal-freebusy-color=",
                                     "date-color=",
-                                    "border-color="])
+                                    "border-color=",
+                                    "reminder-minutes="])
     except getopt.error:
         sys.exit(1)
 
@@ -1347,6 +1366,7 @@ def BowChickaWowWow():
     calWidth      = int(GetConfig(cfg, 'width', '10'))
     calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
     tsv           = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
+    reminderMinutes = GetConfig(cfg, 'reminder-minutes', None)
 
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
@@ -1433,6 +1453,9 @@ def BowChickaWowWow():
 
         elif opt == "--tsv":
             tsv = True
+
+        elif opt == "--reminder-minutes":
+            reminderMinutes = int(arg)
 
     if usr == None:
         PrintErrMsg('Error: must specify a username\n')
@@ -1556,7 +1579,8 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.QuickAdd(unicode(args[1], locale.getpreferredencoding()))
+        gcal.QuickAdd(unicode(args[1], locale.getpreferredencoding()),
+                      reminderMinutes=reminderMinutes)
 
     elif args[0] == 'remind':
         if len(args) == 3: # minutes and command
