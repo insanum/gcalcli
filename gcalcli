@@ -136,6 +136,8 @@ gcalcli [options] command [command args]
   --tsv                    tab-separated output for 'agenda'. Format is:
                            'date' 'start' 'end' 'title' 'location' 'description'
 
+  --keyring                try to use keyring via python-keyring module
+
  Commands:
 
   list                     list all calendars
@@ -261,6 +263,7 @@ class gcalcli:
     calMonday     = False
     command       = 'notify-send -u critical -a gcalcli %s'
     tsv           = False
+    useKeyring    = False
 
     calOwnerColor       = CLR_CYN()
     calEditorColor      = CLR_NRM()
@@ -301,7 +304,8 @@ class gcalcli:
                  calFreeBusyColor=CLR_NRM(),
                  dateColor=CLR_GRN(),
                  borderColor=CLR_WHT(),
-                 tsv=False):
+                 tsv=False,
+                 useKeyring=True):
 
         self.gcal          = CalendarService()
         self.gcal.ssl      = True
@@ -316,6 +320,7 @@ class gcalcli:
         self.calWidth      = calWidth
         self.calMonday     = calMonday
         self.tsv           = tsv
+        self.useKeyring    = useKeyring
 
         self.calOwnerColor       = calOwnerColor
         self.calEditorColor      = calEditorColor
@@ -1315,6 +1320,7 @@ def BowChickaWowWow():
                                     "24hr",
                                     "details",
                                     "tsv",
+                                    "keyring",
                                     "ignore-started",
                                     "width=",
                                     "mon",
@@ -1348,6 +1354,7 @@ def BowChickaWowWow():
     calWidth      = int(GetConfig(cfg, 'width', '10'))
     calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
     tsv           = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
+    useKeyring    = GetTrueFalse(GetConfig(cfg, 'keyring', 'false'))
 
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
@@ -1432,6 +1439,9 @@ def BowChickaWowWow():
         elif opt == "--tsv":
             tsv = True
 
+        elif opt == "--keyring":
+            useKeyring = True
+
     if usr == None:
         PrintErrMsg('Error: must specify a username\n')
         sys.exit(1)
@@ -1439,18 +1449,22 @@ def BowChickaWowWow():
     try:
         if pwd == None:
             keyring_loaded = False
-            try:
-                import keyring
-                pwd = keyring.get_password('www.google.com/calendar', usr)
-                keyring_loaded = True
-            except ImportError:
-                PrintErrMsg('keyring library not found\n')
+            if useKeyring:
+                try:
+                    import keyring
+                    pwd = keyring.get_password('www.google.com/calendar', usr)
+                    keyring_loaded = True
+                except ImportError:
+                    PrintErrMsg('keyring library not found\n')
             if pwd == None:
                 pwd = getpass.getpass("Password: ")
                 if keyring_loaded:
-                     # TODO check password?
-                     keyring.set_password('www.google.com/calendar', usr, pwd)
-    except Exception, e:
+                    # TODO check password?
+                    try:
+                        keyring.set_password('www.google.com/calendar', usr, pwd)
+                    except keyring.backend.PasswordSetError:
+                        PrintErrMsg('Unable to save password to keyring.')
+    except Exception as e:
         PrintErrMsg("Error: " + str(e) + "!\n")
         sys.exit(1)
 
@@ -1481,7 +1495,8 @@ def BowChickaWowWow():
                    calFreeBusyColor=calFreeBusyColor,
                    dateColor=dateColor,
                    borderColor=borderColor,
-                   tsv=tsv)
+                   tsv=tsv,
+                   useKeyring=useKeyring)
 
     if args[0] == 'list':
         gcal.ListAllCalendars()
