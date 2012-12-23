@@ -1211,7 +1211,7 @@ class gcalcli:
                 try:
                     self.gcal.InsertEvent(event, self._TargetCalendar())
                 except Exception, e:
-                    PrintErrMsg("Error: " + e["reason"] + "\n")
+                    PrintErrMsg("Error: " + e[0] + "\n")
                     sys.exit(1)
                 continue
 
@@ -1221,7 +1221,7 @@ class gcalcli:
                 try:
                     self.gcal.InsertEvent(event, self._TargetCalendar())
                 except Exception, e:
-                    PrintErrMsg("Error: " + e["reason"] + "\n")
+                    PrintErrMsg("Error: " + e[0] + "\n")
                     sys.exit(1)
             elif val == 's':
                 continue
