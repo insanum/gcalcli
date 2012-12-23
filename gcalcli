@@ -138,6 +138,8 @@ gcalcli [options] command [command args]
   --locale                 set a custom locale (i.e. 'de_DE.UTF-8'). Check the
                            supported locales of your system first.
 
+  --keyring                try to use keyring via python-keyring module
+
  Commands:
 
   list                     list all calendars
@@ -264,6 +266,7 @@ class gcalcli:
     command       = 'notify-send -u critical -a gcalcli %s'
     tsv           = False
     customLocale  = None
+    useKeyring    = False
 
     calOwnerColor       = CLR_CYN()
     calEditorColor      = CLR_NRM()
@@ -305,7 +308,8 @@ class gcalcli:
                  dateColor=CLR_GRN(),
                  borderColor=CLR_WHT(),
                  tsv=False,
-                 customLocale=None):
+                 customLocale=None,
+                 useKeyring=True):
 
         self.gcal          = CalendarService()
         self.gcal.ssl      = True
@@ -321,6 +325,7 @@ class gcalcli:
         self.calMonday     = calMonday
         self.tsv           = tsv
         self.customLocale  = customLocale
+        self.useKeyring    = useKeyring
 
         self.calOwnerColor       = calOwnerColor
         self.calEditorColor      = calEditorColor
@@ -1353,6 +1358,7 @@ def BowChickaWowWow():
                                     "24hr",
                                     "details",
                                     "tsv",
+                                    "keyring",
                                     "ignore-started",
                                     "width=",
                                     "mon",
@@ -1388,6 +1394,7 @@ def BowChickaWowWow():
     calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
     tsv           = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
     customLocale  = GetConfig(cfg, 'locale', None)
+    useKeyring    = GetTrueFalse(GetConfig(cfg, 'keyring', 'false'))
 
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
@@ -1475,14 +1482,32 @@ def BowChickaWowWow():
         elif opt == "--locale":
         	customLocale = arg
 
+        elif opt == "--keyring":
+            useKeyring = True
+
     if usr == None:
         PrintErrMsg('Error: must specify a username\n')
         sys.exit(1)
 
     try:
         if pwd == None:
-            pwd = getpass.getpass("Password: ")
-    except Exception, e:
+            keyring_loaded = False
+            if useKeyring:
+                try:
+                    import keyring
+                    pwd = keyring.get_password('www.google.com/calendar', usr)
+                    keyring_loaded = True
+                except ImportError:
+                    PrintErrMsg('keyring library not found\n')
+            if pwd == None:
+                pwd = getpass.getpass("Password: ")
+                if keyring_loaded:
+                    # TODO check password?
+                    try:
+                        keyring.set_password('www.google.com/calendar', usr, pwd)
+                    except keyring.backend.PasswordSetError:
+                        PrintErrMsg('Unable to save password to keyring.')
+    except Exception as e:
         PrintErrMsg("Error: " + str(e) + "!\n")
         sys.exit(1)
 
@@ -1514,7 +1539,8 @@ def BowChickaWowWow():
                    dateColor=dateColor,
                    borderColor=borderColor,
                    tsv=tsv,
-                   customLocale=customLocale)
+                   customLocale=customLocale,
+                   useKeyring=useKeyring)
 
     if args[0] == 'list':
         gcal.ListAllCalendars()
