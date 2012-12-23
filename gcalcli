@@ -1438,7 +1438,18 @@ def BowChickaWowWow():
 
     try:
         if pwd == None:
-            pwd = getpass.getpass("Password: ")
+            keyring_loaded = False
+            try:
+                import keyring
+                pwd = keyring.get_password('www.google.com/calendar', usr)
+                keyring_loaded = True
+            except ImportError:
+                PrintErrMsg('keyring library not found\n')
+            if pwd == None:
+                pwd = getpass.getpass("Password: ")
+                if keyring_loaded:
+                     # TODO check password?
+                     keyring.set_password('www.google.com/calendar', usr, pwd)
     except Exception, e:
         PrintErrMsg("Error: " + str(e) + "!\n")
         sys.exit(1)
