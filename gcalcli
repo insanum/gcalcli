@@ -821,10 +821,14 @@ class gcalcli:
                 event.s = parse(event.when[0].start_time)
                 if event.s.tzinfo == None:
                     event.s = event.s.replace(tzinfo=tzlocal())
+                else:
+                    event.s = event.s.astimezone(tzlocal())
 
                 event.e = parse(event.when[0].end_time)
                 if event.e.tzinfo == None:
                     event.e = event.e.replace(tzinfo=tzlocal())
+                else:
+                    event.e = event.e.astimezone(tzlocal())
 
                 # For all-day events, Google seems to assume that the event time
                 # is based in the UTC instead of the local timezone.  Here we
