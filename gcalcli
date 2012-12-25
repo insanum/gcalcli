@@ -706,7 +706,20 @@ class gcalcli:
             tmpDayStr = event.s.strftime(dayFormat)
             tmpTimeStr = event.s.strftime("%H:%M")
             tmpTimeStp = event.e.strftime("%H:%M")
-            str = "%s\t%s\t%s\t%s\t%s\t%s" % (tmpDayStr, tmpTimeStr, tmpTimeStp, self._ValidTitle(event.title.text).strip(), event.where[0].value_string, event.content.text )
+            if event.where and 0 in event.where and event.where[0].value_string:
+                tmpWhere = event.where[0].value_string
+            else:
+                tmpWhere = ''
+            if event.content and event.content.text:
+                tmpContent = event.content.text
+            else:
+                tmpContent = ''
+            str = "%s\t%s\t%s\t%s\t%s\t%s" % (
+                tmpDayStr, tmpTimeStr, tmpTimeStp,
+                self._ValidTitle(event.title.text).strip(),
+                tmpWhere,
+                tmpContent
+            )
             str2 = "%s\n" % str.replace('\n', '''\\n''')
             sys.stdout.write(str2)
 
@@ -753,18 +766,24 @@ class gcalcli:
             if self.details:
 
                 clr = CLR_NRM()
+                reminders = None
 
-                if event.where[0].value_string:
-                    str = "%s  Location: %s\n" % (detailsIndent,
-                                                 event.where[0].value_string)
-                    PrintMsg(clr, str)
+                if event.where and 0 in event.where:
+                    if reminder in event.where[0]:
+                        reminders = event.where[0].reminder
+                    if event.where[0].value_string:
+                        str = "%s  Location: %s\n" % (
+                            detailsIndent,
+                            event.where[0].value_string
+                        )
+                        PrintMsg(clr, str)
 
                 diffDateTime = (event.e - event.s)
                 str = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
                 PrintMsg(clr, str)
 
                 # XXX Why does accessing event.when[0].reminder[0] fail?
-                for rem in event.when[0].reminder:
+                for rem in reminders:
                     remStr = ''
                     if rem.days:
                         remStr += "%s Days" % (rem.days)
@@ -777,7 +796,7 @@ class gcalcli:
                     str = "%s  Reminder: %s\n" % (detailsIndent, remStr)
                     PrintMsg(clr, str)
 
-                if event.content.text:
+                if event.content and event.content.text:
                     str = "%s  Content: %s\n" % (detailsIndent,
                                                 event.content.text)
                     PrintMsg(clr, str)
