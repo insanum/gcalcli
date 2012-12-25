@@ -117,6 +117,9 @@ gcalcli [options] command [command args]
   --tsv                    tab-separated output for 'agenda'. Format is:
                            'date' 'start' 'end' 'title' 'location' 'description'
 
+  --locale                 set a custom locale (i.e. 'de_DE.UTF-8'). Check the
+                           supported locales of your system first.
+
  Commands:
 
   list                     list all calendars
@@ -231,6 +234,7 @@ cal-read-color: <color>
 cal-freebusy-color: <color>
 date-color: <color>
 border-color: <color>
+locale: <locale>
 ```
 
 Note that you can specify a shell command and the output will be the value for
