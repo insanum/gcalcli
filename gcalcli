@@ -143,7 +143,7 @@ gcalcli [options] command [command args]
   search <text>            search for events
                            - only matches whole words
 
-  agenda [start] [end]     get an agenda for a time period
+  agenda [-d] [start] [end]get an agenda for a time period
                            - start time default is 12am today
                            - end time default is 5 days from start
                            - example time strings:
@@ -153,6 +153,7 @@ gcalcli [options] command [command args]
                               '2007-09-24T15:30-8:00'
                               '20070924T15'
                               '8am'
+                            - if -d is given events description is also printed.
 
   calw <weeks> [start]     get a week based agenda in a nice calendar format
                            - weeks is the number of weeks to display
@@ -256,6 +257,7 @@ class gcalcli:
     access        = ''
     military      = False
     details       = False
+    agendaDesc    = False
     ignoreStarted = False
     calWidth      = 10
     calMonday     = False
@@ -291,6 +293,7 @@ class gcalcli:
                  calNameColors=[],
                  military=False,
                  details=False,
+                 agendaDesc=False,
                  ignoreStarted=False,
                  calWidth=10,
                  calMonday=False,
@@ -312,6 +315,7 @@ class gcalcli:
         self.access        = access
         self.military      = military
         self.details       = details
+        self.agendaDesc    = agendaDesc
         self.ignoreStarted = ignoreStarted
         self.calWidth      = calWidth
         self.calMonday     = calMonday
@@ -781,6 +785,12 @@ class gcalcli:
                     str = "%s  Content: %s\n" % (detailsIndent,
                                                 event.content.text)
                     PrintMsg(clr, str)
+            elif self.agendaDesc and event.content.text:
+                clr = CLR_NRM()
+                # Indent every line of the description
+                desc = event.content.text.replace("\n", "\n  " + detailsIndent).rstrip()
+                str = "%s  %s\n" % (detailsIndent, desc)
+                PrintMsg(clr, str)
 
 
     def _GetAllEvents(self, cal, feed, end):
@@ -1344,6 +1354,7 @@ def BowChickaWowWow():
     calNames      = GetConfigMultiple(cfg, 'cal', None)
     military      = GetTrueFalse(GetConfig(cfg, '24hr', 'false'))
     details       = GetTrueFalse(GetConfig(cfg, 'details', 'false'))
+    agendaDesc    = GetTrueFalse(GetConfig(cfg, 'agenda-description', 'false'))
     ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
     calWidth      = int(GetConfig(cfg, 'width', '10'))
     calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
@@ -1460,6 +1471,7 @@ def BowChickaWowWow():
                    calNameColors=calNameColors,
                    military=military,
                    details=details,
+                   agendaDesc=agendaDesc,
                    ignoreStarted=ignoreStarted,
                    calWidth=calWidth,
                    calMonday=calMonday,
@@ -1486,11 +1498,16 @@ def BowChickaWowWow():
         sys.stdout.write('\n')
 
     elif args[0] == 'agenda':
-        if len(args) == 3: # start and end
-            gcal.AgendaQuery(startText=args[1], endText=args[2])
-        elif len(args) == 2: # start
-            gcal.AgendaQuery(startText=args[1])
-        elif len(args) == 1: # defaults
+        args = args[1:]
+        if len(args) >= 1 and args[0] == "-d":
+            gcal.agendaDesc = True
+            args = args[1:]
+
+        if len(args) == 2: # start and end
+            gcal.AgendaQuery(startText=args[0], endText=args[1])
+        elif len(args) == 1: # start
+            gcal.AgendaQuery(startText=args[0])
+        elif len(args) == 0: # defaults
             gcal.AgendaQuery()
         else:
             PrintErrMsg('Error: invalid agenda arguments\n')
