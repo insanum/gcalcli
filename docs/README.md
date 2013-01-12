@@ -87,8 +87,11 @@ gcalcli [options] command [command args]
 
   --24hr                   show all dates in 24 hour format
 
-  --details                show all event details (i.e. length, location,
-                           reminders, contents)
+  --detail-all             show event details in the 'agenda' output
+  --detail-location        (i.e. all, location, length, reminders, description)
+  --detail-length
+  --detail-reminders
+  --detail-descr
 
   --ignore-started         ignore old or already started events
                            - when used with the 'agenda' command, ignore events
@@ -222,7 +225,11 @@ pw: <password>
 cals: <type>
 cal: <name>[#color], <name>[#color], ...
 24hr: <true|false>
-details: <true|false>
+detail-all: <true|false>
+detail-location: <true|false>
+detail-length: <true|false>
+detail-reminders: <true|false>
+detail-descr: <true|false>
 ignore-started: <true|false>
 width: <width>
 mon: <true|false>
