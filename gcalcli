@@ -58,7 +58,6 @@ from dateutil.parser import *
 from dateutil.rrule import *
 from unicodedata import east_asian_width
 
-
 def Version():
     sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
     sys.exit(1)
@@ -138,6 +137,9 @@ gcalcli [options] command [command args]
 
   --tsv                    tab-separated output for 'agenda'. Format is:
                            'date' 'start' 'end' 'title' 'location' 'description'
+  
+  --locale                 set a custom locale (i.e. 'de_DE.UTF-8'). Check the
+                           supported locales of your system first.
 
  Commands:
 
@@ -263,6 +265,7 @@ class gcalcli:
     calMonday     = False
     command       = 'notify-send -u critical -a gcalcli %s'
     tsv           = False
+    customLocale  = None
 
     detailLocation  = False
     detailLength    = False
@@ -311,7 +314,8 @@ class gcalcli:
                  calFreeBusyColor=CLR_NRM(),
                  dateColor=CLR_GRN(),
                  borderColor=CLR_WHT(),
-                 tsv=False):
+                 tsv=False,
+                 customLocale=None):
 
         self.gcal          = CalendarService()
         self.gcal.ssl      = True
@@ -325,6 +329,7 @@ class gcalcli:
         self.calWidth      = calWidth
         self.calMonday     = calMonday
         self.tsv           = tsv
+        self.customLocale  = customLocale
 
         self.detailLocation  = detailLocation
         self.detailLength    = detailLength
@@ -338,6 +343,14 @@ class gcalcli:
         self.calFreeBusyColor    = calFreeBusyColor
         self.dateColor           = dateColor
         self.borderColor         = borderColor
+        
+        # set customLocale if correct
+        try:
+        	locale.setlocale(locale.LC_ALL, customLocale)
+        except Exception, e:
+        	PrintErrMsg("Error: " + str(e) + "!\n"
+        	    + "Check supported locales of your system.\n")
+        	sys.exit(1)
 
         # authenticate and login to google calendar
         try:
@@ -1376,7 +1389,8 @@ def BowChickaWowWow():
                                     "cal-read-color=",
                                     "cal-freebusy-color=",
                                     "date-color=",
-                                    "border-color="])
+                                    "border-color=",
+                                    "locale="])
     except getopt.error:
         sys.exit(1)
 
@@ -1398,6 +1412,7 @@ def BowChickaWowWow():
     calWidth      = int(GetConfig(cfg, 'width', '10'))
     calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
     tsv           = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
+    customLocale  = GetConfig(cfg, 'locale', None)
 
     detailAll       = GetTrueFalse(GetConfig(cfg, 'detail-all', 'false'))
     detailLocation  = GetTrueFalse(GetConfig(cfg, 'detail-location', 'false'))
@@ -1502,6 +1517,9 @@ def BowChickaWowWow():
 
         elif opt == "--tsv":
             tsv = True
+        
+        elif opt == "--locale":
+        	customLocale = arg
 
     if usr == None:
         PrintErrMsg('Error: must specify a username\n')
@@ -1544,7 +1562,8 @@ def BowChickaWowWow():
                    calFreeBusyColor=calFreeBusyColor,
                    dateColor=dateColor,
                    borderColor=borderColor,
-                   tsv=tsv)
+                   tsv=tsv,
+                   customLocale=customLocale)
 
     if args[0] == 'list':
         gcal.ListAllCalendars()
