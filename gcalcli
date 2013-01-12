@@ -139,6 +139,12 @@ gcalcli [options] command [command args]
   --tsv                    tab-separated output for 'agenda'. Format is:
                            'date' 'start' 'end' 'title' 'location' 'description'
 
+  --reminder-minutes       number of minutes to use when setting reminders for
+                           quick add; if not specified, Google code's default
+                           behavior occurs: no reminder is set (documented,
+                           incorrectly, otherwise: as using the default for
+                           the calendar, but this does not actually happen)
+
  Commands:
 
   list                     list all calendars
@@ -1032,7 +1038,7 @@ class gcalcli:
         self._GraphEvents(cmd, start, count, eventList)
 
 
-    def QuickAdd(self, eventText):
+    def QuickAdd(self, eventText, reminderMinutes=None):
 
         if eventText == '':
             return
@@ -1042,7 +1048,19 @@ class gcalcli:
         quickEvent.quick_add = gdata.calendar.QuickAdd(value='true')
 
         try:
-            self.gcal.InsertEvent(quickEvent, self._TargetCalendar())
+            newEvent = self.gcal.InsertEvent(quickEvent, self._TargetCalendar())
+
+            if reminderMinutes is not None:
+                if len(newEvent.when) > 0:
+                    for when in newEvent.when:
+                        if len(when.reminder) > 0:
+                            when.reminder[0].minutes = reminderMinutes
+                        else:
+                            when.reminder.append(gdata.calendar.Reminder(minutes=str(reminderMinutes)))
+                    self.gcal.UpdateEvent(newEvent.GetEditLink().href, newEvent)
+                else:
+                    pass # should not happen
+
         except Exception, e:
             PrintErrMsg("Error: %s -- %s\n" % (e[0]["reason"], e[0]["body"]))
             sys.exit(1)
@@ -1308,19 +1326,18 @@ def GetColor(value, exitFlag):
 
 
 def GetCalColors(calNames):
-    calNameColors = []
-    for idx in xrange(len(calNames)):
-        i = calNames[idx].rfind('#')
-        if i != -1:
-            c = GetColor(calNames[idx][(i+1):], False)
-            if c:
-                calNameColors.append(c)
-                calNames[idx] = calNames[idx][:i]
-            else:
-                calNameColors.append(None)
-        else:
-            calNameColors.append(None)
-    return calNames, calNameColors
+    calColors = {}
+    for calName in calNames:
+        calNameParts = calName.split("#")
+        calNameSimple = calNameParts[0]
+        calColor = calColors.get(calNameSimple)
+        if len(calNameParts) > 0:
+            calColorRaw = calNameParts[-1]
+            calColorNew = GetColor(calColorRaw, False)
+            if calColorNew is not None:
+                calColor = calColorNew
+        calColors[calNameSimple] = calColor
+    return calColors
 
 
 def BowChickaWowWow():
@@ -1351,7 +1368,8 @@ def BowChickaWowWow():
                                     "cal-read-color=",
                                     "cal-freebusy-color=",
                                     "date-color=",
-                                    "border-color="])
+                                    "border-color=",
+                                    "reminder-minutes="])
     except getopt.error:
         sys.exit(1)
 
@@ -1373,6 +1391,7 @@ def BowChickaWowWow():
     calWidth      = int(GetConfig(cfg, 'width', '10'))
     calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
     tsv           = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
+    reminderMinutes = GetConfig(cfg, 'reminder-minutes', None)
 
     detailAll       = GetTrueFalse(GetConfig(cfg, 'detail-all', 'false'))
     detailLocation  = GetTrueFalse(GetConfig(cfg, 'detail-location', 'false'))
@@ -1400,6 +1419,8 @@ def BowChickaWowWow():
         calNames      = []
         calNameColors = []
 
+    calNamesCommandLine = []
+
     # Process options
     for opt, arg in opts:
 
@@ -1420,6 +1441,7 @@ def BowChickaWowWow():
 
         elif opt == "--cal":
             calNames.append(arg)
+            calNamesCommandLine.append(arg)
 
         elif opt == "--24hr":
             military = True
@@ -1478,6 +1500,9 @@ def BowChickaWowWow():
         elif opt == "--tsv":
             tsv = True
 
+        elif opt == "--reminder-minutes":
+            reminderMinutes = int(arg)
+
     if usr == None:
         PrintErrMsg('Error: must specify a username\n')
         sys.exit(1)
@@ -1497,7 +1522,17 @@ def BowChickaWowWow():
         PrintErrMsg('Error: no command (--help)\n')
         sys.exit(1)
 
-    calNames, calNameColors = GetCalColors(calNames)
+    calColors = GetCalColors(calNames)
+    if len(calNamesCommandLine) > 0:
+        calNames = calNamesCommandLine
+
+    calNamesFiltered = []
+    calNameColors = []
+    for calName in calNames:
+        calNameSimple = calName.split("#")[0]
+        calNamesFiltered.append(calNameSimple)
+        calNameColors.append(calColors[calNameSimple])
+    calNames = calNamesFiltered
 
     gcal = gcalcli(username=usr,
                    password=pwd,
@@ -1593,7 +1628,8 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.QuickAdd(unicode(args[1], locale.getpreferredencoding()))
+        gcal.QuickAdd(unicode(args[1], locale.getpreferredencoding()),
+                      reminderMinutes=reminderMinutes)
 
     elif args[0] == 'remind':
         if len(args) == 3: # minutes and command
