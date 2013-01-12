@@ -106,8 +106,11 @@ gcalcli [options] command [command args]
 
   --24hr                   show all dates in 24 hour format
 
-  --details                show all event details (i.e. length, location,
-                           reminders, contents)
+  --detail-all             show event details in the 'agenda' output
+  --detail-location        (i.e. all, location, length, reminders, description)
+  --detail-length
+  --detail-reminders
+  --detail-descr
 
   --ignore-started         ignore old or already started events
                            - when used with the 'agenda' command, ignore events
@@ -255,12 +258,16 @@ class gcalcli:
     password      = None
     access        = ''
     military      = False
-    details       = False
     ignoreStarted = False
     calWidth      = 10
     calMonday     = False
     command       = 'notify-send -u critical -a gcalcli %s'
     tsv           = False
+
+    detailLocation  = False
+    detailLength    = False
+    detailReminders = False
+    detailDescr     = False
 
     calOwnerColor       = CLR_CYN()
     calEditorColor      = CLR_NRM()
@@ -290,7 +297,10 @@ class gcalcli:
                  calNames=[],
                  calNameColors=[],
                  military=False,
-                 details=False,
+                 detailLocation=False,
+                 detailLength=False,
+                 detailReminders=False,
+                 detailDescr=False,
                  ignoreStarted=False,
                  calWidth=10,
                  calMonday=False,
@@ -311,11 +321,15 @@ class gcalcli:
 
         self.access        = access
         self.military      = military
-        self.details       = details
         self.ignoreStarted = ignoreStarted
         self.calWidth      = calWidth
         self.calMonday     = calMonday
         self.tsv           = tsv
+
+        self.detailLocation  = detailLocation
+        self.detailLength    = detailLength
+        self.detailReminders = detailReminders
+        self.detailDescr     = detailDescr
 
         self.calOwnerColor       = calOwnerColor
         self.calEditorColor      = calEditorColor
@@ -750,19 +764,21 @@ class gcalcli:
                 PrintMsg(self._CalendarColor(event.gcalcli_cal), fmt %
                          (tmpTimeStr, self._ValidTitle(event.title.text).strip()))
 
-            if self.details:
-
+            if self.detailLocation:
                 clr = CLR_NRM()
-
                 if event.where[0].value_string:
                     str = "%s  Location: %s\n" % (detailsIndent,
                                                  event.where[0].value_string)
                     PrintMsg(clr, str)
 
+            if self.detailLength:
+                clr = CLR_NRM()
                 diffDateTime = (event.e - event.s)
                 str = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
                 PrintMsg(clr, str)
 
+            if self.detailReminders:
+                clr = CLR_NRM()
                 # XXX Why does accessing event.when[0].reminder[0] fail?
                 for rem in event.when[0].reminder:
                     remStr = ''
@@ -777,9 +793,11 @@ class gcalcli:
                     str = "%s  Reminder: %s\n" % (detailsIndent, remStr)
                     PrintMsg(clr, str)
 
+            if self.detailDescr:
+                clr = CLR_NRM()
                 if event.content.text:
-                    str = "%s  Content: %s\n" % (detailsIndent,
-                                                event.content.text)
+                    str = "%s  Description: %s\n" % (detailsIndent,
+                                                     event.content.text)
                     PrintMsg(clr, str)
 
 
@@ -1313,7 +1331,11 @@ def BowChickaWowWow():
                                     "cals=",
                                     "cal=",
                                     "24hr",
-                                    "details",
+                                    "detail-all",
+                                    "detail-location",
+                                    "detail-length",
+                                    "detail-reminders",
+                                    "detail-descr",
                                     "tsv",
                                     "ignore-started",
                                     "width=",
@@ -1343,11 +1365,16 @@ def BowChickaWowWow():
     access        = GetConfig(cfg, 'cals', 'all')
     calNames      = GetConfigMultiple(cfg, 'cal', None)
     military      = GetTrueFalse(GetConfig(cfg, '24hr', 'false'))
-    details       = GetTrueFalse(GetConfig(cfg, 'details', 'false'))
     ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
     calWidth      = int(GetConfig(cfg, 'width', '10'))
     calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
     tsv           = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
+
+    detailAll       = GetTrueFalse(GetConfig(cfg, 'detail-all', 'false'))
+    detailLocation  = GetTrueFalse(GetConfig(cfg, 'detail-location', 'false'))
+    detailLength    = GetTrueFalse(GetConfig(cfg, 'detail-length', 'false'))
+    detailReminders = GetTrueFalse(GetConfig(cfg, 'detail-reminders', 'false'))
+    detailDescr     = GetTrueFalse(GetConfig(cfg, 'detail-descr', 'false'))
 
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
@@ -1393,8 +1420,23 @@ def BowChickaWowWow():
         elif opt == "--24hr":
             military = True
 
-        elif opt == "--details":
-            details = True
+        elif opt == "--detail-all":
+            detailLocation  = True
+            detailLength    = True
+            detailReminders = True
+            detailDescr     = True
+
+        elif opt == "--detail-location":
+            detailLocation = True
+
+        elif opt == "--detail-length":
+            detailLength = True
+
+        elif opt == "--detail-reminders":
+            detailReminders = True
+
+        elif opt == "--detail-descr":
+            detailDescr = True
 
         elif opt == "--ignore-started":
             ignoreStarted = True
@@ -1459,7 +1501,10 @@ def BowChickaWowWow():
                    calNames=calNames,
                    calNameColors=calNameColors,
                    military=military,
-                   details=details,
+                   detailLocation=detailLocation,
+                   detailLength=detailLength,
+                   detailReminders=detailReminders,
+                   detailDescr=detailDescr,
                    ignoreStarted=ignoreStarted,
                    calWidth=calWidth,
                    calMonday=calMonday,
