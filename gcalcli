@@ -1204,6 +1204,31 @@ class gcalcli:
                     print "Description:\n%s" % ve.description.value
                 event.content = atom.Content(text=ve.description.value)
 
+            if hasattr(ve, 'organizer'):
+                DebugPrint("ORGANIZER: %s\n" % ve.organizer.value)
+
+                if ve.organizer.value.startswith("MAILTO:"):
+                    email = ve.organizer.value[7:]
+                else:
+                    email = ve.organizer.value
+                if verbose:
+                    print "organizer:\n%s" % email
+                event.who.append(gdata.calendar.Who(ve.organizer.name, email, rel='ORGANIZER'))
+
+            if hasattr(ve, 'attendee_list'):
+                DebugPrint("ATTENDEE_LIST : %s\n" % ve.attendee_list)
+                if verbose:
+                    print "attendees:"
+                for attendee in ve.attendee_list:
+                    if attendee.value.startswith("MAILTO:"):
+                        email = attendee.value[7:]
+                    else:
+                        email = attendee.value
+                    if verbose:
+                        print " %s" % email
+
+                    event.who.append(gdata.calendar.Who(attendee.name, email, rel='ATTENDEE'))
+
             if not verbose:
                 try:
                     self.gcal.InsertEvent(event, self._TargetCalendar())
