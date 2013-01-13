@@ -211,7 +211,11 @@ the following:
  * the config file
  * or interactively when prompted
 
-In any case make sure you protect the information.
+In any case make sure you protect the information. It is highly recommended
+you turn on
+[Google's 2-Step Verification](http://support.google.com/accounts/bin/topic.py?hl=en&topic=28786)
+and use different application specific passwords for each system you're using
+gcalcli on.
 
 #### HTTP Proxy Support
 
@@ -298,7 +302,9 @@ $TERMINAL -e bash -c "echo 'Importing invite...' ; \
 
 Note that with Thunderbird you'll have to have the 'Show All Body Parts'
 extension installed for seeing the calendar attachments when not using
-'Lightning'. See: https://bugzilla.mozilla.org/show_bug.cgi?id=505024
+'Lightning'. See this
+[bug report](https://bugzilla.mozilla.org/show_bug.cgi?id=505024)
+for more details.
 
 #### Event Popup Reminders Using Cron
 
