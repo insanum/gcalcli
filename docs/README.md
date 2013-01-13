@@ -120,8 +120,14 @@ gcalcli [options] command [command args]
   --tsv                    tab-separated output for 'agenda'. Format is:
                            'date' 'start' 'end' 'title' 'location' 'description'
 
-  --locale                 set a custom locale (i.e. 'de_DE.UTF-8'). Check the
+  --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
                            supported locales of your system first.
+
+  --reminder-minutes <#>   number of minutes to use when setting reminders for
+                           quick add; if not specified, Google code's default
+                           behavior occurs: no reminder is set (documented,
+                           incorrectly, otherwise: as using the default for
+                           the calendar, but this does not actually happen)
 
  Commands:
 
