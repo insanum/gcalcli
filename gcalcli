@@ -48,7 +48,7 @@ __author__  = 'Eric Davis'
 import inspect
 
 import sys, os, re, urllib, getopt, shlex, subprocess, time
-import codecs, locale, csv, threading, getpass
+import codecs, locale, csv, threading, getpass, textwrap
 from Queue import Queue
 from ConfigParser import RawConfigParser
 from gdata.calendar.service import *
@@ -369,6 +369,7 @@ class gcalcli:
                  detailLength=False,
                  detailReminders=False,
                  detailDescr=False,
+                 detailDescrWidth=80,
                  ignoreStarted=False,
                  calWidth=10,
                  calMonday=False,
@@ -396,10 +397,11 @@ class gcalcli:
         self.tsv           = tsv
         self.customLocale  = customLocale
 
-        self.detailLocation  = detailLocation
-        self.detailLength    = detailLength
-        self.detailReminders = detailReminders
-        self.detailDescr     = detailDescr
+        self.detailLocation   = detailLocation
+        self.detailLength     = detailLength
+        self.detailReminders  = detailReminders
+        self.detailDescr      = detailDescr
+        self.detailDescrWidth = detailDescrWidth
 
         self.calOwnerColor       = calOwnerColor
         self.calEditorColor      = calEditorColor
@@ -817,6 +819,16 @@ class gcalcli:
 
     def _PrintEvents(self, startDateTime, eventList):
 
+        def formatDescr(descr, indent):
+            wrapper = textwrap.TextWrapper()
+            wrapper.initial_indent = indent
+            wrapper.subsequent_indent = indent
+            wrapper.width = self.detailDescrWidth
+            new_descr = ""
+            for line in descr.split("\n"):
+                new_descr += wrapper.fill(line) + "\n"
+            return new_descr.rstrip()
+
         if len(eventList) == 0:
             PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
             return
@@ -889,11 +901,13 @@ class gcalcli:
 
             if self.detailDescr:
                 if event.content and event.content.text:
-                    marker = "----------------------------------------"
+                    descrIndent = detailsIndent
+                    marker = descrIndent + "-" * \
+                            (self.detailDescrWidth - len(descrIndent))
                     str = "%s  Description:\n%s\n%s\n%s\n" % (
                         detailsIndent,
                         marker,
-                        event.content.text,
+                        formatDescr(event.content.text, descrIndent),
                         marker
                     )
                     PrintMsg(CLR_NRM(), str)
@@ -1569,11 +1583,12 @@ def BowChickaWowWow():
     customLocale  = GetConfig(cfg, 'locale', None)
     reminder      = GetConfig(cfg, 'reminder', None)
 
-    detailAll       = GetTrueFalse(GetConfig(cfg, 'detail-all', 'false'))
-    detailLocation  = GetTrueFalse(GetConfig(cfg, 'detail-location', 'false'))
-    detailLength    = GetTrueFalse(GetConfig(cfg, 'detail-length', 'false'))
-    detailReminders = GetTrueFalse(GetConfig(cfg, 'detail-reminders', 'false'))
-    detailDescr     = GetTrueFalse(GetConfig(cfg, 'detail-descr', 'false'))
+    detailAll        = GetTrueFalse(GetConfig(cfg, 'detail-all', 'false'))
+    detailLocation   = GetTrueFalse(GetConfig(cfg, 'detail-location', 'false'))
+    detailLength     = GetTrueFalse(GetConfig(cfg, 'detail-length', 'false'))
+    detailReminders  = GetTrueFalse(GetConfig(cfg, 'detail-reminders', 'false'))
+    detailDescr      = GetTrueFalse(GetConfig(cfg, 'detail-descr', 'false'))
+    detailDescrWidth = int(GetConfig(cfg, 'detail-descr-width', '80'))
 
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
@@ -1744,6 +1759,7 @@ def BowChickaWowWow():
                    detailLength=detailLength,
                    detailReminders=detailReminders,
                    detailDescr=detailDescr,
+                   detailDescrWidth=detailDescrWidth,
                    ignoreStarted=ignoreStarted,
                    calWidth=calWidth,
                    calMonday=calMonday,
