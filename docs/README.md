@@ -267,6 +267,7 @@ cal-freebusy-color: <color>
 date-color: <color>
 border-color: <color>
 locale: <locale>
+reminder: <mins>
 ```
 
 Note that you can specify a shell command and the output will be the value for
@@ -276,6 +277,28 @@ backtick (i.e. '`'). An example is pulling a password from gpg:
 ```
 pw: `gpg --decrypt ~/mypw.gpg`
 ```
+
+#### Importing VCS/VCAL/ICS Files from Exchange (or other)
+
+Importing events from files is easy with gcalcli. The 'import' command accepts
+a filename on the command line or can read from standard input. Here is a script
+that can be used as an attachment handler for Thunderbird or in a mailcap entry
+with Mutt (or in Mutt you could just use the attachment viewer and pipe command):
+
+```
+#!/bin/bash
+
+TERMINAL=urxvtc
+CONFIG=~/.gcalclirc
+
+$TERMINAL -e bash -c "echo 'Importing invite...' ; \
+                      gcalcli --config=$CONFIG import -v \"$1\" ; \
+                      read -p 'press enter to exit: '"
+```
+
+Note that with Thunderbird you'll have to have the 'Show All Body Parts'
+extension installed for seeing the calendar attachments when not using
+'Lightning'. See: https://bugzilla.mozilla.org/show_bug.cgi?id=505024
 
 #### Event Popup Reminders Using Cron
 
