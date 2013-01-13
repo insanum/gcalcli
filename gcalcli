@@ -52,7 +52,7 @@ import codecs, locale, csv, threading, getpass
 from Queue import Queue
 from ConfigParser import RawConfigParser
 from gdata.calendar.service import *
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from dateutil.tz import *
 from dateutil.parser import *
 from dateutil.rrule import *
