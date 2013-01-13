@@ -107,9 +107,10 @@ gcalcli [options] command [command args]
 
   --detail-all             show event details in the 'agenda' output
   --detail-location        (i.e. all, location, length, reminders, description)
-  --detail-length
+  --detail-length          the description width defaults to 80 characters
   --detail-reminders
   --detail-descr
+  --detail-descr-width
 
   --ignore-started         ignore old or already started events
                            - when used with the 'agenda' command, ignore events
@@ -332,10 +333,11 @@ class gcalcli:
     tsv           = False
     customLocale  = None
 
-    detailLocation  = False
-    detailLength    = False
-    detailReminders = False
-    detailDescr     = False
+    detailLocation   = False
+    detailLength     = False
+    detailReminders  = False
+    detailDescr      = False
+    detailDescrWidth = 80
 
     calOwnerColor       = CLR_CYN()
     calEditorColor      = CLR_NRM()
@@ -901,7 +903,7 @@ class gcalcli:
 
             if self.detailDescr:
                 if event.content and event.content.text:
-                    descrIndent = detailsIndent
+                    descrIndent = detailsIndent + '  '
                     marker = descrIndent + "-" * \
                             (self.detailDescrWidth - len(descrIndent))
                     str = "%s  Description:\n%s\n%s\n%s\n" % (
@@ -1540,6 +1542,7 @@ def BowChickaWowWow():
                                     "detail-length",
                                     "detail-reminders",
                                     "detail-descr",
+                                    "detail-descr-width=",
                                     "tsv",
                                     "ignore-started",
                                     "width=",
@@ -1660,6 +1663,9 @@ def BowChickaWowWow():
 
         elif opt == "--detail-descr":
             detailDescr = True
+
+        elif opt == "--detail-descr-width":
+            detailDescrWidth = int(arg)
 
         elif opt == "--ignore-started":
             ignoreStarted = True

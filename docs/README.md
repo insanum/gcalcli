@@ -89,9 +89,10 @@ gcalcli [options] command [command args]
 
   --detail-all             show event details in the 'agenda' output
   --detail-location        (i.e. all, location, length, reminders, description)
-  --detail-length
+  --detail-length          the description width defaults to 80 characters
   --detail-reminders
   --detail-descr
+  --detail-descr-width
 
   --ignore-started         ignore old or already started events
                            - when used with the 'agenda' command, ignore events
@@ -259,6 +260,7 @@ detail-location: <true|false>
 detail-length: <true|false>
 detail-reminders: <true|false>
 detail-descr: <true|false>
+detail-descr-width: <width>
 ignore-started: <true|false>
 width: <width>
 mon: <true|false>
