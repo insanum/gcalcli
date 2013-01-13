@@ -123,11 +123,18 @@ gcalcli [options] command [command args]
   --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
                            supported locales of your system first.
 
-  --reminder-minutes <#>   number of minutes to use when setting reminders for
-                           quick add; if not specified, Google code's default
-                           behavior occurs: no reminder is set (documented,
-                           incorrectly, otherwise: as using the default for
-                           the calendar, but this does not actually happen)
+  --reminder <mins>        number of minutes to use when setting reminders for
+                           the 'quick' and 'add' commands; if not specified,
+                           Google code's default behavior occurs: no reminder is
+                           set (documented, incorrectly, otherwise: as using the
+                           default for the calendar, but this does not actually
+                           happen)
+
+   --title <title>         event details used by the 'add' command
+   --where <location>      - the duration is specified in minutes
+   --when <datetime>       - make sure to quote strings with spaces
+   --duration <#>          - the datetime format is 'MM/DD/YYYY HH:MM'
+   --descr <description>   - the '--reminder' option can be specified as well
 
  Commands:
 
@@ -163,6 +170,18 @@ gcalcli [options] command [command args]
                            - example:
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
+
+  add                      add a detailed event to a calendar
+                           - if a --cal is not specified then the event is
+                             added to the default calendar
+                           - example:
+                              gcalcli --title 'Analysis of Algorithms Final'
+                                      --where UCI
+                                      --when '12/14/2012 10:00'
+                                      --duration 60
+                                      --descr 'It is going to be hard!'
+                                      --reminder 30
+                                      add
 
   import [-v] [file]       import an ics/vcal file to a calendar
                            - if a --cal is not specified then the event is

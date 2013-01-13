@@ -47,12 +47,12 @@ __author__  = 'Eric Davis'
 
 import inspect
 
-import sys, os, re, urllib, getopt, shlex, subprocess
+import sys, os, re, urllib, getopt, shlex, subprocess, time
 import codecs, locale, csv, threading, getpass
 from Queue import Queue
 from ConfigParser import RawConfigParser
 from gdata.calendar.service import *
-from datetime import *
+from datetime import datetime
 from dateutil.tz import *
 from dateutil.parser import *
 from dateutil.rrule import *
@@ -141,11 +141,18 @@ gcalcli [options] command [command args]
   --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
                            supported locales of your system first.
 
-  --reminder-minutes <#>   number of minutes to use when setting reminders for
-                           quick add; if not specified, Google code's default
-                           behavior occurs: no reminder is set (documented,
-                           incorrectly, otherwise: as using the default for
-                           the calendar, but this does not actually happen)
+  --reminder <mins>        number of minutes to use when setting reminders for
+                           the 'quick' and 'add' commands; if not specified,
+                           Google code's default behavior occurs: no reminder is
+                           set (documented, incorrectly, otherwise: as using the
+                           default for the calendar, but this does not actually
+                           happen)
+
+   --title <title>         event details used by the 'add' command
+   --where <location>      - the duration is specified in minutes
+   --when <datetime>       - make sure to quote strings with spaces
+   --duration <#>          - the datetime format is 'MM/DD/YYYY HH:MM'
+   --descr <description>   - the '--reminder' option can be specified as well
 
  Commands:
 
@@ -182,6 +189,18 @@ gcalcli [options] command [command args]
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
 
+  add                      add a detailed event to a calendar
+                           - if a --cal is not specified then the event is
+                             added to the default calendar
+                           - example:
+                              gcalcli --title 'Analysis of Algorithms Final'
+                                      --where UCI
+                                      --when '12/14/2012 10:00'
+                                      --duration 60
+                                      --descr 'It is going to be hard!'
+                                      --reminder 30
+                                      add
+
   import [-v] [file]       import an ics/vcal file to a calendar
                            - if a --cal is not specified then the event is
                              added to the default calendar
@@ -198,6 +217,7 @@ gcalcli [options] command [command args]
                            - <mins> default is 10
                            - default command:
                               'notify-send -u critical -a gcalcli %s'
+
 ''')
     sys.exit(1)
 
@@ -252,6 +272,45 @@ def DebugPrint(msg):
     sys.stdout.write(str(CLR_YLW()))
     sys.stdout.write(msg)
     sys.stdout.write(str(CLR_NRM()))
+
+
+def GetTimeFromStr(eWhen, eDuration):
+    time_pattern = '^(0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])[- /.](19|20)\d\d\s\d{2}:\d{2}$'
+    duration_pattern = '^\d+$'
+    if not eWhen or not (re.search(time_pattern, eWhen)):
+        PrintErrMsg('Date and time is invalid!\n')
+        PrintErrMsg('Examples: MM/DD/YYYY HH:MM\n' +
+                    '          MM-DD-YYYY HH:MM\n' +
+                    '          MM.DD.YYYY HH:MM\n' +
+                    '          MM DD YYYY HH:MM\n')
+        sys.exit(1)
+    if not eDuration or not (re.search(duration_pattern, eDuration)):
+        PrintErrMsg('Duration time is invalid!\n')
+        PrintErrMsg('Examples: 30, 60, 120, etc\n')
+        sys.exit(1)
+    eMins = float(eDuration) * 60
+    try:
+        eTimeTuple = time.strptime(eWhen, '%m/%d/%Y %H:%M')
+    except ValueError, e:
+        try:
+            eTimeTuple = time.strptime(eWhen, '%m-%d-%Y %H:%M')
+        except ValueError, e:
+            try:
+                eTimeTuple = time.strptime(eWhen, '%m.%d.%Y %H:%M')
+            except ValueError, e:
+                try:
+                    eTimeTuple = time.strptime(eWhen, '%m %d %Y %H:%M')
+                except ValueError, e:
+                    PrintErrMsg('Error: ' + str(e) + '!\n')
+                    sys.exit(1)
+
+    eTimeStartSec = time.mktime(eTimeTuple)
+    eTimeEndSec = eTimeStartSec + eMins
+    eTimeStart = time.strftime('%Y-%m-%dT%H:%M:%S.000Z',
+                               time.gmtime(eTimeStartSec))
+    eTimeEnd = time.strftime('%Y-%m-%dT%H:%M:%S.000Z',
+                             time.gmtime(eTimeEndSec))
+    return eTimeStart, eTimeEnd
 
 
 class gcalcli:
@@ -1071,32 +1130,91 @@ class gcalcli:
         self._GraphEvents(cmd, start, count, eventList)
 
 
-    def QuickAdd(self, eventText, reminderMinutes=None):
+    def _InsertEvent(self, event):
+        for i in range(0,6):
+            if i != 0:
+                time.sleep(i)
+            try:
+                newEvent = self.gcal.InsertEvent(event, self._TargetCalendar())
+                PrintMsg(CLR_GRN(),
+                         'New event added: %s\n' % newEvent.id.text)
+                PrintMsg(CLR_GRN(),
+                         'Edit URL: %s\n' % newEvent.GetEditLink().href)
+                PrintMsg(CLR_GRN(),
+                         'HTML URL: %s\n' % newEvent.GetHtmlLink().href)
+                return newEvent
+            except Exception, e:
+                PrintErrMsg("Insert error: %s\n" % (e[0]["reason"]))
+                #PrintErrMsg("Error: %s\n" % (e[0]["body"]))
+                continue
+
+        PrintErrMsg('Failed to add event!\n')
+        return None
+
+
+    def _UpdateEvent(self, event):
+        for i in range(0,6):
+            if i != 0:
+                time.sleep(i)
+            try:
+                self.gcal.UpdateEvent(event.GetEditLink().href, event)
+                return True
+            except Exception, e:
+                PrintErrMsg("Update error: %s\n" % (e[0]["reason"]))
+                PrintErrMsg("Error: %s\n" % (e[0]["body"]))
+                continue
+
+        PrintErrMsg('Failed to update event!\n')
+        return False
+
+
+    def QuickAdd(self, eventText, reminder=None):
 
         if eventText == '':
             return
 
-        quickEvent = gdata.calendar.CalendarEventEntry()
-        quickEvent.content = atom.Content(text=eventText)
-        quickEvent.quick_add = gdata.calendar.QuickAdd(value='true')
+        event = gdata.calendar.CalendarEventEntry()
+        event.content = atom.Content(text=eventText)
+        event.quick_add = gdata.calendar.QuickAdd(value='true')
 
-        try:
-            newEvent = self.gcal.InsertEvent(quickEvent, self._TargetCalendar())
+        # XXX can't do this because of a bug in gdata 
+        # http://code.google.com/a/google.com/p/apps-api-issues/issues/detail?id=2197
+        #if reminder is not None:
+        #    event.when.append(gdata.calendar.When())
+        #    event.when[0].reminder.append(gdata.calendar.Reminder(minutes=reminder))
 
-            if reminderMinutes is not None:
-                if len(newEvent.when) > 0:
-                    for when in newEvent.when:
-                        if len(when.reminder) > 0:
-                            when.reminder[0].minutes = reminderMinutes
-                        else:
-                            when.reminder.append(gdata.calendar.Reminder(minutes=str(reminderMinutes)))
-                    self.gcal.UpdateEvent(newEvent.GetEditLink().href, newEvent)
-                else:
-                    pass # should not happen
+        newEvent = self._InsertEvent(event)
 
-        except Exception, e:
-            PrintErrMsg("Error: %s -- %s\n" % (e[0]["reason"], e[0]["body"]))
-            sys.exit(1)
+        if newEvent is not None and reminder is not None:
+            if len(newEvent.when) > 0:
+                for when in newEvent.when:
+                    if len(when.reminder) > 0:
+                        when.reminder[0].minutes = reminder
+                    else:
+                        when.reminder.append(gdata.calendar.Reminder(minutes=reminder))
+                self._UpdateEvent(newEvent)
+            else:
+                pass # should not happen
+
+
+    def ExtendedAdd(self, eTitle, eWhere, eStart, eEnd, eDescr, reminder):
+        # https://developers.google.com/google-apps/calendar/v1/developers_guide_python#CreatingSingle
+        event = gdata.calendar.CalendarEventEntry()
+
+        event.title = atom.Title(text=eTitle)
+
+        if eWhere:
+            event.where.append(gdata.calendar.Where(value_string=eWhere))
+
+        event.when.append(gdata.calendar.When(start_time=eStart,
+                                              end_time=eEnd))
+        if eDescr:
+            event.content = atom.Content(text=eDescr)
+
+        if reminder is not None:
+            event.when[0].reminder.append(gdata.calendar.Reminder(minutes=reminder))
+
+        self._InsertEvent(event)
 
 
     def Remind(self, minutes=10, command=None):
@@ -1281,20 +1399,13 @@ class gcalcli:
                     event.who.append(gdata.calendar.Who(attendee.name, email, rel='ATTENDEE'))
 
             if not verbose:
-                try:
-                    self.gcal.InsertEvent(event, self._TargetCalendar())
-                except Exception, e:
-                    PrintErrMsg("Error: %s -- %s\n" % (e[0]["reason"], e[0]["body"]))
-                    sys.exit(1)
+                self._InsertEvent(event)
                 continue
 
             PrintMsg(CLR_YLW(), "[i]mport [s]kip [q]uit: ")
             val = raw_input()
             if val == 'i':
-                try:
-                    self.gcal.InsertEvent(event, self._TargetCalendar())
-                except Exception, e:
-                    PrintErrMsg("Error: %s -- %s\n" % (e[0]["reason"], e[0]["body"]))
+                if not self._InsertEvent(event):
                     sys.exit(1)
             elif val == 's':
                 continue
@@ -1428,7 +1539,12 @@ def BowChickaWowWow():
                                     "date-color=",
                                     "border-color=",
                                     "locale=",
-                                    "reminder-minutes="])
+                                    "reminder=",
+                                    "title=",
+                                    "where=",
+                                    "when=",
+                                    "duration=",
+                                    "descr="])
     except getopt.error:
         sys.exit(1)
 
@@ -1441,17 +1557,17 @@ def BowChickaWowWow():
 
     cfg = LoadConfig(configFile)
 
-    usr             = GetConfig(cfg, 'user', None)
-    pwd             = GetConfig(cfg, 'pw', None)
-    access          = GetConfig(cfg, 'cals', 'all')
-    calNames        = GetConfigMultiple(cfg, 'cal', None)
-    military        = GetTrueFalse(GetConfig(cfg, '24hr', 'false'))
-    ignoreStarted   = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
-    calWidth        = int(GetConfig(cfg, 'width', '10'))
-    calMonday       = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
-    tsv             = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
-    customLocale    = GetConfig(cfg, 'locale', None)
-    reminderMinutes = GetConfig(cfg, 'reminder-minutes', None)
+    usr           = GetConfig(cfg, 'user', None)
+    pwd           = GetConfig(cfg, 'pw', None)
+    access        = GetConfig(cfg, 'cals', 'all')
+    calNames      = GetConfigMultiple(cfg, 'cal', None)
+    military      = GetTrueFalse(GetConfig(cfg, '24hr', 'false'))
+    ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
+    calWidth      = int(GetConfig(cfg, 'width', '10'))
+    calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
+    tsv           = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
+    customLocale  = GetConfig(cfg, 'locale', None)
+    reminder      = GetConfig(cfg, 'reminder', None)
 
     detailAll       = GetTrueFalse(GetConfig(cfg, 'detail-all', 'false'))
     detailLocation  = GetTrueFalse(GetConfig(cfg, 'detail-location', 'false'))
@@ -1473,6 +1589,12 @@ def BowChickaWowWow():
         GetColor(GetConfig(cfg, 'date-color', 'yellow'), True)
     borderColor = \
         GetColor(GetConfig(cfg, 'border-color', 'white'), True)
+
+    eTitle    = None
+    eWhere    = None
+    eWhen     = None
+    eDuration = None
+    eDescr    = None
 
     # fix wokCalNames when not specified in config file
     if len(calNames) == 1 and calNames[0] == None:
@@ -1563,8 +1685,23 @@ def BowChickaWowWow():
         elif opt == "--locale":
             customLocale = arg
 
-        elif opt == "--reminder-minutes":
-            reminderMinutes = int(arg)
+        elif opt == "--reminder":
+            reminder = arg
+
+        elif (opt == "--title"):
+            eTitle = arg
+
+        elif (opt == "--where"):
+            eWhere = arg
+
+        elif (opt == "--when"):
+            eWhen = arg
+
+        elif (opt == "--duration"):
+            eDuration = arg
+
+        elif (opt == "--descr"):
+            eDescr = arg
 
     if usr == None:
         PrintErrMsg('Error: must specify a username\n')
@@ -1693,7 +1830,40 @@ def BowChickaWowWow():
 
         # allow unicode strings for input
         gcal.QuickAdd(unicode(args[1], locale.getpreferredencoding()),
-                      reminderMinutes=reminderMinutes)
+                      reminder=reminder)
+
+    elif (args[0] == 'add'):
+        if eTitle == None:
+            PrintMsg(CLR_YLW(), "Title: ")
+            eTitle = raw_input()
+        if eWhere == None:
+            PrintMsg(CLR_YLW(), "Location: ")
+            eWhere = raw_input()
+        if eWhen == None:
+            PrintMsg(CLR_YLW(), "When: ")
+            eWhen = raw_input()
+        if eDuration == None:
+            PrintMsg(CLR_YLW(), "Duration (mins): ")
+            eDuration = raw_input()
+        if eDescr == None:
+            PrintMsg(CLR_YLW(), "Description: ")
+            eDescr = raw_input()
+        if reminder == None:
+            PrintMsg(CLR_YLW(), "Reminder (mins): ")
+            reminder = raw_input()
+
+        # calculate "when" time:
+        eStart, eEnd = GetTimeFromStr(eWhen, eDuration)
+
+        # allow unicode strings for input
+        ueTitle = unicode(eTitle, locale.getpreferredencoding())
+        ueWhere = unicode(eWhere, locale.getpreferredencoding())
+        ueStart = unicode(eStart, locale.getpreferredencoding())
+        ueEnd   = unicode(eEnd,   locale.getpreferredencoding())
+        ueDescr = unicode(eDescr, locale.getpreferredencoding())
+
+        #http://code.google.com/apis/calendar/data/1.0/developers_guide_python.html#CreatingSingle
+        gcal.ExtendedAdd(ueTitle, ueWhere, ueStart, ueEnd, ueDescr, reminder)
 
     elif args[0] == 'remind':
         if len(args) == 3: # minutes and command
