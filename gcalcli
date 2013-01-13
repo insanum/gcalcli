@@ -53,6 +53,7 @@ from Queue import Queue
 from ConfigParser import RawConfigParser
 from gdata.calendar.service import *
 from datetime import datetime
+from datetime import timedelta
 from dateutil.tz import *
 from dateutil.parser import *
 from dateutil.rrule import *
