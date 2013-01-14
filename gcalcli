@@ -277,9 +277,9 @@ def DebugPrint(msg):
 
 def GetTimeFromStr(eWhen, eDuration):
     defaultDateTime = datetime.now().replace(hour=0,
-                                           minute=0,
-                                           second=0,
-                                           microsecond=0)
+                                             minute=0,
+                                             second=0,
+                                             microsecond=0)
 
     try:
         eTimeStart = parse(eWhen, default=defaultDateTime)
@@ -290,8 +290,7 @@ def GetTimeFromStr(eWhen, eDuration):
     try:
         eTimeStop = eTimeStart + timedelta(minutes=float(eDuration))
     except:
-        PrintErrMsg('Duration time is invalid\n')
-        PrintErrMsg('Examples: 30, 60, 120, etc\n')
+        PrintErrMsg('Duration time (minutes) is invalid\n')
         sys.exit(1)
 
     sTimeStart = eTimeStart.isoformat()
@@ -963,7 +962,7 @@ class gcalcli:
             if not self._CalendarWithinAccess(cal):
                 continue
 
-            # see http://code.google.com/apis/calendar/reference.html
+            # http://code.google.com/apis/calendar/reference.html
             if not searchText:
                 query = CalendarEventQuery(cal.gcalcli_username,
                                            cal.gcalcli_visibility,
@@ -1181,9 +1180,9 @@ class gcalcli:
 
         # XXX can't do this because of a bug in gdata 
         # http://code.google.com/a/google.com/p/apps-api-issues/issues/detail?id=2197
-        #if reminder is not None:
-        #    event.when.append(gdata.calendar.When())
-        #    event.when[0].reminder.append(gdata.calendar.Reminder(minutes=reminder))
+        # if reminder is not None:
+        #   event.when.append(gdata.calendar.When())
+        #   event.when[0].reminder.append(gdata.calendar.Reminder(minutes=reminder))
 
         newEvent = self._InsertEvent(event)
 
@@ -1870,7 +1869,7 @@ def BowChickaWowWow():
         ueEnd   = unicode(eEnd,   locale.getpreferredencoding())
         ueDescr = unicode(eDescr, locale.getpreferredencoding())
 
-        #http://code.google.com/apis/calendar/data/1.0/developers_guide_python.html#CreatingSingle
+        # http://code.google.com/apis/calendar/data/1.0/developers_guide_python.html#CreatingSingle
         gcal.ExtendedAdd(ueTitle, ueWhere, ueStart, ueEnd, ueDescr, reminder)
 
     elif args[0] == 'remind':
