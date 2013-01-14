@@ -42,7 +42,7 @@
 #
 
 __program__ = 'gcalcli'
-__version__ = 'v2.2'
+__version__ = 'v2.3'
 __author__  = 'Eric Davis'
 
 import inspect
@@ -1137,12 +1137,7 @@ class gcalcli:
                 time.sleep(i)
             try:
                 newEvent = self.gcal.InsertEvent(event, self._TargetCalendar())
-                PrintMsg(CLR_GRN(),
-                         'New event added: %s\n' % newEvent.id.text)
-                PrintMsg(CLR_GRN(),
-                         'Edit URL: %s\n' % newEvent.GetEditLink().href)
-                PrintMsg(CLR_GRN(),
-                         'HTML URL: %s\n' % newEvent.GetHtmlLink().href)
+                PrintMsg(CLR_GRN(), 'New event added: %s\n' % newEvent.GetHtmlLink().href)
                 return newEvent
             except Exception, e:
                 PrintErrMsg("Insert error: %s\n" % (e[0]["reason"]))
@@ -1403,7 +1398,7 @@ class gcalcli:
                 self._InsertEvent(event)
                 continue
 
-            PrintMsg(CLR_YLW(), "[i]mport [s]kip [q]uit: ")
+            PrintMsg(CLR_YLW(), "\n[i]mport [s]kip [q]uit: ")
             val = raw_input()
             if val == 'i':
                 if not self._InsertEvent(event):
