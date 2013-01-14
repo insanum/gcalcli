@@ -25,15 +25,17 @@ Features
 
  * list your calendars
  * show an agenda using a specified start/end date and time
- * graphical calendar display with variable width
+ * ascii text graphical calendar display with variable width
  * search for past and/or future calendar events
  * "quick add" new events to a specified calendar
- * import ics/vcal files to a specified calendar
+ * "add" a new event to a specified calendar (interactively or automatically)
+ * import events from ICS/VCAL files to a specified calendar
+ * easy integration with your favorite mail client (attachment handler)
  * run as a cron job and execute a command for reminders
  * work against specific calendars (by calendar type or calendar name regex)
  * config file support for specifying option defaults
  * colored output and unicode character support
- * easy within shell scripts, cron, screen, tmux, conky, etc
+ * super fun hacking with shell scripts, cron, screen, tmux, conky, etc
 
 Screenshots
 -----------
