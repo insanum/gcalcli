@@ -276,42 +276,28 @@ def DebugPrint(msg):
 
 
 def GetTimeFromStr(eWhen, eDuration):
-    time_pattern = '^(0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])[- /.](19|20)\d\d\s\d{2}:\d{2}$'
-    duration_pattern = '^\d+$'
-    if not eWhen or not (re.search(time_pattern, eWhen)):
+    defaultDateTime = datetime.now().replace(hour=0,
+                                           minute=0,
+                                           second=0,
+                                           microsecond=0)
+
+    try:
+        eTimeStart = parse(eWhen, default=defaultDateTime)
+    except:
         PrintErrMsg('Date and time is invalid!\n')
-        PrintErrMsg('Examples: MM/DD/YYYY HH:MM\n' +
-                    '          MM-DD-YYYY HH:MM\n' +
-                    '          MM.DD.YYYY HH:MM\n' +
-                    '          MM DD YYYY HH:MM\n')
         sys.exit(1)
-    if not eDuration or not (re.search(duration_pattern, eDuration)):
-        PrintErrMsg('Duration time is invalid!\n')
+
+    try:
+        eTimeStop = eTimeStart + timedelta(minutes=float(eDuration))
+    except:
+        PrintErrMsg('Duration time is invalid\n')
         PrintErrMsg('Examples: 30, 60, 120, etc\n')
         sys.exit(1)
-    eMins = float(eDuration) * 60
-    try:
-        eTimeTuple = time.strptime(eWhen, '%m/%d/%Y %H:%M')
-    except ValueError, e:
-        try:
-            eTimeTuple = time.strptime(eWhen, '%m-%d-%Y %H:%M')
-        except ValueError, e:
-            try:
-                eTimeTuple = time.strptime(eWhen, '%m.%d.%Y %H:%M')
-            except ValueError, e:
-                try:
-                    eTimeTuple = time.strptime(eWhen, '%m %d %Y %H:%M')
-                except ValueError, e:
-                    PrintErrMsg('Error: ' + str(e) + '!\n')
-                    sys.exit(1)
 
-    eTimeStartSec = time.mktime(eTimeTuple)
-    eTimeEndSec = eTimeStartSec + eMins
-    eTimeStart = time.strftime('%Y-%m-%dT%H:%M:%S.000Z',
-                               time.gmtime(eTimeStartSec))
-    eTimeEnd = time.strftime('%Y-%m-%dT%H:%M:%S.000Z',
-                             time.gmtime(eTimeEndSec))
-    return eTimeStart, eTimeEnd
+    sTimeStart = eTimeStart.isoformat()
+    sTimeStop = eTimeStop.isoformat()
+
+    return sTimeStart, sTimeStop
 
 
 class gcalcli:
