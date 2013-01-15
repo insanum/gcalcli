@@ -40,6 +40,7 @@ Features
 Screenshots
 -----------
 
+![gcalcli](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_5.png)
 ![gcalcli](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_1.png)
 ![gcalcli](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_2.png)
 ![gcalcli](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_3.png)
@@ -111,6 +112,10 @@ gcalcli [options] command [command args]
                            outputs (default is Sunday)
 
   --nc                     don't use colors
+
+  --conky                  use conky color escapes sequences instead of ansi
+                           terminal color escape sequences (requires using
+                           the 'execpi' command in your conkyrc)
 
   --cal-owner-color        specify the colors used for the calendars and dates
   --cal-editor-color       each of these argument requires a <color> argument
@@ -326,17 +331,19 @@ Then add the following line:
 
 #### Agenda On Your Root Desktop
 
-Put your agenda on your desktop using Conky. Add the following to your
-.conkyrc:
+Put your agenda on your desktop using Conky. The '--conky' option causes
+gcalcli to output Conky color sequences. Note that you need to use the Conky
+'execpi' command for the gcalcli output to be parsed for color sequences. Add
+the following to your .conkyrc:
 
 ```
-${execi 300 gcalcli --nc agenda}
+${execpi 300 gcalcli --conky agenda}
 ```
 
 To also get a graphical calendar that shows the next three weeks add:
 
 ```
-${execi 300 gcalcli --nc --cals=owner calw 3}
+${execpi 300 gcalcli --conky --cals=owner calw 3}
 ```
 
 #### Agenda Integration With tmux
