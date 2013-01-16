@@ -1286,7 +1286,7 @@ class gcalcli:
             os.execvp(cmd[0], cmd)
 
 
-    def ImportICS(self, verbose=False, icsFile=None):
+    def ImportICS(self, verbose=False, reminder=None, icsFile=None):
         try:
             import vobject
         except:
@@ -1422,6 +1422,9 @@ class gcalcli:
                         print " %s" % email
 
                     event.who.append(gdata.calendar.Who(attendee.name, email, rel='ATTENDEE'))
+
+            if reminder is not None and event.when is not None:
+                event.when.reminder.append(gdata.calendar.Reminder(minutes=reminder))
 
             if not verbose:
                 self._InsertEvent(event)
@@ -1918,9 +1921,9 @@ def BowChickaWowWow():
             verbose = True
             args = args[1:]
         if len(args) == 0: # stdin
-            gcal.ImportICS(verbose)
+            gcal.ImportICS(verbose, reminder)
         elif len(args) == 1: # ics file
-            gcal.ImportICS(verbose, args[0])
+            gcal.ImportICS(verbose, reminder, args[0])
         else:
             PrintErrMsg('Error: invalid import arguments\n')
             sys.exit(1)
