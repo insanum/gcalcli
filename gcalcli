@@ -171,6 +171,8 @@ gcalcli [options] command [command args]
                            - end time default is 5 days from start
                            - example time strings:
                               '9/24/2007'
+                              '24/09/2007'
+                              '24/9/07'
                               'Sep 24 2007 3:30pm'
                               '2007-09-24T15:30'
                               '2007-09-24T15:30-8:00'
