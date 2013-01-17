@@ -301,7 +301,7 @@ with Mutt (or in Mutt you could just use the attachment viewer and pipe command)
 ```
 #!/bin/bash
 
-TERMINAL=urxvtc
+TERMINAL=evilvte
 CONFIG=~/.gcalclirc
 
 $TERMINAL -e bash -c "echo 'Importing invite...' ; \
@@ -315,19 +315,42 @@ extension installed for seeing the calendar attachments when not using
 [bug report](https://bugzilla.mozilla.org/show_bug.cgi?id=505024)
 for more details.
 
-#### Event Popup Reminders Using Cron
+#### Event Popup Reminders
 
-Run gcalcli using cron and generate xmessage-like popups for reminders.
+The 'remind' command for gcalcli is used to execute any command as an event
+notification. This can be a notify-send or an xmessage-like popup or whatever
+else you can think of. gcalcli does not contain a daemon so you'll have to use
+some other tool to ensure gcalcli is run in a timely manner for notifications.
+Two options are using cron or a loop inside a shell script.
 
+Cron:
 ```
-% crontab -e
+% crontab -l
+*/10 * * * * /usr/bin/gcalcli remind
 ```
 
-Then add the following line:
+Shell script like your .xinitrc so notifications only occur when you're logged
+in via X:
+```
+#!/bin/bash
 
+[[ -x /usr/bin/dunst ]] && /usr/bin/dunst -config ~/.dunstrc &
+
+if [ -x /usr/bin/gcalcli ]; then 
+  while true; do
+    /usr/bin/gcalcli --config=~/.gcalclirc --cal="davis" remind
+    sleep 300
+  done &
+fi
+
+exec herbstluftwm # :-)
 ```
-*/10 * * * * gcalcli remind
-```
+
+By default gcalcli executes the notify-send command for notifications. Most
+common Linux desktop enviroments already contain a DBUS notification daemon
+that supports libnotify so it should automagically just work. If you're like
+me and use nothing that is common I highly recommend the
+[dunst](https://github.com/knopwob/dunst) dmenu'ish notification daemon.
 
 #### Agenda On Your Root Desktop
 
