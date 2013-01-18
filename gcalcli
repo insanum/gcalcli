@@ -918,7 +918,7 @@ class gcalcli:
                     PrintMsg(CLR_NRM(), str)
 
             if self.detailDescr:
-                if event.content and event.content.text:
+                if event.content and event.content.text and event.content.text.strip():
                     descrIndent = detailsIndent + '  '
                     marker = descrIndent + "-" * \
                             (self.detailDescrWidth - len(descrIndent))
