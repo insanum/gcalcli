@@ -1394,6 +1394,9 @@ class gcalcli:
                 event.when = gdata.calendar.When(start_time=start,
                                                  end_time=end)
 
+                if reminder is not None:
+                    event.when.reminder.append(gdata.calendar.Reminder(minutes=reminder))
+
             if hasattr(ve, 'description'):
                 DebugPrint("DESCRIPTION: %s\n" % ve.description.value)
                 if verbose:
@@ -1424,9 +1427,6 @@ class gcalcli:
                         print " %s" % email
 
                     event.who.append(gdata.calendar.Who(attendee.name, email, rel='ATTENDEE'))
-
-            if reminder is not None and event.when is not None:
-                event.when.reminder.append(gdata.calendar.Reminder(minutes=reminder))
 
             if not verbose:
                 self._InsertEvent(event)
