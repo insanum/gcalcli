@@ -62,7 +62,7 @@ from dateutil.parser import *
 from dateutil.rrule import *
 try:
     # If they have parsedatetime, we'll use it for fuzzy datetime comparison
-    from parsedatetime import parsedatetime2
+    from parsedatetime import parsedatetime
 except:
     class parsedatetime:
         class Calendar:
