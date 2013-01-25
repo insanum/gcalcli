@@ -1,3 +1,8 @@
+v2.4 (dev)
+ * Added support for conky color sequences
+ * Support --reminder when using ics/vcal import
+ * Don't print empty descriptions
+ * Add support for fuzzy dates (today, tomorrow, next week) using parsedatetime
 
 v2.3
   * Enhancements
