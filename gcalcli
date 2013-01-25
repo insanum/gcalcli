@@ -1124,7 +1124,7 @@ class gcalcli:
             end = (start + timedelta(days=self.agendaLength))
         else:
             try:
-                end = self.dateParser.fromString(endText,  not self.ignoreStarted)
+                end = self.dateParser.fromString(endText, not self.ignoreStarted)
             except:
                 PrintErrMsg('Error: failed to parse end time\n')
                 return
