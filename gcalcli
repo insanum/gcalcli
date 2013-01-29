@@ -25,21 +25,33 @@
 # Dude... just buy me a beer. :-)
 #
 
-#
-# Home: http://code.google.com/p/gcalcli
-#
-# Author: Eric Davis <http://www.insanum.com>
-#
-# Requirements:
-#  - Python 2
-#        http://www.python.org
-#  - Google's GData Python module (for Python 2)
-#        http://code.google.com/p/gdata-python-client
-#  - dateutil Python module
-#        http://www.labix.org/python-dateutil
-#  - vobject Python module (optional, needed for importing ics/vcal files)
-#        http://vobject.skyhouseconsulting.com
-#
+#############################################################################
+#                                                                           #
+#                                      (           (     (                  #
+#               (         (     (      )\ )   (    )\ )  )\ )               #
+#               )\ )      )\    )\    (()/(   )\  (()/( (()/(               #
+#              (()/(    (((_)((((_)(   /(_))(((_)  /(_)) /(_))              #
+#               /(_))_  )\___ )\ _ )\ (_))  )\___ (_))  (_))                #
+#              (_)) __|((/ __|(_)_\(_)| |  ((/ __|| |   |_ _|               #
+#                | (_ | | (__  / _ \  | |__ | (__ | |__  | |                #
+#                 \___|  \___|/_/ \_\ |____| \___||____||___|               #
+#                                                                           #
+# Author: Eric Davis <http://www.insanum.com>                               #
+# Home: http://code.google.com/p/gcalcli                                    #
+#                                                                           #
+# Author: Eric Davis <http://www.insanum.com>                               #
+#                                                                           #
+# Requirements:                                                             #
+#  - Python 2                                                               #
+#        http://www.python.org                                              #
+#  - Google's GData Python module (for Python 2)                            #
+#        http://code.google.com/p/gdata-python-client                       #
+#  - dateutil Python module                                                 #
+#        http://www.labix.org/python-dateutil                               #
+#  - vobject Python module (optional, needed for importing ics/vcal files)  #
+#        http://vobject.skyhouseconsulting.com                              #
+#                                                                           #
+#############################################################################
 
 __program__ = 'gcalcli'
 __version__ = 'v2.3'
