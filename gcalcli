@@ -818,7 +818,8 @@ class gcalcli:
             tmpDayStr = event.s.strftime(dayFormat)
             tmpTimeStr = event.s.strftime("%H:%M")
             tmpTimeStp = event.e.strftime("%H:%M")
-            if event.where and 0 in event.where and event.where[0].value_string:
+            if event.where and len(event.where) > 0 and \
+               event.where[0].value_string:
                 tmpWhere = event.where[0].value_string
             else:
                 tmpWhere = ''
@@ -886,13 +887,13 @@ class gcalcli:
                          (tmpTimeStr, self._ValidTitle(event.title.text).strip()))
 
             if self.detailLocation:
-                if event.where and 0 in event.where:
-                    if event.where[0].value_string:
-                        str = "%s  Location: %s\n" % (
-                            detailsIndent,
-                            event.where[0].value_string
-                        )
-                        PrintMsg(CLR_NRM(), str)
+                if event.where and len(event.where) > 0 and \
+                   event.where[0].value_string:
+                    str = "%s  Location: %s\n" % (
+                        detailsIndent,
+                        event.where[0].value_string
+                    )
+                    PrintMsg(CLR_NRM(), str)
 
             if self.detailLength:
                 diffDateTime = (event.e - event.s)
@@ -901,9 +902,9 @@ class gcalcli:
 
             if self.detailReminders:
                 reminders = []
-                if event.where and 0 in event.where:
-                    if reminder in event.where[0]:
-                        reminders = event.where[0].reminder
+                if event.when and len(event.when) > 0 and \
+                   hasattr(event.when[0], 'reminder'):
+                    reminders = event.when[0].reminder
                 for rem in reminders:
                     remStr = ''
                     if rem.days:
