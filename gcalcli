@@ -850,14 +850,29 @@ class gcalcli:
 
     def _PrintEvents(self, startDateTime, eventList):
 
-        def formatDescr(descr, indent):
+        def formatDescr(descr, indent, box):
             wrapper = textwrap.TextWrapper()
-            wrapper.initial_indent = indent
-            wrapper.subsequent_indent = indent
-            wrapper.width = self.detailDescrWidth
+            if box:
+                wrapper.initial_indent = (indent + '  ')
+                wrapper.subsequent_indent = (indent + '  ')
+                wrapper.width = (self.detailDescrWidth - 2)
+            else:
+                wrapper.initial_indent = indent
+                wrapper.subsequent_indent = indent
+                wrapper.width = self.detailDescrWidth
             new_descr = ""
             for line in descr.split("\n"):
-                new_descr += wrapper.fill(line) + "\n"
+                if box:
+                    tmpLine = wrapper.fill(line)
+                    for singleLine in tmpLine.split("\n"):
+                        singleLine = singleLine.ljust(self.detailDescrWidth,' ')
+                        new_descr += singleLine[:len(indent)] + \
+                                     '|' + \
+                                     singleLine[(len(indent)+1) :
+                                                (self.detailDescrWidth-1)] + \
+                                     '|' + '\n'
+                else:
+                    new_descr += wrapper.fill(line) + "\n"
             return new_descr.rstrip()
 
         if len(eventList) == 0:
@@ -933,12 +948,19 @@ class gcalcli:
             if self.detailDescr:
                 if event.content and event.content.text and event.content.text.strip():
                     descrIndent = detailsIndent + '  '
-                    marker = descrIndent + "-" * \
-                            (self.detailDescrWidth - len(descrIndent))
+                    marker = descrIndent + '-' * \
+                             (self.detailDescrWidth - len(descrIndent))
+                    box = True # leave old non-box code for option later
+                    if box:
+                        marker = marker[:len(descrIndent)] + \
+                                 '+' + \
+                                 marker[(len(descrIndent)+1) :
+                                        (self.detailDescrWidth-1)] + \
+                                 '+'
                     str = "%s  Description:\n%s\n%s\n%s\n" % (
                         detailsIndent,
                         marker,
-                        formatDescr(event.content.text, descrIndent),
+                        formatDescr(event.content.text, descrIndent, box),
                         marker
                     )
                     PrintMsg(CLR_NRM(), str)
