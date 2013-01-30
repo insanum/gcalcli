@@ -881,7 +881,7 @@ class gcalcli:
             str2 = "%s\n" % str.replace('\n', '''\\n''')
             sys.stdout.write(str2)
 
-    def _PrintEvents(self, startDateTime, eventList):
+    def _PrintEvents(self, startDateTime, eventList, yearDate=False):
 
         def formatDescr(descr, indent, box):
             wrapper = textwrap.TextWrapper()
@@ -912,7 +912,7 @@ class gcalcli:
             PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
             return
 
-        dayFormat = '\n%a %b %d' # 10 chars for day
+        dayFormat = '\n%F' if yearDate else '\n%a %b %d' # 10 chars for day
         indent = '          ' # 10 spaces
         detailsIndent = '                   '    # 19 spaces
         day = ''
@@ -1137,16 +1137,10 @@ class gcalcli:
         else:
             start = None
 
-        # convert now to midnight this morning and use for default
-        defaultDateTime = self.now.replace(hour=0,
-                                           minute=0,
-                                           second=0,
-                                           microsecond=0)
-
         eventList = \
             self._SearchForCalEvents(start, None, searchText)
 
-        self._PrintEvents(self.now, eventList)
+        self._PrintEvents(self.now, eventList, yearDate=True)
 
 
     def AgendaQuery(self, startText='', endText=''):
@@ -1183,7 +1177,7 @@ class gcalcli:
         if self.tsv:
             self._tsv(start, eventList)
         else:
-            self._PrintEvents(start, eventList)
+            self._PrintEvents(start, eventList, yearDate=False)
 
 
     def CalQuery(self, cmd, startText='', count=1):
