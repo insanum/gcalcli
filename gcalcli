@@ -163,7 +163,7 @@ gcalcli [options] command [command args]
   --border-color           brightwhite ]
 
   --tsv                    tab-separated output for 'agenda'. Format is:
-                           'date' 'start' 'end' 'title' 'location' 'description'
+                           date, start, end, link, title, location, description
 
   --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
                            supported locales of your system first.
@@ -854,6 +854,9 @@ class gcalcli:
         dayFormat = '%F'
 
         for event in eventList:
+            tmpLink = event.GetHtmlLink().href
+            if self.detailUrl == "short":
+                tmpLink = ShortenURL(tmpLink)
             tmpDayStr = event.s.strftime(dayFormat)
             tmpTimeStr = event.s.strftime("%H:%M")
             tmpTimeStp = event.e.strftime("%H:%M")
@@ -866,8 +869,11 @@ class gcalcli:
                 tmpContent = event.content.text
             else:
                 tmpContent = ''
-            str = "%s\t%s\t%s\t%s\t%s\t%s" % (
-                tmpDayStr, tmpTimeStr, tmpTimeStp,
+            str = "%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
+                tmpDayStr,
+                tmpTimeStr,
+                tmpTimeStp,
+                tmpLink,
                 self._ValidTitle(event.title.text).strip(),
                 tmpWhere,
                 tmpContent
