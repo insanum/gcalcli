@@ -50,25 +50,33 @@
 #        http://www.labix.org/python-dateutil                               #
 #  - vobject Python module (optional, needed for importing ics/vcal files)  #
 #        http://vobject.skyhouseconsulting.com                              #
+#  - simpleson Python module (optional, needed for url shortening)          #
+#        https://github.com/simplejson/simplejson                           #
 #                                                                           #
 #############################################################################
 
-__program__ = 'gcalcli'
-__version__ = 'v2.3'
-__author__  = 'Eric Davis'
+__program__         = 'gcalcli'
+__version__         = 'v2.3'
+__author__          = 'Eric Davis'
+__gcalcli_api_key__ = 'AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc'
 
 import inspect
 
-import sys, os, re, urllib, getopt, shlex, subprocess, time
-import codecs, locale, csv, threading, getpass, textwrap
-from Queue import Queue
-from ConfigParser import RawConfigParser
-from gdata.calendar.service import *
-from datetime import datetime, timedelta, date
-from dateutil.tz import *
-from dateutil.parser import *
-from dateutil.rrule import *
-from unicodedata import east_asian_width
+try:
+    import sys, os, re, urllib, getopt, shlex, subprocess, time
+    import codecs, locale, csv, threading, getpass, textwrap
+    from Queue import Queue
+    from ConfigParser import RawConfigParser
+    from gdata.calendar.service import *
+    from datetime import datetime, timedelta, date
+    from dateutil.tz import *
+    from dateutil.parser import *
+    from dateutil.rrule import *
+    from unicodedata import east_asian_width
+except ImportError, e:
+    print "ERROR: Missing module - %s" % e.args[0]
+    sys.exit(1)
+
 
 def Version():
     sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
@@ -118,11 +126,13 @@ gcalcli [options] command [command args]
   --24hr                   show all dates in 24 hour format
 
   --detail-all             show event details in the 'agenda' output
-  --detail-location        (i.e. all, location, length, reminders, description)
-  --detail-length          the description width defaults to 80 characters
-  --detail-reminders
+  --detail-location        - the description width defaults to 80 characters
+  --detail-length          - if 'short' is specified for the url then the event
+  --detail-reminders         link is shortened using http://goo.gl (slow!)
   --detail-descr
   --detail-descr-width
+  --detail-url [short,
+                long]
 
   --ignore-started         ignore old or already started events
                            - when used with the 'agenda' command, ignore events
@@ -340,6 +350,20 @@ def GetTimeFromStr(eWhen, eDuration):
     return sTimeStart, sTimeStop
 
 
+def ShortenURL(url):
+    try:
+        from urllib2 import urlopen, Request
+        import simplejson as json
+    except:
+        return url
+    gshort  = 'https://www.googleapis.com/urlshortener/v1/url'
+    data    = {"longUrl":url, "key":__gcalcli_api_key__}
+    headers = {'Content-Type':'application/json', 'User-Agent':'gcalcli'}
+    r = urlopen(Request(gshort, json.dumps(data), headers))
+    j = json.loads(r.read())
+    return j['id'] if 'id' in j else url
+
+
 class gcalcli:
 
     gcal          = None
@@ -364,6 +388,7 @@ class gcalcli:
     detailReminders  = False
     detailDescr      = False
     detailDescrWidth = 80
+    detailUrl        = None
 
     calOwnerColor       = CLR_CYN()
     calEditorColor      = CLR_NRM()
@@ -398,6 +423,7 @@ class gcalcli:
                  detailReminders=False,
                  detailDescr=False,
                  detailDescrWidth=80,
+                 detailUrl=None,
                  ignoreStarted=False,
                  calWidth=10,
                  calMonday=False,
@@ -430,6 +456,7 @@ class gcalcli:
         self.detailReminders  = detailReminders
         self.detailDescr      = detailDescr
         self.detailDescrWidth = detailDescrWidth
+        self.detailUrl        = detailUrl
 
         self.calOwnerColor       = calOwnerColor
         self.calEditorColor      = calEditorColor
@@ -913,6 +940,13 @@ class gcalcli:
                 PrintMsg(self._CalendarColor(event.gcalcli_cal), fmt %
                          (tmpTimeStr, self._ValidTitle(event.title.text).strip()))
 
+            if self.detailUrl:
+                hLink = event.GetHtmlLink().href
+                if self.detailUrl == "short":
+                    hLink = ShortenURL(hLink)
+                str = "%s  Link: %s\n" % (detailsIndent, hLink)
+                PrintMsg(CLR_NRM(), str)
+
             if self.detailLocation:
                 if event.where and len(event.where) > 0 and \
                    event.where[0].value_string:
@@ -1203,7 +1237,8 @@ class gcalcli:
                 time.sleep(i)
             try:
                 newEvent = self.gcal.InsertEvent(event, self._TargetCalendar())
-                PrintMsg(CLR_GRN(), 'New event added: %s\n' % newEvent.GetHtmlLink().href)
+                url = ShortenURL(newEvent.GetHtmlLink().href)
+                PrintMsg(CLR_GRN(), 'New event added: %s\n' % url)
                 return newEvent
             except Exception, e:
                 PrintErrMsg("Insert error: %s\n" % (e[0]["reason"]))
@@ -1592,6 +1627,7 @@ def BowChickaWowWow():
                                     "detail-reminders",
                                     "detail-descr",
                                     "detail-descr-width=",
+                                    "detail-url=",
                                     "tsv",
                                     "ignore-started",
                                     "width=",
@@ -1642,6 +1678,7 @@ def BowChickaWowWow():
     detailReminders  = GetTrueFalse(GetConfig(cfg, 'detail-reminders', 'false'))
     detailDescr      = GetTrueFalse(GetConfig(cfg, 'detail-descr', 'false'))
     detailDescrWidth = int(GetConfig(cfg, 'detail-descr-width', '80'))
+    detailUrl        = GetConfig(cfg, 'detail-url', None)
 
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
@@ -1701,6 +1738,7 @@ def BowChickaWowWow():
             detailLength    = True
             detailReminders = True
             detailDescr     = True
+            detailUrl       = "long"
 
         elif opt == "--detail-location":
             detailLocation = True
@@ -1716,6 +1754,9 @@ def BowChickaWowWow():
 
         elif opt == "--detail-descr-width":
             detailDescrWidth = int(arg)
+
+        elif opt == "--detail-url":
+            detailUrl = arg
 
         elif opt == "--ignore-started":
             ignoreStarted = True
@@ -1792,6 +1833,10 @@ def BowChickaWowWow():
         PrintErrMsg('Error: must specify a password\n')
         sys.exit(1)
 
+    if detailUrl and detailUrl != 'short' and detailUrl != 'long':
+        PrintErrMsg('Error: invalid detail url\n')
+        sys.exit(1)
+
     if len(args) == 0:
         PrintErrMsg('Error: no command (--help)\n')
         sys.exit(1)
@@ -1819,6 +1864,7 @@ def BowChickaWowWow():
                    detailReminders=detailReminders,
                    detailDescr=detailDescr,
                    detailDescrWidth=detailDescrWidth,
+                   detailUrl=detailUrl,
                    ignoreStarted=ignoreStarted,
                    calWidth=calWidth,
                    calMonday=calMonday,

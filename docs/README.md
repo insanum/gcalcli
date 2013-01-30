@@ -91,11 +91,13 @@ gcalcli [options] command [command args]
   --24hr                   show all dates in 24 hour format
 
   --detail-all             show event details in the 'agenda' output
-  --detail-location        (i.e. all, location, length, reminders, description)
-  --detail-length          the description width defaults to 80 characters
-  --detail-reminders
+  --detail-location        - the description width defaults to 80 characters
+  --detail-length          - if 'short' is specified for the url then the event
+  --detail-reminders         link is shortened using http://goo.gl (slow!)
   --detail-descr
   --detail-descr-width
+  --detail-url [short,
+                long]
 
   --ignore-started         ignore old or already started events
                            - when used with the 'agenda' command, ignore events
@@ -208,8 +210,7 @@ gcalcli [options] command [command args]
                            event start time and title text)
                            - <mins> default is 10
                            - default command:
-                              'gxmessage -display :0 -center \
-                                         -title "Ding, Ding, Ding!" %s'
+                              'notify-send -u critical -a gcalcli %s'
 ```
 
 #### Login Information
