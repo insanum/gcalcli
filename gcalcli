@@ -25,45 +25,63 @@
 # Dude... just buy me a beer. :-)
 #
 
-#
-# Home: http://code.google.com/p/gcalcli
-#
-# Author: Eric Davis <http://www.insanum.com>
-#
-# Requirements:
-#  - Python 2
-#        http://www.python.org
-#  - Google's GData Python module (for Python 2)
-#        http://code.google.com/p/gdata-python-client
-#  - dateutil Python module
-#        http://www.labix.org/python-dateutil
-#  - vobject Python module (optional, needed for importing ics/vcal files)
-#        http://vobject.skyhouseconsulting.com
-#
+#############################################################################
+#                                                                           #
+#                                      (           (     (                  #
+#               (         (     (      )\ )   (    )\ )  )\ )               #
+#               )\ )      )\    )\    (()/(   )\  (()/( (()/(               #
+#              (()/(    (((_)((((_)(   /(_))(((_)  /(_)) /(_))              #
+#               /(_))_  )\___ )\ _ )\ (_))  )\___ (_))  (_))                #
+#              (_)) __|((/ __|(_)_\(_)| |  ((/ __|| |   |_ _|               #
+#                | (_ | | (__  / _ \  | |__ | (__ | |__  | |                #
+#                 \___|  \___|/_/ \_\ |____| \___||____||___|               #
+#                                                                           #
+# Author: Eric Davis <http://www.insanum.com>                               #
+# Home: http://code.google.com/p/gcalcli                                    #
+#                                                                           #
+# Author: Eric Davis <http://www.insanum.com>                               #
+#                                                                           #
+# Requirements:                                                             #
+#  - Python 2                                                               #
+#        http://www.python.org                                              #
+#  - Google's GData Python module (for Python 2)                            #
+#        http://code.google.com/p/gdata-python-client                       #
+#  - dateutil Python module                                                 #
+#        http://www.labix.org/python-dateutil                               #
+#  - vobject Python module (optional, needed for importing ics/vcal files)  #
+#        http://vobject.skyhouseconsulting.com                              #
+#  - simpleson Python module (optional, needed for url shortening)          #
+#        https://github.com/simplejson/simplejson                           #
+#                                                                           #
+#############################################################################
 
-__program__ = 'gcalcli'
-__version__ = 'v2.2'
-__author__  = 'Eric Davis'
+__program__         = 'gcalcli'
+__version__         = 'v2.3'
+__author__          = 'Eric Davis'
+__gcalcli_api_key__ = 'AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc'
 
 import inspect
 
-import sys, os, re, urllib, getopt, shlex, subprocess
-import codecs, locale, csv, threading
-from Queue import Queue
-from ConfigParser import RawConfigParser
-from gdata.gauth import *
-from gdata.client import *
-from gdata.calendar.client import *
-from datetime import *
-from dateutil.tz import *
-from dateutil.parser import *
-from unicodedata import east_asian_width
+try:
+    import sys, os, re, urllib, getopt, shlex, subprocess, time
+    import codecs, locale, csv, threading, getpass, textwrap
+    from Queue import Queue
+    from ConfigParser import RawConfigParser
+    from gdata.calendar.service import *
+    from datetime import datetime, timedelta, date
+    from dateutil.tz import *
+    from dateutil.parser import *
+    from dateutil.rrule import *
+    from unicodedata import east_asian_width
+except ImportError, e:
+    print "ERROR: Missing module - %s" % e.args[0]
+    sys.exit(1)
 
 #XXX
 from pprint import pprint
 
 def Version():
-    sys.stdout.write(__program__+'-'+__version__+'\n')
+    sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
     sys.exit(1)
 
 
@@ -107,8 +125,14 @@ gcalcli [options] command [command args]
 
   --24hr                   show all dates in 24 hour format
 
-  --details                show all event details (i.e. length, location,
-                           reminders, contents)
+  --detail-all             show event details in the 'agenda' output
+  --detail-location        - the description width defaults to 80 characters
+  --detail-length          - if 'short' is specified for the url then the event
+  --detail-reminders         link is shortened using http://goo.gl (slow!)
+  --detail-descr
+  --detail-descr-width
+  --detail-url [short,
+                long]
 
   --ignore-started         ignore old or already started events
                            - when used with the 'agenda' command, ignore events
@@ -126,6 +150,10 @@ gcalcli [options] command [command args]
 
   --nc                     don't use colors
 
+  --conky                  use conky color escapes sequences instead of ansi
+                           terminal color escape sequences (requires using
+                           the 'execpi' command in your conkyrc)
+
   --cal-owner-color        specify the colors used for the calendars and dates
   --cal-editor-color       each of these argument requires a <color> argument
   --cal-contributor-color  which must be one of [ default, black, brightblack,
@@ -135,7 +163,23 @@ gcalcli [options] command [command args]
   --border-color           brightwhite ]
 
   --tsv                    tab-separated output for 'agenda'. Format is:
-                           'date' 'start' 'end' 'title' 'location' 'description'
+                           date, start, end, link, title, location, description
+
+  --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
+                           supported locales of your system first.
+
+  --reminder <mins>        number of minutes to use when setting reminders for
+                           the 'quick' and 'add' commands; if not specified,
+                           Google code's default behavior occurs: no reminder is
+                           set (documented, incorrectly, otherwise: as using the
+                           default for the calendar, but this does not actually
+                           happen)
+
+   --title <title>         event details used by the 'add' command
+   --where <location>      - the duration is specified in minutes
+   --when <datetime>       - make sure to quote strings with spaces
+   --duration <#>          - the datetime format is 'MM/DD/YYYY HH:MM'
+   --descr <description>   - the '--reminder' option can be specified as well
 
  Commands:
 
@@ -149,6 +193,8 @@ gcalcli [options] command [command args]
                            - end time default is 5 days from start
                            - example time strings:
                               '9/24/2007'
+                              '24/09/2007'
+                              '24/9/07'
                               'Sep 24 2007 3:30pm'
                               '2007-09-24T15:30'
                               '2007-09-24T15:30-8:00'
@@ -172,11 +218,27 @@ gcalcli [options] command [command args]
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
 
-  import [file]            import an ics/vcal file to a calendar
+  add                      add a detailed event to a calendar
+                           - if a --cal is not specified then the event is
+                             added to the default calendar
+                           - example:
+                              gcalcli --title 'Analysis of Algorithms Final'
+                                      --where UCI
+                                      --when '12/14/2012 10:00'
+                                      --duration 60
+                                      --descr 'It is going to be hard!'
+                                      --reminder 30
+                                      add
+
+  import [-v] [file]       import an ics/vcal file to a calendar
                            - if a --cal is not specified then the event is
                              added to the default calendar
                            - if a file is not specified then the data is read
                              from standard input
+                           - if -v is given then each event in the file is
+                             displayed and you're given the option to import
+                             or skip it, by default everything is imported
+                             quietly without any interaction
 
   remind <mins> <command>  execute command if event occurs within <mins>
                            minutes time ('%s' in <command> is replaced with
@@ -184,6 +246,7 @@ gcalcli [options] command [command args]
                            - <mins> default is 10
                            - default command:
                               'notify-send -a gcalcli -u critical %s'
+                              'notify-send -u critical -a gcalcli %s'
 ''')
     sys.exit(1)
 
@@ -191,6 +254,7 @@ gcalcli [options] command [command args]
 class CLR:
 
     useColor = True
+    conky    = False
 
     def __str__(self):
         if self.useColor: return self.color
@@ -213,6 +277,28 @@ class CLR_CYN(CLR):   color = "\033[0;36m"
 class CLR_BRCYN(CLR): color = "\033[36;1m"
 class CLR_WHT(CLR):   color = "\033[0;37m"
 class CLR_BRWHT(CLR): color = "\033[37;1m"
+
+
+def SetConkyColors():
+    # XXX these colors should be configurable
+    CLR.conky       = True
+    CLR_NRM.color   = ""
+    CLR_BLK.color   = "${color black}"
+    CLR_BRBLK.color = "${color black}"
+    CLR_RED.color   = "${color red}"
+    CLR_BRRED.color = "${color red}"
+    CLR_GRN.color   = "${color green}"
+    CLR_BRGRN.color = "${color green}"
+    CLR_YLW.color   = "${color yellow}"
+    CLR_BRYLW.color = "${color yellow}"
+    CLR_BLU.color   = "${color blue}"
+    CLR_BRBLU.color = "${color blue}"
+    CLR_MAG.color   = "${color magenta}"
+    CLR_BRMAG.color = "${color magenta}"
+    CLR_CYN.color   = "${color cyan}"
+    CLR_BRCYN.color = "${color cyan}"
+    CLR_WHT.color   = "${color white}"
+    CLR_BRWHT.color = "${color white}"
 
 
 def PrintErrMsg(msg):
@@ -240,6 +326,44 @@ def DebugPrint(msg):
     sys.stdout.write(str(CLR_NRM()))
 
 
+def GetTimeFromStr(eWhen, eDuration):
+    defaultDateTime = datetime.now().replace(hour=0,
+                                             minute=0,
+                                             second=0,
+                                             microsecond=0)
+
+    try:
+        eTimeStart = parse(eWhen, default=defaultDateTime)
+    except:
+        PrintErrMsg('Date and time is invalid!\n')
+        sys.exit(1)
+
+    try:
+        eTimeStop = eTimeStart + timedelta(minutes=float(eDuration))
+    except:
+        PrintErrMsg('Duration time (minutes) is invalid\n')
+        sys.exit(1)
+
+    sTimeStart = eTimeStart.isoformat()
+    sTimeStop = eTimeStop.isoformat()
+
+    return sTimeStart, sTimeStop
+
+
+def ShortenURL(url):
+    try:
+        from urllib2 import urlopen, Request
+        import simplejson as json
+    except:
+        return url
+    gshort  = 'https://www.googleapis.com/urlshortener/v1/url'
+    data    = {"longUrl":url, "key":__gcalcli_api_key__}
+    headers = {'Content-Type':'application/json', 'User-Agent':'gcalcli'}
+    r = urlopen(Request(gshort, json.dumps(data), headers))
+    j = json.loads(r.read())
+    return j['id'] if 'id' in j else url
+
+
 class gcalcli:
 
     gcal          = None
@@ -252,12 +376,19 @@ class gcalcli:
     token         = None
     access        = ''
     military      = False
-    details       = False
     ignoreStarted = False
     calWidth      = 10
     calMonday     = False
-    command       = 'notify-send -a gcalcli -u critical %s'
+    command       = 'notify-send -u critical -a gcalcli %s'
     tsv           = False
+    customLocale  = None
+
+    detailLocation   = False
+    detailLength     = False
+    detailReminders  = False
+    detailDescr      = False
+    detailDescrWidth = 80
+    detailUrl        = None
 
     calOwnerColor       = CLR_CYN()
     calEditorColor      = CLR_NRM()
@@ -287,7 +418,12 @@ class gcalcli:
                  calNames=[],
                  calNameColors=[],
                  military=False,
-                 details=False,
+                 detailLocation=False,
+                 detailLength=False,
+                 detailReminders=False,
+                 detailDescr=False,
+                 detailDescrWidth=80,
+                 detailUrl=None,
                  ignoreStarted=False,
                  calWidth=10,
                  calMonday=False,
@@ -298,7 +434,8 @@ class gcalcli:
                  calFreeBusyColor=CLR_NRM(),
                  dateColor=CLR_GRN(),
                  borderColor=CLR_WHT(),
-                 tsv=False):
+                 tsv=False,
+                 customLocale=None):
 
        #self.gcal          = CalendarService()
 
@@ -312,11 +449,18 @@ class gcalcli:
 
         self.access        = access
         self.military      = military
-        self.details       = details
         self.ignoreStarted = ignoreStarted
         self.calWidth      = calWidth
         self.calMonday     = calMonday
         self.tsv           = tsv
+        self.customLocale  = customLocale
+
+        self.detailLocation   = detailLocation
+        self.detailLength     = detailLength
+        self.detailReminders  = detailReminders
+        self.detailDescr      = detailDescr
+        self.detailDescrWidth = detailDescrWidth
+        self.detailUrl        = detailUrl
 
         self.calOwnerColor       = calOwnerColor
         self.calEditorColor      = calEditorColor
@@ -325,6 +469,14 @@ class gcalcli:
         self.calFreeBusyColor    = calFreeBusyColor
         self.dateColor           = dateColor
         self.borderColor         = borderColor
+
+        # set customLocale if correct
+        try:
+            locale.setlocale(locale.LC_ALL, customLocale)
+        except Exception, e:
+            PrintErrMsg("Error: " + str(e) + "!\n" +
+                        "Check supported locales of your system.\n")
+            sys.exit(1)
 
         # authenticate and login to google calendar
         #try:
@@ -659,10 +811,12 @@ class gcalcli:
                                 str(self.borderColor) + '|' + str(CLR_NRM())
                         continue
 
-                    if weekEventStrings[j][0] == '\033':
-                        # get/skip over color sequence
+                    # get/skip over a color sequence
+                    if ((not CLR.conky and weekEventStrings[j][0] == '\033') or
+                        (    CLR.conky and weekEventStrings[j][0] == '$')):
                         weekColorStrings[j] = ''
-                        while (weekEventStrings[j][0] != 'm'):
+                        while ((not CLR.conky and weekEventStrings[j][0] != 'm') or
+                               (    CLR.conky and weekEventStrings[j][0] != '}')):
                             weekColorStrings[j] += weekEventStrings[j][0]
                             weekEventStrings[j] = weekEventStrings[j][1:]
                         weekColorStrings[j] += weekEventStrings[j][0]
@@ -704,20 +858,65 @@ class gcalcli:
         dayFormat = '%F'
 
         for event in eventList:
+            tmpLink = event.GetHtmlLink().href
+            if self.detailUrl == "short":
+                tmpLink = ShortenURL(tmpLink)
             tmpDayStr = event.s.strftime(dayFormat)
             tmpTimeStr = event.s.strftime("%H:%M")
             tmpTimeStp = event.e.strftime("%H:%M")
-            str = "%s\t%s\t%s\t%s\t%s\t%s" % (tmpDayStr, tmpTimeStr, tmpTimeStp, self._ValidTitle(event.title.text).strip(), event.where[0].value_string, event.content.text )
-            str2 = "%s" % str.replace('\n', '''\\n''')
-            print(str2)
+            if event.where and len(event.where) > 0 and \
+               event.where[0].value_string:
+                tmpWhere = event.where[0].value_string
+            else:
+                tmpWhere = ''
+            if event.content and event.content.text:
+                tmpContent = event.content.text
+            else:
+                tmpContent = ''
+            str = "%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
+                tmpDayStr,
+                tmpTimeStr,
+                tmpTimeStp,
+                tmpLink,
+                self._ValidTitle(event.title.text).strip(),
+                tmpWhere,
+                tmpContent
+            )
+            str2 = "%s\n" % str.replace('\n', '''\\n''')
+            sys.stdout.write(str2)
 
-    def _PrintEvents(self, startDateTime, eventList):
+    def _PrintEvents(self, startDateTime, eventList, yearDate=False):
+
+        def formatDescr(descr, indent, box):
+            wrapper = textwrap.TextWrapper()
+            if box:
+                wrapper.initial_indent = (indent + '  ')
+                wrapper.subsequent_indent = (indent + '  ')
+                wrapper.width = (self.detailDescrWidth - 2)
+            else:
+                wrapper.initial_indent = indent
+                wrapper.subsequent_indent = indent
+                wrapper.width = self.detailDescrWidth
+            new_descr = ""
+            for line in descr.split("\n"):
+                if box:
+                    tmpLine = wrapper.fill(line)
+                    for singleLine in tmpLine.split("\n"):
+                        singleLine = singleLine.ljust(self.detailDescrWidth,' ')
+                        new_descr += singleLine[:len(indent)] + \
+                                     '|' + \
+                                     singleLine[(len(indent)+1) :
+                                                (self.detailDescrWidth-1)] + \
+                                     '|' + '\n'
+                else:
+                    new_descr += wrapper.fill(line) + "\n"
+            return new_descr.rstrip()
 
         if len(eventList) == 0:
             PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
             return
 
-        dayFormat = '\n%a %b %d' # 10 chars for day
+        dayFormat = '\n%F' if yearDate else '\n%a %b %d' # 10 chars for day
         indent = '          ' # 10 spaces
         detailsIndent = '                   '    # 19 spaces
         day = ''
@@ -751,21 +950,33 @@ class gcalcli:
                 PrintMsg(self._CalendarColor(event.gcalcli_cal), fmt %
                          (tmpTimeStr, self._ValidTitle(event.title.text).strip()))
 
-            if self.details:
+            if self.detailUrl:
+                hLink = event.GetHtmlLink().href
+                if self.detailUrl == "short":
+                    hLink = ShortenURL(hLink)
+                str = "%s  Link: %s\n" % (detailsIndent, hLink)
+                PrintMsg(CLR_NRM(), str)
 
-                clr = CLR_NRM()
+            if self.detailLocation:
+                if event.where and len(event.where) > 0 and \
+                   event.where[0].value_string:
+                    str = "%s  Location: %s\n" % (
+                        detailsIndent,
+                        event.where[0].value_string
+                    )
+                    PrintMsg(CLR_NRM(), str)
 
-                if event.where[0].value_string:
-                    str = "%s  Location: %s\n" % (detailsIndent,
-                                                 event.where[0].value_string)
-                    PrintMsg(clr, str)
-
+            if self.detailLength:
                 diffDateTime = (event.e - event.s)
                 str = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
-                PrintMsg(clr, str)
+                PrintMsg(CLR_NRM(), str)
 
-                # XXX Why does accessing event.when[0].reminder[0] fail?
-                for rem in event.when[0].reminder:
+            if self.detailReminders:
+                reminders = []
+                if event.when and len(event.when) > 0 and \
+                   hasattr(event.when[0], 'reminder'):
+                    reminders = event.when[0].reminder
+                for rem in reminders:
                     remStr = ''
                     if rem.days:
                         remStr += "%s Days" % (rem.days)
@@ -776,12 +987,27 @@ class gcalcli:
                         if remStr != '': remStr += ' '
                         remStr += "%s Minutes" % (rem.minutes)
                     str = "%s  Reminder: %s\n" % (detailsIndent, remStr)
-                    PrintMsg(clr, str)
+                    PrintMsg(CLR_NRM(), str)
 
-                if event.content.text:
-                    str = "%s  Content: %s\n" % (detailsIndent,
-                                                event.content.text)
-                    PrintMsg(clr, str)
+            if self.detailDescr:
+                if event.content and event.content.text and event.content.text.strip():
+                    descrIndent = detailsIndent + '  '
+                    marker = descrIndent + '-' * \
+                             (self.detailDescrWidth - len(descrIndent))
+                    box = True # leave old non-box code for option later
+                    if box:
+                        marker = marker[:len(descrIndent)] + \
+                                 '+' + \
+                                 marker[(len(descrIndent)+1) :
+                                        (self.detailDescrWidth-1)] + \
+                                 '+'
+                    str = "%s  Description:\n%s\n%s\n%s\n" % (
+                        detailsIndent,
+                        marker,
+                        formatDescr(event.content.text, descrIndent, box),
+                        marker
+                    )
+                    PrintMsg(CLR_NRM(), str)
 
 
     def _GetAllEvents(self, cal, feed, end):
@@ -798,10 +1024,14 @@ class gcalcli:
                 event.s = parse(event.when[0].start)
                 if event.s.tzinfo == None:
                     event.s = event.s.replace(tzinfo=tzlocal())
+                else:
+                    event.s = event.s.astimezone(tzlocal())
 
                 event.e = parse(event.when[0].end)
                 if event.e.tzinfo == None:
                     event.e = event.e.replace(tzinfo=tzlocal())
+                else:
+                    event.e = event.e.astimezone(tzlocal())
 
                 # For all-day events, Google seems to assume that the event time
                 # is based in the UTC instead of the local timezone.  Here we
@@ -845,7 +1075,7 @@ class gcalcli:
             if not self._CalendarWithinAccess(cal):
                 continue
 
-            # see http://code.google.com/apis/calendar/reference.html
+            # http://code.google.com/apis/calendar/reference.html
             if not searchText:
                 #query = CalendarEventQuery(cal.gcalcli_username,
                 #                           cal.gcalcli_visibility,
@@ -919,16 +1149,10 @@ class gcalcli:
         else:
             start = None
 
-        # convert now to midnight this morning and use for default
-        defaultDateTime = self.now.replace(hour=0,
-                                           minute=0,
-                                           second=0,
-                                           microsecond=0)
-
         eventList = \
             self._SearchForCalEvents(start, None, searchText)
 
-        self._PrintEvents(self.now, eventList)
+        self._PrintEvents(self.now, eventList, yearDate=True)
 
 
     def AgendaQuery(self, startText='', endText=''):
@@ -965,7 +1189,7 @@ class gcalcli:
         if self.tsv:
             self._tsv(start, eventList)
         else:
-            self._PrintEvents(start, eventList)
+            self._PrintEvents(start, eventList, yearDate=False)
 
 
     def CalQuery(self, cmd, startText='', count=1):
@@ -1019,16 +1243,87 @@ class gcalcli:
         self._GraphEvents(cmd, start, count, eventList)
 
 
-    def QuickAdd(self, eventText):
+    def _InsertEvent(self, event):
+        for i in range(0,6):
+            if i != 0:
+                time.sleep(i)
+            try:
+                newEvent = self.gcal.InsertEvent(event, self._TargetCalendar())
+                url = ShortenURL(newEvent.GetHtmlLink().href)
+                PrintMsg(CLR_GRN(), 'New event added: %s\n' % url)
+                return newEvent
+            except Exception, e:
+                PrintErrMsg("Insert error: %s\n" % (e[0]["reason"]))
+                #PrintErrMsg("Error: %s\n" % (e[0]["body"]))
+                continue
+
+        PrintErrMsg('Failed to add event!\n')
+        return None
+
+
+    def _UpdateEvent(self, event):
+        for i in range(0,6):
+            if i != 0:
+                time.sleep(i)
+            try:
+                self.gcal.UpdateEvent(event.GetEditLink().href, event)
+                return True
+            except Exception, e:
+                PrintErrMsg("Update error: %s\n" % (e[0]["reason"]))
+                PrintErrMsg("Error: %s\n" % (e[0]["body"]))
+                continue
+
+        PrintErrMsg('Failed to update event!\n')
+        return False
+
+
+    def QuickAdd(self, eventText, reminder=None):
 
         if eventText == '':
             return
 
-        quickEvent = gdata.calendar.CalendarEventEntry()
-        quickEvent.content = atom.Content(text=eventText)
-        quickEvent.quick_add = gdata.calendar.QuickAdd(value='true')
+        event = gdata.calendar.CalendarEventEntry()
+        event.content = atom.Content(text=eventText)
+        event.quick_add = gdata.calendar.QuickAdd(value='true')
 
-        self.gcal.InsertEvent(quickEvent, self._TargetCalendar())
+        # XXX can't do this because of a bug in gdata 
+        # http://code.google.com/a/google.com/p/apps-api-issues/issues/detail?id=2197
+        # if reminder is not None:
+        #   event.when.append(gdata.calendar.When())
+        #   event.when[0].reminder.append(gdata.calendar.Reminder(minutes=reminder))
+
+        newEvent = self._InsertEvent(event)
+
+        if newEvent is not None and reminder is not None:
+            if len(newEvent.when) > 0:
+                for when in newEvent.when:
+                    if len(when.reminder) > 0:
+                        when.reminder[0].minutes = reminder
+                    else:
+                        when.reminder.append(gdata.calendar.Reminder(minutes=reminder))
+                self._UpdateEvent(newEvent)
+            else:
+                pass # should not happen
+
+
+    def ExtendedAdd(self, eTitle, eWhere, eStart, eEnd, eDescr, reminder):
+        # https://developers.google.com/google-apps/calendar/v1/developers_guide_python#CreatingSingle
+        event = gdata.calendar.CalendarEventEntry()
+
+        event.title = atom.Title(text=eTitle)
+
+        if eWhere:
+            event.where.append(gdata.calendar.Where(value_string=eWhere))
+
+        event.when.append(gdata.calendar.When(start_time=eStart,
+                                              end_time=eEnd))
+        if eDescr:
+            event.content = atom.Content(text=eDescr)
+
+        if reminder is not None:
+            event.when[0].reminder.append(gdata.calendar.Reminder(minutes=reminder))
+
+        self._InsertEvent(event)
 
 
     def Remind(self, minutes=10, command=None):
@@ -1064,8 +1359,6 @@ class gcalcli:
         if message == '':
             return
 
-        message = "Google Calendar Reminder:\n" + message
-
         cmd = shlex.split(command)
 
         for i, a in zip(xrange(len(cmd)), cmd):
@@ -1077,7 +1370,7 @@ class gcalcli:
             os.execvp(cmd[0], cmd)
 
 
-    def ImportICS(self, icsFile=None):
+    def ImportICS(self, verbose=False, reminder=None, icsFile=None):
         try:
             import vobject
         except:
@@ -1105,22 +1398,36 @@ class gcalcli:
 
             if hasattr(ve, 'summary'):
                 DebugPrint("SUMMARY: %s\n" % ve.summary.value)
+                if verbose:
+                    print "Event........%s" % ve.summary.value
                 event.title = atom.Title(text=ve.summary.value)
 
             if hasattr(ve, 'location'):
                 DebugPrint("LOCATION: %s\n" % ve.location.value)
+                if verbose:
+                    print "Location.....%s" % ve.location.value
                 event.where = gdata.calendar.Where(value_string=ve.location.value)
 
             if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
-                PrintErrMsg("Error: file does not have both dtstart and dtend!\n")
-                sys.exit(1)
+                PrintErrMsg("Error: event does not have a dtstart and dtend!\n")
+                continue
 
             DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
             DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
+            if verbose:
+                print "Start........%s" % ve.dtstart.value.isoformat(' ')
+                print "End..........%s" % ve.dtend.value.isoformat(' ')
+                print "Local Start..%s" % ve.dtstart.value.astimezone(tzlocal())
+                print "Local End....%s" % ve.dtend.value.astimezone(tzlocal())
 
             if hasattr(ve, 'rrule'):
 
                 DebugPrint("RRULE: %s\n" % ve.rrule.value)
+                if verbose:
+                    print "Recurrence...%s" % ve.rrule.value
+                    # XXX Need to print a NICE recurrence string
+                    #rr = rrulestr(ve.rrule.value)
+                    #print dir(rr)
 
                 #
                 # In order to add an RRULE using a DTSTART and DTEND in the
@@ -1169,11 +1476,56 @@ class gcalcli:
                 event.when = gdata.calendar.When(start_time=start,
                                                  end_time=end)
 
+                if reminder is not None:
+                    event.when.reminder.append(gdata.calendar.Reminder(minutes=reminder))
+
             if hasattr(ve, 'description'):
                 DebugPrint("DESCRIPTION: %s\n" % ve.description.value)
+                if verbose:
+                    print "Description:\n%s" % ve.description.value
                 event.content = atom.Content(text=ve.description.value)
 
-            self.gcal.InsertEvent(event, self._TargetCalendar())
+            if hasattr(ve, 'organizer'):
+                DebugPrint("ORGANIZER: %s\n" % ve.organizer.value)
+
+                if ve.organizer.value.startswith("MAILTO:"):
+                    email = ve.organizer.value[7:]
+                else:
+                    email = ve.organizer.value
+                if verbose:
+                    print "organizer:\n%s" % email
+                event.who.append(gdata.calendar.Who(ve.organizer.name, email, rel='ORGANIZER'))
+
+            if hasattr(ve, 'attendee_list'):
+                DebugPrint("ATTENDEE_LIST : %s\n" % ve.attendee_list)
+                if verbose:
+                    print "attendees:"
+                for attendee in ve.attendee_list:
+                    if attendee.value.startswith("MAILTO:"):
+                        email = attendee.value[7:]
+                    else:
+                        email = attendee.value
+                    if verbose:
+                        print " %s" % email
+
+                    event.who.append(gdata.calendar.Who(attendee.name, email, rel='ATTENDEE'))
+
+            if not verbose:
+                self._InsertEvent(event)
+                continue
+
+            PrintMsg(CLR_YLW(), "\n[i]mport [s]kip [q]uit: ")
+            val = raw_input()
+            if val == 'i':
+                if not self._InsertEvent(event):
+                    sys.exit(1)
+            elif val == 's':
+                continue
+            elif val == 'q':
+                sys.exit(0)
+            else:
+                PrintErrMsg('Error: invalid input\n')
+                sys.exit(1)
 
 
 def LoadConfig(configFile):
@@ -1255,19 +1607,18 @@ def GetColor(value, exitFlag):
 
 
 def GetCalColors(calNames):
-    calNameColors = []
-    for idx in xrange(len(calNames)):
-        i = calNames[idx].rfind('#')
-        if i != -1:
-            c = GetColor(calNames[idx][(i+1):], False)
-            if c:
-                calNameColors.append(c)
-                calNames[idx] = calNames[idx][:i]
-            else:
-                calNameColors.append(None)
-        else:
-            calNameColors.append(None)
-    return calNames, calNameColors
+    calColors = {}
+    for calName in calNames:
+        calNameParts = calName.split("#")
+        calNameSimple = calNameParts[0]
+        calColor = calColors.get(calNameSimple)
+        if len(calNameParts) > 0:
+            calColorRaw = calNameParts[-1]
+            calColorNew = GetColor(calColorRaw, False)
+            if calColorNew is not None:
+                calColor = calColorNew
+        calColors[calNameSimple] = calColor
+    return calColors
 
 
 def BowChickaWowWow(token):
@@ -1281,19 +1632,33 @@ def BowChickaWowWow(token):
                                     "cals=",
                                     "cal=",
                                     "24hr",
-                                    "details",
+                                    "detail-all",
+                                    "detail-location",
+                                    "detail-length",
+                                    "detail-reminders",
+                                    "detail-descr",
+                                    "detail-descr-width=",
+                                    "detail-url=",
                                     "tsv",
                                     "ignore-started",
                                     "width=",
                                     "mon",
                                     "nc",
+                                    "conky",
                                     "cal-owner-color=",
                                     "cal-editor-color=",
                                     "cal-contributor-color=",
                                     "cal-read-color=",
                                     "cal-freebusy-color=",
                                     "date-color=",
-                                    "border-color="])
+                                    "border-color=",
+                                    "locale=",
+                                    "reminder=",
+                                    "title=",
+                                    "where=",
+                                    "when=",
+                                    "duration=",
+                                    "descr="])
     except getopt.error:
         sys.exit(1)
 
@@ -1310,11 +1675,20 @@ def BowChickaWowWow(token):
     access        = GetConfig(cfg, 'cals', 'all')
     calNames      = GetConfigMultiple(cfg, 'cal', None)
     military      = GetTrueFalse(GetConfig(cfg, '24hr', 'false'))
-    details       = GetTrueFalse(GetConfig(cfg, 'details', 'false'))
     ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
     calWidth      = int(GetConfig(cfg, 'width', '10'))
     calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
     tsv           = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
+    customLocale  = GetConfig(cfg, 'locale', None)
+    reminder      = GetConfig(cfg, 'reminder', None)
+
+    detailAll        = GetTrueFalse(GetConfig(cfg, 'detail-all', 'false'))
+    detailLocation   = GetTrueFalse(GetConfig(cfg, 'detail-location', 'false'))
+    detailLength     = GetTrueFalse(GetConfig(cfg, 'detail-length', 'false'))
+    detailReminders  = GetTrueFalse(GetConfig(cfg, 'detail-reminders', 'false'))
+    detailDescr      = GetTrueFalse(GetConfig(cfg, 'detail-descr', 'false'))
+    detailDescrWidth = int(GetConfig(cfg, 'detail-descr-width', '80'))
+    detailUrl        = GetConfig(cfg, 'detail-url', None)
 
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
@@ -1331,10 +1705,18 @@ def BowChickaWowWow(token):
     borderColor = \
         GetColor(GetConfig(cfg, 'border-color', 'white'), True)
 
+    eTitle    = None
+    eWhere    = None
+    eWhen     = None
+    eDuration = None
+    eDescr    = None
+
     # fix wokCalNames when not specified in config file
     if len(calNames) == 1 and calNames[0] == None:
         calNames      = []
         calNameColors = []
+
+    calNamesCommandLine = []
 
     # Process options
     for opt, arg in opts:
@@ -1353,12 +1735,35 @@ def BowChickaWowWow(token):
 
         elif opt == "--cal":
             calNames.append(arg)
+            calNamesCommandLine.append(arg)
 
         elif opt == "--24hr":
             military = True
 
-        elif opt == "--details":
-            details = True
+        elif opt == "--detail-all":
+            detailLocation  = True
+            detailLength    = True
+            detailReminders = True
+            detailDescr     = True
+            detailUrl       = "long"
+
+        elif opt == "--detail-location":
+            detailLocation = True
+
+        elif opt == "--detail-length":
+            detailLength = True
+
+        elif opt == "--detail-reminders":
+            detailReminders = True
+
+        elif opt == "--detail-descr":
+            detailDescr = True
+
+        elif opt == "--detail-descr-width":
+            detailDescrWidth = int(arg)
+
+        elif opt == "--detail-url":
+            detailUrl = arg
 
         elif opt == "--ignore-started":
             ignoreStarted = True
@@ -1371,6 +1776,9 @@ def BowChickaWowWow(token):
 
         elif opt == "--nc":
             CLR.useColor = False
+
+        elif opt == "--conky":
+            SetConkyColors()
 
         elif opt == "--cal-owner-color":
             calOwnerColor = GetColor(arg, True)
@@ -1396,15 +1804,50 @@ def BowChickaWowWow(token):
         elif opt == "--tsv":
             tsv = True
 
+        elif opt == "--locale":
+            customLocale = arg
+
+        elif opt == "--reminder":
+            reminder = arg
+
+        elif (opt == "--title"):
+            eTitle = arg
+
+        elif (opt == "--where"):
+            eWhere = arg
+
+        elif (opt == "--when"):
+            eWhen = arg
+
+        elif (opt == "--duration"):
+            eDuration = arg
+
+        elif (opt == "--descr"):
+            eDescr = arg
+
     if usr == None:
         PrintErrMsg('Error: must specify a username\n')
+        sys.exit(1)
+
+    if detailUrl and detailUrl != 'short' and detailUrl != 'long':
+        PrintErrMsg('Error: invalid detail url\n')
         sys.exit(1)
 
     if len(args) == 0:
         PrintErrMsg('Error: no command (--help)\n')
         sys.exit(1)
 
-    calNames, calNameColors = GetCalColors(calNames)
+    calColors = GetCalColors(calNames)
+    if len(calNamesCommandLine) > 0:
+        calNames = calNamesCommandLine
+
+    calNamesFiltered = []
+    calNameColors = []
+    for calName in calNames:
+        calNameSimple = calName.split("#")[0]
+        calNamesFiltered.append(calNameSimple)
+        calNameColors.append(calColors[calNameSimple])
+    calNames = calNamesFiltered
 
     gcal = gcalcli(username=usr,
                    token=token,
@@ -1412,7 +1855,12 @@ def BowChickaWowWow(token):
                    calNames=calNames,
                    calNameColors=calNameColors,
                    military=military,
-                   details=details,
+                   detailLocation=detailLocation,
+                   detailLength=detailLength,
+                   detailReminders=detailReminders,
+                   detailDescr=detailDescr,
+                   detailDescrWidth=detailDescrWidth,
+                   detailUrl=detailUrl,
                    ignoreStarted=ignoreStarted,
                    calWidth=calWidth,
                    calMonday=calMonday,
@@ -1423,7 +1871,8 @@ def BowChickaWowWow(token):
                    calFreeBusyColor=calFreeBusyColor,
                    dateColor=dateColor,
                    borderColor=borderColor,
-                   tsv=tsv)
+                   tsv=tsv,
+                   customLocale=customLocale)
 
     if args[0] == 'list':
         gcal.ListAllCalendars()
@@ -1497,7 +1946,41 @@ def BowChickaWowWow(token):
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.QuickAdd(unicode(args[1], locale.getpreferredencoding()))
+        gcal.QuickAdd(unicode(args[1], locale.getpreferredencoding()),
+                      reminder=reminder)
+
+    elif (args[0] == 'add'):
+        if eTitle == None:
+            PrintMsg(CLR_YLW(), "Title: ")
+            eTitle = raw_input()
+        if eWhere == None:
+            PrintMsg(CLR_YLW(), "Location: ")
+            eWhere = raw_input()
+        if eWhen == None:
+            PrintMsg(CLR_YLW(), "When: ")
+            eWhen = raw_input()
+        if eDuration == None:
+            PrintMsg(CLR_YLW(), "Duration (mins): ")
+            eDuration = raw_input()
+        if eDescr == None:
+            PrintMsg(CLR_YLW(), "Description: ")
+            eDescr = raw_input()
+        if reminder == None:
+            PrintMsg(CLR_YLW(), "Reminder (mins): ")
+            reminder = raw_input()
+
+        # calculate "when" time:
+        eStart, eEnd = GetTimeFromStr(eWhen, eDuration)
+
+        # allow unicode strings for input
+        ueTitle = unicode(eTitle, locale.getpreferredencoding())
+        ueWhere = unicode(eWhere, locale.getpreferredencoding())
+        ueStart = unicode(eStart, locale.getpreferredencoding())
+        ueEnd   = unicode(eEnd,   locale.getpreferredencoding())
+        ueDescr = unicode(eDescr, locale.getpreferredencoding())
+
+        # http://code.google.com/apis/calendar/data/1.0/developers_guide_python.html#CreatingSingle
+        gcal.ExtendedAdd(ueTitle, ueWhere, ueStart, ueEnd, ueDescr, reminder)
 
     elif args[0] == 'remind':
         if len(args) == 3: # minutes and command
@@ -1511,10 +1994,18 @@ def BowChickaWowWow(token):
             sys.exit(1)
 
     elif args[0] == 'import':
-        if len(args) == 2: # ics file
-            gcal.ImportICS(args[1])
+        args = args[1:]
+        verbose = False
+        if len(args) >= 1 and args[0] == "-v":
+            verbose = True
+            args = args[1:]
+        if len(args) == 0: # stdin
+            gcal.ImportICS(verbose, reminder)
+        elif len(args) == 1: # ics file
+            gcal.ImportICS(verbose, reminder, args[0])
         else:
-            gcal.ImportICS() # stdin
+            PrintErrMsg('Error: invalid import arguments\n')
+            sys.exit(1)
 
     else:
         PrintErrMsg('Error: unknown command (--help)\n')

@@ -25,19 +25,22 @@ Features
 
  * list your calendars
  * show an agenda using a specified start/end date and time
- * graphical calendar display with variable width
+ * ascii text graphical calendar display with variable width
  * search for past and/or future calendar events
  * "quick add" new events to a specified calendar
- * import ics/vcal files to a specified calendar
+ * "add" a new event to a specified calendar (interactively or automatically)
+ * import events from ICS/VCAL files to a specified calendar
+ * easy integration with your favorite mail client (attachment handler)
  * run as a cron job and execute a command for reminders
  * work against specific calendars (by calendar type or calendar name regex)
  * config file support for specifying option defaults
  * colored output and unicode character support
- * easy within shell scripts, cron, screen, tmux, conky, etc
+ * super fun hacking with shell scripts, cron, screen, tmux, conky, etc
 
 Screenshots
 -----------
 
+![gcalcli](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_5.png)
 ![gcalcli](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_1.png)
 ![gcalcli](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_2.png)
 ![gcalcli](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_3.png)
@@ -87,8 +90,14 @@ gcalcli [options] command [command args]
 
   --24hr                   show all dates in 24 hour format
 
-  --details                show all event details (i.e. length, location,
-                           reminders, contents)
+  --detail-all             show event details in the 'agenda' output
+  --detail-location        - the description width defaults to 80 characters
+  --detail-length          - if 'short' is specified for the url then the event
+  --detail-reminders         link is shortened using http://goo.gl (slow!)
+  --detail-descr
+  --detail-descr-width
+  --detail-url [short,
+                long]
 
   --ignore-started         ignore old or already started events
                            - when used with the 'agenda' command, ignore events
@@ -106,6 +115,10 @@ gcalcli [options] command [command args]
 
   --nc                     don't use colors
 
+  --conky                  use conky color escapes sequences instead of ansi
+                           terminal color escape sequences (requires using
+                           the 'execpi' command in your conkyrc)
+
   --cal-owner-color        specify the colors used for the calendars and dates
   --cal-editor-color       each of these argument requires a <color> argument
   --cal-contributor-color  which must be one of [ default, black, brightblack,
@@ -116,6 +129,22 @@ gcalcli [options] command [command args]
 
   --tsv                    tab-separated output for 'agenda'. Format is:
                            'date' 'start' 'end' 'title' 'location' 'description'
+
+  --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
+                           supported locales of your system first.
+
+  --reminder <mins>        number of minutes to use when setting reminders for
+                           the 'quick' and 'add' commands; if not specified,
+                           Google code's default behavior occurs: no reminder is
+                           set (documented, incorrectly, otherwise: as using the
+                           default for the calendar, but this does not actually
+                           happen)
+
+   --title <title>         event details used by the 'add' command
+   --where <location>      - the duration is specified in minutes
+   --when <datetime>       - make sure to quote strings with spaces
+   --duration <#>          - the datetime format is 'MM/DD/YYYY HH:MM'
+   --descr <description>   - the '--reminder' option can be specified as well
 
  Commands:
 
@@ -129,6 +158,8 @@ gcalcli [options] command [command args]
                            - end time default is 5 days from start
                            - example time strings:
                               '9/24/2007'
+                              '24/09/2007'
+                              '24/9/07'
                               'Sep 24 2007 3:30pm'
                               '2007-09-24T15:30'
                               '2007-09-24T15:30-8:00'
@@ -152,19 +183,34 @@ gcalcli [options] command [command args]
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
 
-  import [file]            import an ics/vcal file to a calendar
+  add                      add a detailed event to a calendar
+                           - if a --cal is not specified then the event is
+                             added to the default calendar
+                           - example:
+                              gcalcli --title 'Analysis of Algorithms Final'
+                                      --where UCI
+                                      --when '12/14/2012 10:00'
+                                      --duration 60
+                                      --descr 'It is going to be hard!'
+                                      --reminder 30
+                                      add
+
+  import [-v] [file]       import an ics/vcal file to a calendar
                            - if a --cal is not specified then the event is
                              added to the default calendar
                            - if a file is not specified then the data is read
                              from standard input
+                           - if -v is given then each event in the file is
+                             displayed and you're given the option to import
+                             or skip it, by default everything is imported
+                             quietly without any interaction
 
   remind <mins> <command>  execute command if event occurs within <mins>
                            minutes time ('%s' in <command> is replaced with
                            event start time and title text)
                            - <mins> default is 10
                            - default command:
-                              'gxmessage -display :0 -center \
-                                         -title "Ding, Ding, Ding!" %s'
+                              'notify-send -u critical -a gcalcli %s'
 ```
 
 #### Login Information
@@ -176,7 +222,11 @@ the following:
  * the config file
  * or interactively when prompted
 
-In any case make sure you protect the information.
+In any case make sure you protect the information. It is highly recommended
+you turn on
+[Google's 2-Step Verification](http://support.google.com/accounts/bin/topic.py?hl=en&topic=28786)
+and use different application specific passwords for each system you're using
+gcalcli on.
 
 #### HTTP Proxy Support
 
@@ -215,7 +265,12 @@ pw: <password>
 cals: <type>
 cal: <name>[#color], <name>[#color], ...
 24hr: <true|false>
-details: <true|false>
+detail-all: <true|false>
+detail-location: <true|false>
+detail-length: <true|false>
+detail-reminders: <true|false>
+detail-descr: <true|false>
+detail-descr-width: <width>
 ignore-started: <true|false>
 width: <width>
 mon: <true|false>
@@ -227,6 +282,8 @@ cal-read-color: <color>
 cal-freebusy-color: <color>
 date-color: <color>
 border-color: <color>
+locale: <locale>
+reminder: <mins>
 ```
 
 Note that you can specify a shell command and the output will be the value for
@@ -237,33 +294,82 @@ backtick (i.e. '`'). An example is pulling a password from gpg:
 pw: `gpg --decrypt ~/mypw.gpg`
 ```
 
-#### Event Popup Reminders Using Cron
+#### Importing VCS/VCAL/ICS Files from Exchange (or other)
 
-Run gcalcli using cron and generate xmessage-like popups for reminders.
-
-```
-% crontab -e
-```
-
-Then add the following line:
+Importing events from files is easy with gcalcli. The 'import' command accepts
+a filename on the command line or can read from standard input. Here is a script
+that can be used as an attachment handler for Thunderbird or in a mailcap entry
+with Mutt (or in Mutt you could just use the attachment viewer and pipe command):
 
 ```
-*/10 * * * * gcalcli remind
+#!/bin/bash
+
+TERMINAL=evilvte
+CONFIG=~/.gcalclirc
+
+$TERMINAL -e bash -c "echo 'Importing invite...' ; \
+                      gcalcli --config=$CONFIG import -v \"$1\" ; \
+                      read -p 'press enter to exit: '"
 ```
+
+Note that with Thunderbird you'll have to have the 'Show All Body Parts'
+extension installed for seeing the calendar attachments when not using
+'Lightning'. See this
+[bug report](https://bugzilla.mozilla.org/show_bug.cgi?id=505024)
+for more details.
+
+#### Event Popup Reminders
+
+The 'remind' command for gcalcli is used to execute any command as an event
+notification. This can be a notify-send or an xmessage-like popup or whatever
+else you can think of. gcalcli does not contain a daemon so you'll have to use
+some other tool to ensure gcalcli is run in a timely manner for notifications.
+Two options are using cron or a loop inside a shell script.
+
+Cron:
+```
+% crontab -l
+*/10 * * * * /usr/bin/gcalcli remind
+```
+
+Shell script like your .xinitrc so notifications only occur when you're logged
+in via X:
+```
+#!/bin/bash
+
+[[ -x /usr/bin/dunst ]] && /usr/bin/dunst -config ~/.dunstrc &
+
+if [ -x /usr/bin/gcalcli ]; then 
+  while true; do
+    /usr/bin/gcalcli --config=~/.gcalclirc --cal="davis" remind
+    sleep 300
+  done &
+fi
+
+exec herbstluftwm # :-)
+```
+
+By default gcalcli executes the notify-send command for notifications. Most
+common Linux desktop enviroments already contain a DBUS notification daemon
+that supports libnotify so it should automagically just work. If you're like
+me and use nothing that is common I highly recommend the
+[dunst](https://github.com/knopwob/dunst) dmenu'ish notification daemon.
 
 #### Agenda On Your Root Desktop
 
-Put your agenda on your desktop using Conky. Add the following to your
-.conkyrc:
+Put your agenda on your desktop using Conky. The '--conky' option causes
+gcalcli to output Conky color sequences. Note that you need to use the Conky
+'execpi' command for the gcalcli output to be parsed for color sequences. Add
+the following to your .conkyrc:
 
 ```
-${execi 300 gcalcli --nc agenda}
+${execpi 300 gcalcli --conky agenda}
 ```
 
 To also get a graphical calendar that shows the next three weeks add:
 
 ```
-${execi 300 gcalcli --nc --cals=owner calw 3}
+${execpi 300 gcalcli --conky --cals=owner calw 3}
 ```
 
 #### Agenda Integration With tmux

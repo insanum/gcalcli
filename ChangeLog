@@ -1,4 +1,26 @@
 
+v2.3
+  * Enhancements
+    - new 'add' command for adding new events either interactively or automatically
+        via the new --title --where --when --duration --descr options
+    - new --reminder option to specify a reminder time (in minutes) for the
+        'quick' and 'add' commands
+    - event details in 'agenda' output can now be selectively seen using
+        the new --detail-all --detail-location --detail-length
+        --detail-reminders --detail-descr --detail-descr-width options
+    - new --locale option added to override the default locale
+    - new --tsv option used for tab separated values 'agenda' output
+    - organizer and attendees are now imported from ics/vcal files
+    - doc updates including how to integrate with Thunderbird and Mutt
+        https://github.com/insanum/gcalcli#readme
+  * Fixes
+    - the --cal option now works properly when adding events
+    - now ONLY https is used when communicating with Google's servers
+    - lots of other fixes: https://github.com/insanum/gcalcli/issues
+
+v2.2
+  * never tagged and released (development for v2.3)
+
 v2.1
   * Enhancements
     - new import command for importing ics/vcal files to a calendar
@@ -25,9 +47,11 @@ v1.4
   - new --border-color switch
 
 v1.3
-  - new '--cal' switch used to specify a single calendar or multiple using a regex
+  - new '--cal' switch used to specify a single calendar or multiple using
+      a regex
   - config file support (~/.gcalclirc or override on command line)
-  - new 'calm' and 'calw' command that displays a nice graphical representation of your calendar
+  - new 'calm' and 'calw' command that displays a nice graphical
+      representation of your calendar
   - new '--ignore-started' switch
   - fixed time display (am/pm) for Mac OSX
   - the 'remind' command now works against all specified calendars
