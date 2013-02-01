@@ -31,6 +31,8 @@
 # support different types of reminders plus multiple ones (popup, sms, email)
 # add caching, should be easy (dump all calendar JSON data to file)
 # maybe add support for freebusy ?
+# complete the implementation of _EditEvent iteration hook
+# add a ctrl-c signal handler to huge backtraces aren't dumped to the console
 
 #############################################################################
 #                                                                           #
@@ -229,6 +231,19 @@ gcalcli [options] command [command args]
                                       --reminder 30
                                       add
 
+  delete <text>            delete event(s)
+                           - case insensitive search terms to find and delete
+                             events, just like the 'search' command
+                           - deleting is interactive
+                             use the --iama-expert option to auto delete
+                             THINK YOU'RE AN EXPERT? USE AT YOUR OWN RISK!!!
+                           - use the --detail options to show event details
+
+  edit <text>              edit event(s)
+                           - case insensitive search terms to find and edit
+                             events, just like the 'search' command
+                           - editing is interactive
+
   import [-v] [file]       import an ics/vcal file to a calendar
                            - a single --cal must specified
                            - if a file is not specified then the data is read
@@ -374,6 +389,7 @@ class gcalcli:
     tsv           = False
     customLocale  = None
 
+    detailCalendar   = False
     detailLocation   = False
     detailLength     = False
     detailReminders  = False
@@ -399,6 +415,7 @@ class gcalcli:
                  calNames=[],
                  calNameColors=[],
                  military=False,
+                 detailCalendar=False,
                  detailLocation=False,
                  detailLength=False,
                  detailReminders=False,
@@ -427,6 +444,7 @@ class gcalcli:
         self.tsv           = tsv
         self.customLocale  = customLocale
 
+        self.detailCalendar   = detailCalendar
         self.detailLocation   = detailLocation
         self.detailLength     = detailLength
         self.detailReminders  = detailReminders
@@ -816,9 +834,9 @@ class gcalcli:
             sys.stdout.write(str2)
 
 
-    def _PrintEvents(self, startDateTime, eventList, yearDate=False):
+    def _PrintEvent(self, event, prefix):
 
-        def formatDescr(descr, indent, box):
+        def _formatDescr(descr, indent, box):
             wrapper = textwrap.TextWrapper()
             if box:
                 wrapper.initial_indent = (indent + '  ')
@@ -843,13 +861,138 @@ class gcalcli:
                     new_descr += wrapper.fill(line) + "\n"
             return new_descr.rstrip()
 
+        indent = 10*' '
+        detailsIndent = 19*' '
+
+        if self.military:
+            timeFormat = '%-5s'
+            tmpTimeStr = event['s'].strftime("%H:%M")
+        else:
+            timeFormat = '%-7s'
+            tmpTimeStr = \
+                event['s'].strftime("%I:%M").lstrip('0').rjust(5) + \
+                event['s'].strftime('%p').lower()
+
+        if not prefix:
+            prefix = indent
+
+        PrintMsg(self.dateColor, prefix)
+        if event['s'].hour == 0 and event['s'].minute == 0 and \
+           event['e'].hour == 0 and event['e'].minute == 0:
+            fmt = '  ' + timeFormat + '  %s\n'
+            PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
+                     ('', self._ValidTitle(event).strip()))
+        else:
+            fmt = '  ' + timeFormat + '  %s\n'
+            if 'summary' not in event:
+                dprint(event)
+            PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
+                     (tmpTimeStr, self._ValidTitle(event).strip()))
+
+        if self.detailCalendar:
+            str = "%s  Calendar: %s\n" % (
+                detailsIndent,
+                event['gcalcli_cal']['summary']
+            )
+            PrintMsg(CLR_NRM(), str)
+
+        if self.detailUrl:
+            hLink = self._ShortenURL(event['htmlLink'])
+            str = "%s  Link: %s\n" % (detailsIndent, hLink)
+            PrintMsg(CLR_NRM(), str)
+
+        if self.detailLocation and \
+           'location' in event and \
+           event['location'].strip():
+            str = "%s  Location: %s\n" % (
+                detailsIndent,
+                event['location'].strip()
+            )
+            PrintMsg(CLR_NRM(), str)
+
+        if self.detailLength:
+            diffDateTime = (event['e'] - event['s'])
+            str = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
+            PrintMsg(CLR_NRM(), str)
+
+        if self.detailReminders and 'reminders' in event:
+            if event['reminders']['useDefault'] == True:
+                str = "%s  Reminder: (default)\n" % (detailsIndent)
+                PrintMsg(CLR_NRM(), str)
+            elif 'overrides' in event['reminders']:
+                for rem in event['reminders']['overrides']:
+                    str = "%s  Reminder: %s %d minutes\n" % \
+                          (detailsIndent, rem['method'], rem['minutes'])
+                    PrintMsg(CLR_NRM(), str)
+
+        if self.detailDescr and \
+           'description' in event and \
+           event['description'].strip():
+            descrIndent = detailsIndent + '  '
+            marker = descrIndent + '-' * \
+                     (self.detailDescrWidth - len(descrIndent))
+            box = True # leave old non-box code for option later
+            if box:
+                marker = marker[:len(descrIndent)] + \
+                         '+' + \
+                         marker[(len(descrIndent)+1) :
+                                (self.detailDescrWidth-1)] + \
+                         '+'
+            str = "%s  Description:\n%s\n%s\n%s\n" % (
+                detailsIndent,
+                marker,
+                _formatDescr(event['description'].strip(),
+                             descrIndent, box),
+                marker
+            )
+            PrintMsg(CLR_NRM(), str)
+
+
+    def _DeleteEvent(self, event):
+
+        if self.iamaExpert:
+            self.calService.events().\
+                 delete(calendarId = event['gcalcli_cal']['id'],
+                        eventId = event['id']).execute()
+            PrintMsg(CLR_RED(), "Deleted!\n")
+            return
+
+        PrintMsg(CLR_YLW(), "Delete? [N]o [y]es [q]uit: ")
+        val = raw_input()
+
+        if not val or val.lower() == 'n':
+            return
+        elif val.lower() == 'y':
+            self.calService.events().\
+                 delete(calendarId = event['gcalcli_cal']['id'],
+                        eventId = event['id']).execute()
+            PrintMsg(CLR_RED(), "Deleted!\n")
+        elif val.lower() == 'q':
+            sys.stdout.write('\n')
+            sys.exit(0)
+        else:
+            PrintErrMsg('Error: invalid input\n')
+            sys.stdout.write('\n')
+            sys.exit(1)
+
+
+    def _EditEvent(self, event):
+
+        # XXX
+        PrintMsg(CLR_RED(), "Edit '%s'\n" % event['summary'])
+        PrintMsg(CLR_RED(), "Not yet!")
+        sys.stdout.write('\n')
+
+
+    def _IterateEvents(self, startDateTime, eventList,
+                       yearDate=False, work=None):
+
         if len(eventList) == 0:
             PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
             return
 
-        dayFormat = '\n%F' if yearDate else '\n%a %b %d' # 10 chars for day
-        indent = '          ' # 10 spaces
-        detailsIndent = '                   '    # 19 spaces
+        # 10 chars for day and length must match 'indent' in _PrintEvent
+        dayFormat = '\n%F' if yearDate else '\n%a %b %d'
         day = ''
 
         for event in eventList:
@@ -858,80 +1001,14 @@ class gcalcli:
                 continue
 
             tmpDayStr = event['s'].strftime(dayFormat)
+            prefix    = None
+            if yearDate or tmpDayStr != day:
+                day = prefix = tmpDayStr
 
-            if self.military:
-                timeFormat = '%-5s'
-                tmpTimeStr = event['s'].strftime("%H:%M")
-            else:
-                timeFormat = '%-7s'
-                tmpTimeStr = \
-                    event['s'].strftime("%I:%M").lstrip('0').rjust(5) + \
-                    event['s'].strftime('%p').lower()
+            self._PrintEvent(event, prefix)
 
-            prefix = indent
-            if tmpDayStr != day: day = prefix = tmpDayStr
-            PrintMsg(self.dateColor, prefix)
-            if event['s'].hour == 0 and event['s'].minute == 0 and \
-               event['e'].hour == 0 and event['e'].minute == 0:
-                fmt = '  ' + timeFormat + '  %s\n'
-                PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
-                         ('', self._ValidTitle(event).strip()))
-            else:
-                fmt = '  ' + timeFormat + '  %s\n'
-                if 'summary' not in event:
-                    dprint(event)
-                PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
-                         (tmpTimeStr, self._ValidTitle(event).strip()))
-
-            if self.detailUrl:
-                hLink = self._ShortenURL(event['htmlLink'])
-                str = "%s  Link: %s\n" % (detailsIndent, hLink)
-                PrintMsg(CLR_NRM(), str)
-
-            if self.detailLocation and \
-               'location' in event and \
-               event['location'].strip():
-                str = "%s  Location: %s\n" % (
-                    detailsIndent,
-                    event['location'].strip()
-                )
-                PrintMsg(CLR_NRM(), str)
-
-            if self.detailLength:
-                diffDateTime = (event['e'] - event['s'])
-                str = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
-                PrintMsg(CLR_NRM(), str)
-
-            if self.detailReminders and 'reminders' in event:
-                if event['reminders']['useDefault'] == True:
-                    str = "%s  Reminder: (default)\n" % (detailsIndent)
-                    PrintMsg(CLR_NRM(), str)
-                elif 'overrides' in event['reminders']:
-                    for rem in event['reminders']['overrides']:
-                        str = "%s  Reminder: %s %d minutes\n" % \
-                              (detailsIndent, rem['method'], rem['minutes'])
-                        PrintMsg(CLR_NRM(), str)
-
-            if self.detailDescr and \
-               'description' in event and \
-               event['description'].strip():
-                descrIndent = detailsIndent + '  '
-                marker = descrIndent + '-' * \
-                         (self.detailDescrWidth - len(descrIndent))
-                box = True # leave old non-box code for option later
-                if box:
-                    marker = marker[:len(descrIndent)] + \
-                             '+' + \
-                             marker[(len(descrIndent)+1) :
-                                    (self.detailDescrWidth-1)] + \
-                             '+'
-                str = "%s  Description:\n%s\n%s\n%s\n" % (
-                    detailsIndent,
-                    marker,
-                    formatDescr(event['description'].strip(), descrIndent, box),
-                    marker
-                )
-                PrintMsg(CLR_NRM(), str)
+            if work:
+                work(event)
 
 
     def _GetAllEvents(self, cal, events, end):
@@ -1066,7 +1143,7 @@ class gcalcli:
 
         eventList = self._SearchForCalEvents(start, None, searchText)
 
-        self._PrintEvents(self.now, eventList, yearDate=True)
+        self._IterateEvents(self.now, eventList, yearDate=True)
 
 
     def AgendaQuery(self, startText='', endText=''):
@@ -1103,7 +1180,7 @@ class gcalcli:
         if self.tsv:
             self._tsv(start, eventList)
         else:
-            self._PrintEvents(start, eventList, yearDate=False)
+            self._IterateEvents(start, eventList, yearDate=False)
 
 
     def CalQuery(self, cmd, startText='', count=1):
@@ -1157,7 +1234,7 @@ class gcalcli:
         self._GraphEvents(cmd, start, count, eventList)
 
 
-    def QuickAdd(self, eventText, reminder=None):
+    def QuickAddEvent(self, eventText, reminder=None):
 
         if eventText == '':
             return
@@ -1186,7 +1263,7 @@ class gcalcli:
             PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
 
 
-    def ExtendedAdd(self, eTitle, eWhere, eStart, eEnd, eDescr, reminder):
+    def AddEvent(self, eTitle, eWhere, eStart, eEnd, eDescr, reminder):
 
         if len(self.cals) != 1:
             PrintErrMsg("Must specify a single calendar\n")
@@ -1214,6 +1291,31 @@ class gcalcli:
         if self.detailUrl:
             hLink = self._ShortenURL(newEvent['htmlLink'])
             PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
+
+
+    def DeleteEvents(self, searchText='', expert=False):
+
+        # the empty string would get *ALL* events...
+        if searchText == '':
+            return
+
+        eventList = self._SearchForCalEvents(None, None, searchText)
+
+        self.iamaExpert = expert
+        self._IterateEvents(self.now, eventList,
+                            yearDate=True, work=self._DeleteEvent)
+
+
+    def EditEvents(self, searchText=''):
+
+        # the empty string would get *ALL* events...
+        if searchText == '':
+            return
+
+        eventList = self._SearchForCalEvents(None, None, searchText)
+
+        self._IterateEvents(self.now, eventList,
+                            yearDate=True, work=self._EditEvent)
 
 
     def Remind(self, minutes=10, command=None):
@@ -1416,17 +1518,17 @@ class gcalcli:
                 continue
 
             #dprint(event)
-            PrintMsg(CLR_YLW(), "\n[i]mport [s]kip [q]uit: ")
+            PrintMsg(CLR_YLW(), "\n[S]kip [i]mport [q]uit: ")
             val = raw_input()
-            if val == 'i':
+            if not val or val.lower() == 's':
+                continue
+            if val.lower() == 'i':
                 newEvent = self.calService.events().\
                            insert(calendarId = self.cals[0]['id'],
                                   body = event).execute()
                 hLink = self._ShortenURL(newEvent['htmlLink'])
                 PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
-            elif val == 's':
-                continue
-            elif val == 'q':
+            elif val.lower() == 'q':
                 sys.exit(0)
             else:
                 PrintErrMsg('Error: invalid input\n')
@@ -1537,6 +1639,7 @@ def BowChickaWowWow(calService, urlService):
                                     "cal=",
                                     "24hr",
                                     "detail-all",
+                                    "detail-calendar",
                                     "detail-location",
                                     "detail-length",
                                     "detail-reminders",
@@ -1561,7 +1664,8 @@ def BowChickaWowWow(calService, urlService):
                                     "where=",
                                     "when=",
                                     "duration=",
-                                    "descr="])
+                                    "descr=",
+                                    "iama-expert"])
     except getopt.error:
         sys.exit(1)
 
@@ -1584,6 +1688,7 @@ def BowChickaWowWow(calService, urlService):
     reminder      = GetConfig(cfg, 'reminder', None)
 
     detailAll        = GetTrueFalse(GetConfig(cfg, 'detail-all', 'false'))
+    detailCalendar   = GetTrueFalse(GetConfig(cfg, 'detail-calendar', 'false'))
     detailLocation   = GetTrueFalse(GetConfig(cfg, 'detail-location', 'false'))
     detailLength     = GetTrueFalse(GetConfig(cfg, 'detail-length', 'false'))
     detailReminders  = GetTrueFalse(GetConfig(cfg, 'detail-reminders', 'false'))
@@ -1610,6 +1715,8 @@ def BowChickaWowWow(calService, urlService):
     eDuration = None
     eDescr    = None
 
+    iamaExpert = False # this option CANNOT be set in the config file
+
     # fix wokCalNames when not specified in config file
     if len(calNames) == 1 and calNames[0] == None:
         calNames      = []
@@ -1634,11 +1741,16 @@ def BowChickaWowWow(calService, urlService):
             military = True
 
         elif opt == "--detail-all":
+            detailCalendar  = True
             detailLocation  = True
             detailLength    = True
             detailReminders = True
             detailDescr     = True
-            detailUrl       = "long"
+            if detailUrl != "short":
+                detailUrl = "long"
+
+        elif opt == "--detail-calendar":
+            detailCalendar = True
 
         elif opt == "--detail-location":
             detailLocation = True
@@ -1715,6 +1827,9 @@ def BowChickaWowWow(calService, urlService):
         elif (opt == "--descr"):
             eDescr = arg
 
+        elif (opt == "--iama-expert"):
+            iamaExpert = True
+
     if detailUrl and detailUrl != 'short' and detailUrl != 'long':
         PrintErrMsg('Error: invalid detail url\n')
         sys.exit(1)
@@ -1740,6 +1855,7 @@ def BowChickaWowWow(calService, urlService):
                    calNames=calNames,
                    calNameColors=calNameColors,
                    military=military,
+                   detailCalendar=detailCalendar,
                    detailLocation=detailLocation,
                    detailLength=detailLength,
                    detailReminders=detailReminders,
@@ -1830,8 +1946,8 @@ def BowChickaWowWow(calService, urlService):
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.QuickAdd(unicode(args[1], locale.getpreferredencoding()),
-                      reminder=reminder)
+        gcal.QuickAddEvent(unicode(args[1], locale.getpreferredencoding()),
+                           reminder=reminder)
 
     elif (args[0] == 'add'):
         if eTitle == None:
@@ -1863,7 +1979,28 @@ def BowChickaWowWow(calService, urlService):
         ueEnd   = unicode(eEnd,   locale.getpreferredencoding())
         ueDescr = unicode(eDescr, locale.getpreferredencoding())
 
-        gcal.ExtendedAdd(ueTitle, ueWhere, ueStart, ueEnd, ueDescr, reminder)
+        gcal.AddEvent(ueTitle, ueWhere, ueStart, ueEnd, ueDescr, reminder)
+
+    elif args[0] == 'delete':
+        if len(args) != 2:
+            PrintErrMsg('Error: invalid search string\n')
+            sys.exit(1)
+
+        # allow unicode strings for input
+        gcal.DeleteEvents(unicode(args[1], locale.getpreferredencoding()),
+                          iamaExpert)
+
+        sys.stdout.write('\n')
+
+    elif args[0] == 'edit':
+        if len(args) != 2:
+            PrintErrMsg('Error: invalid search string\n')
+            sys.exit(1)
+
+        # allow unicode strings for input
+        gcal.EditEvents(unicode(args[1], locale.getpreferredencoding()))
+
+        sys.stdout.write('\n')
 
     elif args[0] == 'remind':
         if len(args) == 3: # minutes and command
