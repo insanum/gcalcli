@@ -32,7 +32,6 @@
 # add caching, should be easy (dump all calendar JSON data to file)
 # maybe add support for freebusy ?
 # complete the implementation of _EditEvent iteration hook
-# add a ctrl-c signal handler so huge backtraces aren't dumped to the console
 
 #############################################################################
 #                                                                           #
@@ -69,7 +68,7 @@ __gcalcli_api_key__ = 'AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc'
 
 try:
     import sys, os, re, urllib, getopt, shlex, subprocess, time
-    import codecs, locale, csv, threading, textwrap
+    import codecs, locale, csv, threading, textwrap, signal
     from Queue import Queue
     from ConfigParser import RawConfigParser
     from datetime import datetime, timedelta, date
@@ -2046,6 +2045,12 @@ def BowChickaWowWow(calService, urlService):
         PrintErrMsg('Error: unknown command (--help)\n')
         sys.exit(1)
 
+
+def SIGINT_handler(signum, frame):
+    PrintErrMsg('Signal caught, bye!\n');
+    sys.exit(1)
+
+signal.signal(signal.SIGINT, SIGINT_handler)
 
 #-------------------------------------------------------------------------------
 http = httplib2.Http()
