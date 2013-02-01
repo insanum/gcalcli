@@ -184,6 +184,19 @@ gcalcli [options] command [command args]
                                       --reminder 30
                                       add
 
+  delete <text>            delete event(s)
+                           - case insensitive search terms to find and delete
+                             events, just like the 'search' command
+                           - deleting is interactive
+                             use the --iama-expert option to auto delete
+                             THINK YOU'RE AN EXPERT? USE AT YOUR OWN RISK!!!
+                           - use the --detail options to show event details
+
+  edit <text>              edit event(s)
+                           - case insensitive search terms to find and edit
+                             events, just like the 'search' command
+                           - editing is interactive
+
   import [-v] [file]       import an ics/vcal file to a calendar
                            - a single --cal must specified
                            - if a file is not specified then the data is read
