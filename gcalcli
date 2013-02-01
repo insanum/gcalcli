@@ -25,6 +25,13 @@
 # Dude... just buy me a beer. :-)
 #
 
+# XXX Todo/Cleanup XXX
+# threading is currently broken when getting event list
+# if threading works then move pageToken processing from GetAllEvents to thread
+# support different types of reminders plus multiple ones (popup, sms, email)
+# add caching, should be easy (dump all calendar JSON data to file)
+# maybe add support for freebusy ?
+
 #############################################################################
 #                                                                           #
 #                                      (           (     (                  #
@@ -37,48 +44,49 @@
 #                 \___|  \___|/_/ \_\ |____| \___||____||___|               #
 #                                                                           #
 # Author: Eric Davis <http://www.insanum.com>                               #
-# Home: http://code.google.com/p/gcalcli                                    #
-#                                                                           #
-# Author: Eric Davis <http://www.insanum.com>                               #
+# Home: https://github.com/insanum/gcalcli                                  #
 #                                                                           #
 # Requirements:                                                             #
 #  - Python 2                                                               #
 #        http://www.python.org                                              #
-#  - Google's GData Python module (for Python 2)                            #
-#        http://code.google.com/p/gdata-python-client                       #
+#  - Google APIs Client Library for Python 2                                #
+#        https://developers.google.com/api-client-library/python            #
 #  - dateutil Python module                                                 #
 #        http://www.labix.org/python-dateutil                               #
 #  - vobject Python module (optional, needed for importing ics/vcal files)  #
 #        http://vobject.skyhouseconsulting.com                              #
-#  - simpleson Python module (optional, needed for url shortening)          #
+#  - simplejson Python module                                               #
 #        https://github.com/simplejson/simplejson                           #
 #                                                                           #
 #############################################################################
 
 __program__         = 'gcalcli'
-__version__         = 'v2.3'
+__version__         = 'v3.1'
 __author__          = 'Eric Davis'
 __gcalcli_api_key__ = 'AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc'
 
-import inspect
-
 try:
     import sys, os, re, urllib, getopt, shlex, subprocess, time
-    import codecs, locale, csv, threading, getpass, textwrap
+    import codecs, locale, csv, threading, textwrap
     from Queue import Queue
     from ConfigParser import RawConfigParser
-    from gdata.calendar.service import *
     from datetime import datetime, timedelta, date
     from dateutil.tz import *
     from dateutil.parser import *
     from dateutil.rrule import *
     from unicodedata import east_asian_width
+    import httplib2
+    from apiclient.discovery import build
+    from oauth2client.file import Storage
+    from oauth2client.client import OAuth2WebServerFlow
+    from oauth2client.tools import run
 except ImportError, e:
     print "ERROR: Missing module - %s" % e.args[0]
     sys.exit(1)
 
-#XXX
-from pprint import pprint
+#
+# Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ
+#
 
 def Version():
     sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
@@ -99,21 +107,11 @@ gcalcli [options] command [command args]
 
   --config <file>          config file to read (default is '~/.gcalclirc')
 
-  --user <username>        google username
-
-  --cals [all,             'calendars' to work with (default is all calendars)
-          default,         - default (your default main calendar)
-          owner,           - owner (your owned calendars)
-          editor,          - editor (editable calendar)
-          contributor,     - contributor (non-owner but able to edit)
-          read,            - read (read only calendars)
-          freebusy]        - freebusy (only free/busy info visible)
-
   --cal <name>[#color]     'calendar' to work with (default is all calendars)
                            - you can specify a calendar by name or by substring
                              which can match multiple calendars
                            - you can use multiple '--cal' arguments on the
-                             command line
+                             command line for the query commands
                            - in the config file specify multiple calendars in
                              quotes separated by commas as:
                                cal: "foo", "bar", "my cal"
@@ -129,8 +127,8 @@ gcalcli [options] command [command args]
   --detail-location        - the description width defaults to 80 characters
   --detail-length          - if 'short' is specified for the url then the event
   --detail-reminders         link is shortened using http://goo.gl (slow!)
-  --detail-descr
-  --detail-descr-width
+  --detail-descr           - the --detail-url can be used for both the 'quick'
+  --detail-descr-width       and 'add' commands as well
   --detail-url [short,
                 long]
 
@@ -155,12 +153,12 @@ gcalcli [options] command [command args]
                            the 'execpi' command in your conkyrc)
 
   --cal-owner-color        specify the colors used for the calendars and dates
-  --cal-editor-color       each of these argument requires a <color> argument
-  --cal-contributor-color  which must be one of [ default, black, brightblack,
-  --cal-read-color         red, brightred, green, brightgreen, yellow,
-  --cal-freebusy-color     brightyellow, blue, brightblue, magenta,
-  --date-color             brightmagenta, cyan, brightcyan, white,
-  --border-color           brightwhite ]
+  --cal-writer-color       each of these argument requires a <color> argument
+  --cal-reader-color       which must be one of [ default, black, brightblack,
+  --cal-freebusy-color     red, brightred, green, brightgreen, yellow,
+  --date-color             brightyellow, blue, brightblue, magenta,
+  --border-color           brightmagenta, cyan, brightcyan, white,
+                           brightwhite ]
 
   --tsv                    tab-separated output for 'agenda'. Format is:
                            date, start, end, link, title, location, description
@@ -169,24 +167,24 @@ gcalcli [options] command [command args]
                            supported locales of your system first.
 
   --reminder <mins>        number of minutes to use when setting reminders for
-                           the 'quick' and 'add' commands; if not specified,
-                           Google code's default behavior occurs: no reminder is
-                           set (documented, incorrectly, otherwise: as using the
-                           default for the calendar, but this does not actually
-                           happen)
+                           the 'quick' and 'add' commands; if not specified
+                           the calendar's default reminder settings are used
 
    --title <title>         event details used by the 'add' command
    --where <location>      - the duration is specified in minutes
    --when <datetime>       - make sure to quote strings with spaces
-   --duration <#>          - the datetime format is 'MM/DD/YYYY HH:MM'
-   --descr <description>   - the '--reminder' option can be specified as well
+   --duration <#>          - datetime examples see 'agenda' below
+   --descr <description>
 
  Commands:
 
   list                     list all calendars
 
   search <text>            search for events
-                           - only matches whole words
+                           - case insensitive search terms to find events that
+                             match these terms in any field, like traditional
+                             Google search with quotes, exclusion, etc.
+                           - for example to get just games: "soccer -practice"
 
   agenda [start] [end]     get an agenda for a time period
                            - start time default is 12am today
@@ -212,17 +210,18 @@ gcalcli [options] command [command args]
                              and only one month will be displayed
 
   quick <text>             quick add an event to a calendar
-                           - if a --cal is not specified then the event is
-                             added to the default calendar
-                           - example:
+                           - a single --cal must specified
+                           - the --detail-url option will show the event link
+                           - example text:
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
 
   add                      add a detailed event to a calendar
-                           - if a --cal is not specified then the event is
-                             added to the default calendar
+                           - a single --cal must specified
+                           - the --detail-url option will show the event link
                            - example:
-                              gcalcli --title 'Analysis of Algorithms Final'
+                              gcalcli --cal 'Eric Davis'
+                                      --title 'Analysis of Algorithms Final'
                                       --where UCI
                                       --when '12/14/2012 10:00'
                                       --duration 60
@@ -231,8 +230,7 @@ gcalcli [options] command [command args]
                                       add
 
   import [-v] [file]       import an ics/vcal file to a calendar
-                           - if a --cal is not specified then the event is
-                             added to the default calendar
+                           - a single --cal must specified
                            - if a file is not specified then the data is read
                              from standard input
                            - if -v is given then each event in the file is
@@ -245,8 +243,8 @@ gcalcli [options] command [command args]
                            event start time and title text)
                            - <mins> default is 10
                            - default command:
-                              'notify-send -a gcalcli -u critical %s'
                               'notify-send -u critical -a gcalcli %s'
+
 ''')
     sys.exit(1)
 
@@ -326,6 +324,14 @@ def DebugPrint(msg):
     sys.stdout.write(str(CLR_NRM()))
 
 
+def dprint(obj):
+    try:
+        from pprint import pprint
+        pprint(obj)
+    except ImportError, e:
+        print obj
+
+
 def GetTimeFromStr(eWhen, eDuration):
     defaultDateTime = datetime.now().replace(hour=0,
                                              minute=0,
@@ -350,20 +356,6 @@ def GetTimeFromStr(eWhen, eDuration):
     return sTimeStart, sTimeStop
 
 
-def ShortenURL(url):
-    try:
-        from urllib2 import urlopen, Request
-        import simplejson as json
-    except:
-        return url
-    gshort  = 'https://www.googleapis.com/urlshortener/v1/url'
-    data    = {"longUrl":url, "key":__gcalcli_api_key__}
-    headers = {'Content-Type':'application/json', 'User-Agent':'gcalcli'}
-    r = urlopen(Request(gshort, json.dumps(data), headers))
-    j = json.loads(r.read())
-    return j['id'] if 'id' in j else url
-
-
 class gcalcli:
 
     gcal          = None
@@ -372,9 +364,8 @@ class gcalcli:
     now           = datetime.now(tzlocal())
     feedPrefix    = 'https://www.google.com/calendar/feeds/'
     agendaLength  = 5
-    username      = None
-    token         = None
-    access        = ''
+    calService    = None
+    urlService    = None
     military      = False
     ignoreStarted = False
     calWidth      = 10
@@ -390,31 +381,21 @@ class gcalcli:
     detailDescrWidth = 80
     detailUrl        = None
 
-    calOwnerColor       = CLR_CYN()
-    calEditorColor      = CLR_NRM()
-    calContributorColor = CLR_NRM()
-    calReadColor        = CLR_MAG()
-    calFreeBusyColor    = CLR_NRM()
-    dateColor           = CLR_YLW()
-    borderColor         = CLR_WHT()
+    calOwnerColor    = CLR_CYN()
+    calWriterColor   = CLR_NRM()
+    calReaderColor   = CLR_MAG()
+    calFreeBusyColor = CLR_NRM()
+    dateColor        = CLR_YLW()
+    borderColor      = CLR_WHT()
 
-    ACCESS_ALL         = 'all'      # non-google access level
-    ACCESS_DEFAULT     = 'default'  # non-google access level
-    ACCESS_CONTRIBUTOR = 'contributor'
-    ACCESS_EDITOR      = 'editor'
-    ACCESS_FREEBUSY    = 'freebusy'
-    ACCESS_NONE        = 'none'
-    ACCESS_OVERRIDE    = 'override'
-    ACCESS_OWNER       = 'owner'
-    ACCESS_READ        = 'read'
-    ACCESS_RESPOND     = 'respond'
-    ACCESS_ROOT        = 'root'
-
+    ACCESS_OWNER    = 'owner'
+    ACCESS_WRITER   = 'writer'
+    ACCESS_READER   = 'reader'
+    ACCESS_FREEBUSY = 'freeBusyReader'
 
     def __init__(self,
-                 username=None,
-                 token=None,
-                 access='all',
+                 calService=None,
+                 urlService=None,
                  calNames=[],
                  calNameColors=[],
                  military=False,
@@ -428,26 +409,17 @@ class gcalcli:
                  calWidth=10,
                  calMonday=False,
                  calOwnerColor=CLR_CYN(),
-                 calEditorColor=CLR_GRN(),
-                 calContributorColor=CLR_NRM(),
-                 calReadColor=CLR_MAG(),
+                 calWriterColor=CLR_GRN(),
+                 calReaderColor=CLR_MAG(),
                  calFreeBusyColor=CLR_NRM(),
                  dateColor=CLR_GRN(),
                  borderColor=CLR_WHT(),
                  tsv=False,
                  customLocale=None):
 
-       #self.gcal          = CalendarService()
+        self.calService    = calService
+        self.urlService    = urlService
 
-        self.gcal          = CalendarClient(token.user_agent)
-        token.authorize(self.gcal)
-
-        self.gcal.ssl      = True
-
-        self.username      = username
-        self.token         = token
-
-        self.access        = access
         self.military      = military
         self.ignoreStarted = ignoreStarted
         self.calWidth      = calWidth
@@ -462,13 +434,12 @@ class gcalcli:
         self.detailDescrWidth = detailDescrWidth
         self.detailUrl        = detailUrl
 
-        self.calOwnerColor       = calOwnerColor
-        self.calEditorColor      = calEditorColor
-        self.calContributorColor = calContributorColor
-        self.calReadColor        = calReadColor
-        self.calFreeBusyColor    = calFreeBusyColor
-        self.dateColor           = dateColor
-        self.borderColor         = borderColor
+        self.calOwnerColor    = calOwnerColor
+        self.calWriterColor   = calWriterColor
+        self.calReaderColor   = calReaderColor
+        self.calFreeBusyColor = calFreeBusyColor
+        self.dateColor        = dateColor
+        self.borderColor      = borderColor
 
         # set customLocale if correct
         try:
@@ -478,97 +449,64 @@ class gcalcli:
                         "Check supported locales of your system.\n")
             sys.exit(1)
 
-        # authenticate and login to google calendar
-        #try:
-        #    self.gcal.ClientLogin(
-        #                    username=self.username,
-        #                    password=self.password,
-        #                    service='cl',
-        #                    source=__program__+'-'+__version__)
-        #except Exception, e:
-        #    PrintErrMsg("Error: " + str(e) + "!\n")
-        #    sys.exit(1)
+        self.allCals = []
+        calList = calService.calendarList().list().execute()
+        while True:
+            for cal in calList['items']:
+                self.allCals.append(cal)
+            pageToken = calList.get('nextPageToken')
+            if pageToken:
+                calList = calService.calendarList().\
+                          list(pageToken = pageToken).execute()
+            else:
+                break
 
-        # get the list of calendars
-        self.allCals = self.gcal.GetAllCalendarsFeed()
+        # gcalcli defined way to order calendars
+        order = { self.ACCESS_OWNER    : 1,
+                  self.ACCESS_WRITER   : 2,
+                  self.ACCESS_READER   : 3,
+                  self.ACCESS_FREEBUSY : 4 }
 
-        # gcalcli defined way to order calendars XXX
-        order = { self.ACCESS_OWNER       : 1,
-                  self.ACCESS_EDITOR      : 2,
-                  self.ACCESS_ROOT        : 3,
-                  self.ACCESS_CONTRIBUTOR : 4,
-                  self.ACCESS_OVERRIDE    : 5,
-                  self.ACCESS_RESPOND     : 6,
-                  self.ACCESS_FREEBUSY    : 7,
-                  self.ACCESS_READ        : 8,
-                  self.ACCESS_NONE        : 9 }
+        self.allCals.sort(lambda x, y:
+                           cmp(order[x['accessRole']],
+                               order[y['accessRole']]))
 
-        self.allCals.entry.sort(lambda x, y:
-                                cmp(order[x.accesslevel.value],
-                                    order[y.accesslevel.value]))
-
-        for cal in self.allCals.entry:
-
-            cal.gcalcli_altLink = cal.GetAlternateLink().href
-
-            match = re.match('^' + self.feedPrefix + '(.*?)/(.*?)/(.*)$',
-                             cal.gcalcli_altLink)
-            cal.gcalcli_username   = urllib.unquote(match.group(1))
-            cal.gcalcli_visibility = urllib.unquote(match.group(2))
-            cal.gcalcli_projection = urllib.unquote(match.group(3))
-
+        for cal in self.allCals:
             if len(calNames):
                 for i in xrange(len(calNames)):
-                    if re.search(calNames[i].lower(),
-                                 cal.title.text.lower()):
+                    if re.search(calNames[i].lower(), cal['summary'].lower()):
                         self.cals.append(cal)
-                        cal.colorSpec = calNameColors[i]
+                        cal['colorSpec'] = calNameColors[i]
             else:
                 self.cals.append(cal)
-                cal.colorSpec = None
+                cal['colorSpec'] = None
 
 
-    def _CalendarWithinAccess(self, cal):
-
-        if self.access == self.ACCESS_ALL:
-            return True
-        elif self.access == self.ACCESS_DEFAULT and \
-             cal.gcalcli_username == self.username:
-            return True
-        elif self.access != cal.accesslevel.value:
-            return False
-        else:
-            return True
+    def _ShortenURL(self, url):
+        if self.detailUrl != "short":
+            return url
+        # Note that when authenticated to a google account different shortUrls
+        # can be returned for the same longUrl. See: http://goo.gl/Ya0A9
+        shortUrl = urlService.url().insert(body={'longUrl':url}).execute()
+        return shortUrl['id']
 
 
     def _CalendarColor(self, cal):
 
         if cal == None:
             return CLR_NRM()
-        elif hasattr(cal, 'colorSpec') and cal.colorSpec != None:
-            return cal.colorSpec
-        elif cal.accesslevel.value == self.ACCESS_OWNER:
+        elif 'colorSpec' in cal and cal['colorSpec'] != None:
+            return cal['colorSpec']
+        elif cal['accessRole'] == self.ACCESS_OWNER:
             return self.calOwnerColor
-        elif cal.accesslevel.value == self.ACCESS_EDITOR:
-            return self.calEditorColor
-        elif cal.accesslevel.value == self.ACCESS_CONTRIBUTOR:
-            return self.calContributorColor
-        elif cal.accesslevel.value == self.ACCESS_FREEBUSY:
+        elif cal['accessRole'] == self.ACCESS_WRITER:
+            return self.calWriterColor
+        elif cal['accessRole'] == self.ACCESS_READER:
+            return self.calReaderColor
+        elif cal['accessRole'] == self.ACCESS_FREEBUSY:
             return self.calFreeBusyColor
-        elif cal.accesslevel.value == self.ACCESS_READ:
-            return self.calReadColor
         else:
             return CLR_NRM()
-
-
-    def _TargetCalendar(self):
-
-        if len(self.cals) == 1:
-            match = re.match('^https://www.google.com(.*)$',
-                             self.cals[0].gcalcli_altLink)
-            return match.group(1)
-        else:
-            return '/calendar/feeds/default/private/full'
 
 
     def _ValidTitle(self, title):
@@ -585,34 +523,34 @@ class gcalcli:
 
         for event in eventList:
 
-            if cmd == 'calm' and curMonth != event.s.strftime("%b"):
+            if cmd == 'calm' and curMonth != event['s'].strftime("%b"):
                 continue
 
-            dayNum = int(event.s.strftime("%w"))
+            dayNum = int(event['s'].strftime("%w"))
             if self.calMonday:
                 dayNum -= 1
                 if dayNum < 0:
                     dayNum = 6
 
-            if event.s >= startDateTime and event.s < endDateTime:
+            if event['s'] >= startDateTime and event['s'] < endDateTime:
 
-                if event.s.hour == 0 and event.s.minute == 0 and \
-                   event.e.hour == 0 and event.e.minute == 0:
+                if event['s'].hour == 0 and event['s'].minute == 0 and \
+                   event['e'].hour == 0 and event['e'].minute == 0:
                     tmpTimeStr = ''
                 elif self.military:
-                    tmpTimeStr = event.s.strftime("%H:%M")
+                    tmpTimeStr = event['s'].strftime("%H:%M")
                 else:
                     tmpTimeStr = \
-                        event.s.strftime("%I:%M").lstrip('0') + \
-                        event.s.strftime('%p').lower()
+                        event['s'].strftime("%I:%M").lstrip('0') + \
+                        event['s'].strftime('%p').lower()
 
                 # newline and empty string are the keys to turn off coloring
                 weekEventStrings[dayNum] += \
                     "\n" + \
-                    str(self._CalendarColor(event.gcalcli_cal)) + \
+                    str(self._CalendarColor(event['gcalcli_cal'])) + \
                     tmpTimeStr.strip() + \
                     " " + \
-                    self._ValidTitle(event.title.text).strip()
+                    self._ValidTitle(event['summary']).strip()
 
         return weekEventStrings
 
@@ -695,7 +633,7 @@ class gcalcli:
     def _GraphEvents(self, cmd, startDateTime, count, eventList):
 
         # ignore started events (i.e. that start previous day and end start day)
-        while (len(eventList) and eventList[0].s < startDateTime):
+        while (len(eventList) and eventList[0]['s'] < startDateTime):
             eventList = eventList[1:]
 
         dayDivider = ''
@@ -790,9 +728,10 @@ class gcalcli:
                                                          eventList)
 
             # convert the strings to unicode for various string ops
-            for j in xrange(7):
-                weekEventStrings[j] = unicode(weekEventStrings[j],
-                                              locale.getpreferredencoding())
+            # XXX event strings are already in unicode for Calendar v3 APIs
+            #for j in xrange(7):
+            #    weekEventStrings[j] = unicode(weekEventStrings[j],
+            #                                  locale.getpreferredencoding())
 
             # get date range objects for the next week
             startWeekDateTime = endWeekDateTime
@@ -851,39 +790,31 @@ class gcalcli:
 
             PrintMsg(CLR_NRM(), weekDivider + "\n")
 
-    def _tsv(self, startDateTime, eventList):
-        # tab-separated output for easier shellscripting.
-        # Format:
-        # "Date" "start" "end" "Event-Title" "Location" "Eventdescription"
-        dayFormat = '%F'
 
+    def _tsv(self, startDateTime, eventList):
         for event in eventList:
-            tmpLink = event.GetHtmlLink().href
-            if self.detailUrl == "short":
-                tmpLink = ShortenURL(tmpLink)
-            tmpDayStr = event.s.strftime(dayFormat)
-            tmpTimeStr = event.s.strftime("%H:%M")
-            tmpTimeStp = event.e.strftime("%H:%M")
-            if event.where and len(event.where) > 0 and \
-               event.where[0].value_string:
-                tmpWhere = event.where[0].value_string
-            else:
-                tmpWhere = ''
-            if event.content and event.content.text:
-                tmpContent = event.content.text
-            else:
-                tmpContent = ''
+            tmpLink    = self._ShortenURL(event['htmlLink'])
+            tmpDayStr  = event['s'].strftime('%F')
+            tmpTimeStr = event['s'].strftime("%H:%M")
+            tmpTimeStp = event['e'].strftime("%H:%M")
+            tmpWhere = ''
+            if 'location' in event and event['location'].strip():
+                tmpWhere = event['location'].strip()
+            tmpContent = ''
+            if 'description' in event and event['description'].strip():
+                tmpContent = event['description'].strip()
             str = "%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
                 tmpDayStr,
                 tmpTimeStr,
                 tmpTimeStp,
                 tmpLink,
-                self._ValidTitle(event.title.text).strip(),
+                self._ValidTitle(event['summary']).strip(),
                 tmpWhere,
                 tmpContent
             )
             str2 = "%s\n" % str.replace('\n', '''\\n''')
             sys.stdout.write(str2)
+
 
     def _PrintEvents(self, startDateTime, eventList, yearDate=False):
 
@@ -923,135 +854,141 @@ class gcalcli:
 
         for event in eventList:
 
-            if self.ignoreStarted and (event.s < startDateTime):
+            if self.ignoreStarted and (event['s'] < startDateTime):
                 continue
 
-            tmpDayStr = event.s.strftime(dayFormat)
+            tmpDayStr = event['s'].strftime(dayFormat)
 
             if self.military:
                 timeFormat = '%-5s'
-                tmpTimeStr = event.s.strftime("%H:%M")
+                tmpTimeStr = event['s'].strftime("%H:%M")
             else:
                 timeFormat = '%-7s'
                 tmpTimeStr = \
-                    event.s.strftime("%I:%M").lstrip('0').rjust(5) + \
-                    event.s.strftime('%p').lower()
+                    event['s'].strftime("%I:%M").lstrip('0').rjust(5) + \
+                    event['s'].strftime('%p').lower()
 
             prefix = indent
             if tmpDayStr != day: day = prefix = tmpDayStr
             PrintMsg(self.dateColor, prefix)
-            if event.s.hour == 0 and event.s.minute == 0 and \
-               event.e.hour == 0 and event.e.minute == 0:
+            if event['s'].hour == 0 and event['s'].minute == 0 and \
+               event['e'].hour == 0 and event['e'].minute == 0:
                 fmt = '  ' + timeFormat + '  %s\n'
-                PrintMsg(self._CalendarColor(event.gcalcli_cal), fmt %
-                         ('', self._ValidTitle(event.title.text).strip()))
+                PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
+                         ('', self._ValidTitle(event['summary']).strip()))
             else:
                 fmt = '  ' + timeFormat + '  %s\n'
-                PrintMsg(self._CalendarColor(event.gcalcli_cal), fmt %
-                         (tmpTimeStr, self._ValidTitle(event.title.text).strip()))
+                PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
+                         (tmpTimeStr, self._ValidTitle(event['summary']).strip()))
 
             if self.detailUrl:
-                hLink = event.GetHtmlLink().href
-                if self.detailUrl == "short":
-                    hLink = ShortenURL(hLink)
+                hLink = self._ShortenURL(event['htmlLink'])
                 str = "%s  Link: %s\n" % (detailsIndent, hLink)
                 PrintMsg(CLR_NRM(), str)
 
-            if self.detailLocation:
-                if event.where and len(event.where) > 0 and \
-                   event.where[0].value_string:
-                    str = "%s  Location: %s\n" % (
-                        detailsIndent,
-                        event.where[0].value_string
-                    )
-                    PrintMsg(CLR_NRM(), str)
+            if self.detailLocation and \
+               'location' in event and \
+               event['location'].strip():
+                str = "%s  Location: %s\n" % (
+                    detailsIndent,
+                    event['location'].strip()
+                )
+                PrintMsg(CLR_NRM(), str)
 
             if self.detailLength:
-                diffDateTime = (event.e - event.s)
+                diffDateTime = (event['e'] - event['s'])
                 str = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
                 PrintMsg(CLR_NRM(), str)
 
-            if self.detailReminders:
-                reminders = []
-                if event.when and len(event.when) > 0 and \
-                   hasattr(event.when[0], 'reminder'):
-                    reminders = event.when[0].reminder
-                for rem in reminders:
-                    remStr = ''
-                    if rem.days:
-                        remStr += "%s Days" % (rem.days)
-                    if rem.hours:
-                        if remStr != '': remStr += ' '
-                        remStr += "%s Hours" % (rem.hours)
-                    if rem.minutes:
-                        if remStr != '': remStr += ' '
-                        remStr += "%s Minutes" % (rem.minutes)
-                    str = "%s  Reminder: %s\n" % (detailsIndent, remStr)
+            if self.detailReminders and 'reminders' in event:
+                if event['reminders']['useDefault'] == True:
+                    str = "%s  Reminder: (default)\n" % (detailsIndent)
                     PrintMsg(CLR_NRM(), str)
+                elif 'overrides' in event['reminders']:
+                    for rem in event['reminders']['overrides']:
+                        str = "%s  Reminder: %s %d minutes\n" % \
+                              (detailsIndent, rem['method'], rem['minutes'])
+                        PrintMsg(CLR_NRM(), str)
 
-            if self.detailDescr:
-                if event.content and event.content.text and event.content.text.strip():
-                    descrIndent = detailsIndent + '  '
-                    marker = descrIndent + '-' * \
-                             (self.detailDescrWidth - len(descrIndent))
-                    box = True # leave old non-box code for option later
-                    if box:
-                        marker = marker[:len(descrIndent)] + \
-                                 '+' + \
-                                 marker[(len(descrIndent)+1) :
-                                        (self.detailDescrWidth-1)] + \
-                                 '+'
-                    str = "%s  Description:\n%s\n%s\n%s\n" % (
-                        detailsIndent,
-                        marker,
-                        formatDescr(event.content.text, descrIndent, box),
-                        marker
-                    )
-                    PrintMsg(CLR_NRM(), str)
+            if self.detailDescr and \
+               'description' in event and \
+               event['description'].strip():
+                descrIndent = detailsIndent + '  '
+                marker = descrIndent + '-' * \
+                         (self.detailDescrWidth - len(descrIndent))
+                box = True # leave old non-box code for option later
+                if box:
+                    marker = marker[:len(descrIndent)] + \
+                             '+' + \
+                             marker[(len(descrIndent)+1) :
+                                    (self.detailDescrWidth-1)] + \
+                             '+'
+                str = "%s  Description:\n%s\n%s\n%s\n" % (
+                    detailsIndent,
+                    marker,
+                    formatDescr(event['description'].strip(), descrIndent, box),
+                    marker
+                )
+                PrintMsg(CLR_NRM(), str)
 
 
-    def _GetAllEvents(self, cal, feed, end):
+    def _GetAllEvents(self, cal, events, end):
 
         eventList = []
 
         while 1:
-            next = feed.GetNextLink()
+            if 'items' not in events:
+                break
 
-            for event in feed.entry:
+            for event in events['items']:
 
-                event.gcalcli_cal = cal
+                event['gcalcli_cal'] = cal
 
-                event.s = parse(event.when[0].start)
-                if event.s.tzinfo == None:
-                    event.s = event.s.replace(tzinfo=tzlocal())
+                if 'status' in event and event['status'] == 'cancelled':
+                    continue
+
+                if 'dateTime' in event['start']:
+                    event['s'] = parse(event['start']['dateTime'])
                 else:
-                    event.s = event.s.astimezone(tzlocal())
+                    event['s'] = parse(event['start']['date']) # all date events
 
-                event.e = parse(event.when[0].end)
-                if event.e.tzinfo == None:
-                    event.e = event.e.replace(tzinfo=tzlocal())
+                if event['s'].tzinfo == None:
+                    event['s'] = event['s'].replace(tzinfo=tzlocal())
                 else:
-                    event.e = event.e.astimezone(tzlocal())
+                    event['s'] = event['s'].astimezone(tzlocal())
+
+                if 'dateTime' in event['end']:
+                    event['e'] = parse(event['end']['dateTime'])
+                else:
+                    event['e'] = parse(event['end']['date']) # all date events
+
+                if event['e'].tzinfo == None:
+                    event['e'] = event['e'].replace(tzinfo=tzlocal())
+                else:
+                    event['e'] = event['e'].astimezone(tzlocal())
 
                 # For all-day events, Google seems to assume that the event time
                 # is based in the UTC instead of the local timezone.  Here we
                 # filter out those events start beyond a specified end time.
-                if end and (event.s >= end):
+                if end and (event['s'] >= end):
                     continue
 
                 # http://en.wikipedia.org/wiki/Year_2038_problem
                 # Catch the year 2038 problem here as the python dateutil module
                 # can choke throwing a ValueError exception. If either the start
                 # or end time for an event has a year '>= 2038' dump it.
-                if event.s.year >= 2038 or event.e.year >= 2039:
+                if event['s'].year >= 2038 or event['e'].year >= 2038:
                     continue
 
                 eventList.append(event)
 
-            if not next:
+            pageToken = events.get('nextPageToken')
+            if pageToken:
+                events = self.calService.events().\
+                         list(calendarId = cal['id'],
+                              pageToken = pageToken).execute()
+            else:
                 break
-
-            feed = self.gcal.GetCalendarEventFeed(next.href)
 
         return eventList
 
@@ -1063,57 +1000,33 @@ class gcalcli:
         queue = Queue()
         threads = []
 
-        def worker(cal, query):
-            feed = self.gcal.GetCalendarEventFeed(q=query)
-            queue.put((cal, feed))
+        def worker(cal, work):
+            events = work.execute()
+            queue.put((cal, events))
 
         for cal in self.cals:
 
-            print "***** " + cal.title.text + " " + cal.gcalcli_altLink
-            print cal.gcalcli_username + " " + cal.gcalcli_visibility + " " + cal.gcalcli_projection
+            work = self.calService.events().\
+                   list(calendarId = cal['id'],
+                        timeMin = start.isoformat() if start else None,
+                        timeMax = end.isoformat() if end else None,
+                        q = searchText if searchText else None,
+                        singleEvents = True)
 
-            if not self._CalendarWithinAccess(cal):
-                continue
+            #th = threading.Thread(target=worker, args=(cal, work))
+            #threads.append(th)
+            #th.start()
+            events = work.execute()
+            queue.put((cal, events))
 
-            # http://code.google.com/apis/calendar/reference.html
-            if not searchText:
-                #query = CalendarEventQuery(cal.gcalcli_username,
-                #                           cal.gcalcli_visibility,
-                #                           cal.gcalcli_projection)
-                query = gdata.calendar.service.CalendarEventQuery(start_min=start.isoformat(),
-                                           start_max=end.isoformat())
-            else:
-                #query = CalendarEventQuery(cal.gcalcli_username,
-                #                           cal.gcalcli_visibility,
-                #                           cal.gcalcli_projection,
-                #                           searchText)
-                query = gdata.calendar.service.CalendarEventQuery(text_query=searchText)
-                if start: # flagged by --ignore-started
-                    # weeds out old but still pulls in started events
-                    query.futureevents = 'true'
-
-            query.__dict__['feed'] = cal.gcalcli_altLink
-
-            pprint(vars(query))
-
-            query.singleevents = 'true'
-
-            # we sort later after getting events from all calendars
-            #query.orderby = 'starttime'
-            #query.sortorder = 'ascending'
-
-            th = threading.Thread(target=worker, args=(cal, query))
-            threads.append(th)
-            th.start()
-
-        for th in threads:
-            th.join()
+        #for th in threads:
+        #    th.join()
 
         while not queue.empty():
-            cal, feed = queue.get()
-            eventList.extend(self._GetAllEvents(cal, feed, end))
+            cal, events = queue.get()
+            eventList.extend(self._GetAllEvents(cal, events, end))
 
-        eventList.sort(lambda x, y: cmp(x.s, y.s))
+        eventList.sort(lambda x, y: cmp(x['s'], y['s']))
 
         return eventList
 
@@ -1122,20 +1035,20 @@ class gcalcli:
 
         accessLen = 0
 
-        for cal in self.allCals.entry:
-            length = len(cal.accesslevel.value)
+        for cal in self.allCals:
+            length = len(cal['accessRole'])
             if length > accessLen: accessLen = length
 
         if accessLen < len('Access'): accessLen = len('Access')
 
         format = ' %0' + str(accessLen) + 's  %s\n'
 
-        PrintMsg(CLR_BRYLW(), "\n" + format % ('Access', 'Title'))
+        PrintMsg(CLR_BRYLW(), format % ('Access', 'Title'))
         PrintMsg(CLR_BRYLW(), format % ('------', '-----'))
 
-        for cal in self.allCals.entry:
+        for cal in self.allCals:
             PrintMsg(self._CalendarColor(cal),
-                     format % (cal.accesslevel.value, cal.title.text))
+                     format % (cal['accessRole'], cal['summary']))
 
 
     def TextQuery(self, searchText=''):
@@ -1145,12 +1058,11 @@ class gcalcli:
             return
 
         if self.ignoreStarted:
-            start = self.now # flags gdata futureevents to true
+            start = self.now
         else:
             start = None
 
-        eventList = \
-            self._SearchForCalEvents(start, None, searchText)
+        eventList = self._SearchForCalEvents(start, None, searchText)
 
         self._PrintEvents(self.now, eventList, yearDate=True)
 
@@ -1243,87 +1155,63 @@ class gcalcli:
         self._GraphEvents(cmd, start, count, eventList)
 
 
-    def _InsertEvent(self, event):
-        for i in range(0,6):
-            if i != 0:
-                time.sleep(i)
-            try:
-                newEvent = self.gcal.InsertEvent(event, self._TargetCalendar())
-                url = ShortenURL(newEvent.GetHtmlLink().href)
-                PrintMsg(CLR_GRN(), 'New event added: %s\n' % url)
-                return newEvent
-            except Exception, e:
-                PrintErrMsg("Insert error: %s\n" % (e[0]["reason"]))
-                #PrintErrMsg("Error: %s\n" % (e[0]["body"]))
-                continue
-
-        PrintErrMsg('Failed to add event!\n')
-        return None
-
-
-    def _UpdateEvent(self, event):
-        for i in range(0,6):
-            if i != 0:
-                time.sleep(i)
-            try:
-                self.gcal.UpdateEvent(event.GetEditLink().href, event)
-                return True
-            except Exception, e:
-                PrintErrMsg("Update error: %s\n" % (e[0]["reason"]))
-                PrintErrMsg("Error: %s\n" % (e[0]["body"]))
-                continue
-
-        PrintErrMsg('Failed to update event!\n')
-        return False
-
-
     def QuickAdd(self, eventText, reminder=None):
 
         if eventText == '':
             return
 
-        event = gdata.calendar.CalendarEventEntry()
-        event.content = atom.Content(text=eventText)
-        event.quick_add = gdata.calendar.QuickAdd(value='true')
+        if len(self.cals) != 1:
+            PrintErrMsg("Must specify a single calendar\n")
+            return
 
-        # XXX can't do this because of a bug in gdata 
-        # http://code.google.com/a/google.com/p/apps-api-issues/issues/detail?id=2197
-        # if reminder is not None:
-        #   event.when.append(gdata.calendar.When())
-        #   event.when[0].reminder.append(gdata.calendar.Reminder(minutes=reminder))
+        newEvent = self.calService.events().\
+                   quickAdd(calendarId = self.cals[0]['id'],
+                            text = eventText).execute()
 
-        newEvent = self._InsertEvent(event)
+        if reminder:
+            rem = {}
+            rem['reminders'] = {'useDefault' : False,
+                                'overrides'  : [{'minutes' : reminder,
+                                                 'method'  : 'popup'}]}
 
-        if newEvent is not None and reminder is not None:
-            if len(newEvent.when) > 0:
-                for when in newEvent.when:
-                    if len(when.reminder) > 0:
-                        when.reminder[0].minutes = reminder
-                    else:
-                        when.reminder.append(gdata.calendar.Reminder(minutes=reminder))
-                self._UpdateEvent(newEvent)
-            else:
-                pass # should not happen
+            newEvent = self.calService.events().\
+                       patch(calendarId = self.cals[0]['id'],
+                             eventId = newEvent['id'],
+                             body = rem).execute()
+
+        if self.detailUrl:
+            hLink = self._ShortenURL(newEvent['htmlLink'])
+            PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
 
 
     def ExtendedAdd(self, eTitle, eWhere, eStart, eEnd, eDescr, reminder):
-        # https://developers.google.com/google-apps/calendar/v1/developers_guide_python#CreatingSingle
-        event = gdata.calendar.CalendarEventEntry()
 
-        event.title = atom.Title(text=eTitle)
+        if len(self.cals) != 1:
+            PrintErrMsg("Must specify a single calendar\n")
+            return
 
+        event = {}
+        event['summary'] = eTitle
+        event['start']   = { 'dateTime' : eStart,
+                             'timeZone' : self.cals[0]['timeZone'] }
+        event['end']     = { 'dateTime' : eEnd,
+                             'timeZone' : self.cals[0]['timeZone'] }
         if eWhere:
-            event.where.append(gdata.calendar.Where(value_string=eWhere))
-
-        event.when.append(gdata.calendar.When(start_time=eStart,
-                                              end_time=eEnd))
+            event['location'] = eWhere
         if eDescr:
-            event.content = atom.Content(text=eDescr)
+            event['description'] = eDescr
+        if reminder:
+            event['reminders'] = {'useDefault' : False,
+                                  'overrides'  : [{'minutes' : reminder,
+                                                   'method'  : 'popup'}]}
 
-        if reminder is not None:
-            event.when[0].reminder.append(gdata.calendar.Reminder(minutes=reminder))
+        newEvent = self.calService.events().\
+                   insert(calendarId = self.cals[0]['id'],
+                          body = event).execute()
 
-        self._InsertEvent(event)
+        if self.detailUrl:
+            hLink = self._ShortenURL(newEvent['htmlLink'])
+            PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
 
 
     def Remind(self, minutes=10, command=None):
@@ -1343,18 +1231,18 @@ class gcalcli:
 
             # skip this event if it already started
             # XXX maybe add a 2+ minute grace period here...
-            if event.s < self.now:
+            if event['s'] < self.now:
                 continue
 
             if self.military:
-                tmpTimeStr = event.s.strftime('%H:%M')
+                tmpTimeStr = event['s'].strftime('%H:%M')
             else:
                 tmpTimeStr = \
-                    event.s.strftime('%I:%M').lstrip('0') + \
-                    event.s.strftime('%p').lower()
+                    event['s'].strftime('%I:%M').lstrip('0') + \
+                    event['s'].strftime('%p').lower()
 
             message += '%s  %s\n' % \
-                       (tmpTimeStr, self._ValidTitle(event.title.text).strip())
+                       (tmpTimeStr, self._ValidTitle(event['summary']).strip())
 
         if message == '':
             return
@@ -1377,6 +1265,10 @@ class gcalcli:
             PrintErrMsg('Python vobject module not installed!\n')
             sys.exit(1)
 
+        if len(self.cals) != 1:
+            PrintErrMsg("Must specify a single calendar\n")
+            return
+
         f = sys.stdin
 
         if icsFile:
@@ -1394,19 +1286,19 @@ class gcalcli:
                 break
 
             ve = v.vevent
-            event = gdata.calendar.CalendarEventEntry()
+            event = {}
 
             if hasattr(ve, 'summary'):
                 DebugPrint("SUMMARY: %s\n" % ve.summary.value)
                 if verbose:
                     print "Event........%s" % ve.summary.value
-                event.title = atom.Title(text=ve.summary.value)
+                event['summary'] = ve.summary.value
 
             if hasattr(ve, 'location'):
                 DebugPrint("LOCATION: %s\n" % ve.location.value)
                 if verbose:
                     print "Location.....%s" % ve.location.value
-                event.where = gdata.calendar.Where(value_string=ve.location.value)
+                event['location'] = ve.location.value
 
             if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
                 PrintErrMsg("Error: event does not have a dtstart and dtend!\n")
@@ -1466,24 +1358,26 @@ class gcalcli:
                         "RRULE:" + ve.rrule.value + '\r\n'
 
                 DebugPrint("RECURRENCE:\n%s\n" % recurrence)
-                event.recurrence = \
-                    gdata.calendar.Recurrence(text=recurrence)
+                event['recurrence'] = [ recurrence ]
 
             elif hasattr(ve, 'dtstart') and hasattr(ve, 'dtend'):
 
                 start = ve.dtstart.value.isoformat()
                 end   = ve.dtend.value.isoformat()
-                event.when = gdata.calendar.When(start_time=start,
-                                                 end_time=end)
+                event['start'] = { 'dateTime' : start }
+                event['end']   = { 'dateTime' : end }
 
-                if reminder is not None:
-                    event.when.reminder.append(gdata.calendar.Reminder(minutes=reminder))
+                if reminder:
+                    event['reminders'] = {'useDefault' : False,
+                                          'overrides'  : [{'minutes' : reminder,
+                                                           'method'  : 'popup'}]}
 
-            if hasattr(ve, 'description'):
-                DebugPrint("DESCRIPTION: %s\n" % ve.description.value)
+            if hasattr(ve, 'description') and ve.description.value.strip():
+                descr = ve.description.value.strip()
+                DebugPrint("DESCRIPTION: %s\n" % descr)
                 if verbose:
-                    print "Description:\n%s" % ve.description.value
-                event.content = atom.Content(text=ve.description.value)
+                    print "Description:\n%s" % descr
+                event['description'] = descr
 
             if hasattr(ve, 'organizer'):
                 DebugPrint("ORGANIZER: %s\n" % ve.organizer.value)
@@ -1493,13 +1387,15 @@ class gcalcli:
                 else:
                     email = ve.organizer.value
                 if verbose:
-                    print "organizer:\n%s" % email
-                event.who.append(gdata.calendar.Who(ve.organizer.name, email, rel='ORGANIZER'))
+                    print "organizer:\n %s" % email
+                event['organizer'] = { 'displayName' : ve.organizer.name,
+                                       'email'       : email }
 
             if hasattr(ve, 'attendee_list'):
                 DebugPrint("ATTENDEE_LIST : %s\n" % ve.attendee_list)
                 if verbose:
                     print "attendees:"
+                event['attendees'] = []
                 for attendee in ve.attendee_list:
                     if attendee.value.startswith("MAILTO:"):
                         email = attendee.value[7:]
@@ -1508,17 +1404,24 @@ class gcalcli:
                     if verbose:
                         print " %s" % email
 
-                    event.who.append(gdata.calendar.Who(attendee.name, email, rel='ATTENDEE'))
+                    event['attendees'].append({ 'displayName' : attendee.name,
+                                                'email'       : email })
 
             if not verbose:
-                self._InsertEvent(event)
+                newEvent = self.calService.events().\
+                           insert(calendarId = self.cals[0]['id'],
+                                  body = event).execute()
                 continue
 
+            #dprint(event)
             PrintMsg(CLR_YLW(), "\n[i]mport [s]kip [q]uit: ")
             val = raw_input()
             if val == 'i':
-                if not self._InsertEvent(event):
-                    sys.exit(1)
+                newEvent = self.calService.events().\
+                           insert(calendarId = self.cals[0]['id'],
+                                  body = event).execute()
+                hLink = self._ShortenURL(newEvent['htmlLink'])
+                PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
             elif val == 's':
                 continue
             elif val == 'q':
@@ -1621,14 +1524,13 @@ def GetCalColors(calNames):
     return calColors
 
 
-def BowChickaWowWow(token):
+def BowChickaWowWow(calService, urlService):
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "",
                                    ["help",
                                     "version",
                                     "config=",
-                                    "user=",
                                     "cals=",
                                     "cal=",
                                     "24hr",
@@ -1646,9 +1548,8 @@ def BowChickaWowWow(token):
                                     "nc",
                                     "conky",
                                     "cal-owner-color=",
-                                    "cal-editor-color=",
-                                    "cal-contributor-color=",
-                                    "cal-read-color=",
+                                    "cal-writer-color=",
+                                    "cal-reader-color=",
                                     "cal-freebusy-color=",
                                     "date-color=",
                                     "border-color=",
@@ -1671,8 +1572,6 @@ def BowChickaWowWow(token):
 
     cfg = LoadConfig(configFile)
 
-    usr           = GetConfig(cfg, 'user', None)
-    access        = GetConfig(cfg, 'cals', 'all')
     calNames      = GetConfigMultiple(cfg, 'cal', None)
     military      = GetTrueFalse(GetConfig(cfg, '24hr', 'false'))
     ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
@@ -1692,12 +1591,10 @@ def BowChickaWowWow(token):
 
     calOwnerColor = \
         GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
-    calEditorColor = \
-        GetColor(GetConfig(cfg, 'cal-editor-color', 'green'), True)
-    calContributorColor = \
-        GetColor(GetConfig(cfg, 'cal-contributor-color', 'default'), True)
-    calReadColor = \
-        GetColor(GetConfig(cfg, 'cal-read-color', 'magenta'), True)
+    calWriterColor = \
+        GetColor(GetConfig(cfg, 'cal-writer-color', 'green'), True)
+    calReaderColor = \
+        GetColor(GetConfig(cfg, 'cal-reader-color', 'magenta'), True)
     calFreeBusyColor = \
         GetColor(GetConfig(cfg, 'cal-freebusy-color', 'default'), True)
     dateColor = \
@@ -1726,12 +1623,6 @@ def BowChickaWowWow(token):
 
         if opt == "--version":
             Version()
-
-        elif opt == "--user":
-            usr = arg
-
-        elif opt == "--cals":
-            access = arg
 
         elif opt == "--cal":
             calNames.append(arg)
@@ -1783,14 +1674,11 @@ def BowChickaWowWow(token):
         elif opt == "--cal-owner-color":
             calOwnerColor = GetColor(arg, True)
 
-        elif opt == "--cal-editor-color":
-            calEditorColor = GetColor(arg, True)
+        elif opt == "--cal-writer-color":
+            calWriterColor = GetColor(arg, True)
 
-        elif opt == "--cal-contributor-color":
-            calContributorColor = GetColor(arg, True)
-
-        elif opt == "--cal-read-color":
-            calReadColor = GetColor(arg, True)
+        elif opt == "--cal-reader-color":
+            calReaderColor = GetColor(arg, True)
 
         elif opt == "--cal-freebusy-color":
             calFreeBusyColor = GetColor(arg, True)
@@ -1825,10 +1713,6 @@ def BowChickaWowWow(token):
         elif (opt == "--descr"):
             eDescr = arg
 
-    if usr == None:
-        PrintErrMsg('Error: must specify a username\n')
-        sys.exit(1)
-
     if detailUrl and detailUrl != 'short' and detailUrl != 'long':
         PrintErrMsg('Error: invalid detail url\n')
         sys.exit(1)
@@ -1849,9 +1733,8 @@ def BowChickaWowWow(token):
         calNameColors.append(calColors[calNameSimple])
     calNames = calNamesFiltered
 
-    gcal = gcalcli(username=usr,
-                   token=token,
-                   access=access,
+    gcal = gcalcli(calService=calService,
+                   urlService=urlService,
                    calNames=calNames,
                    calNameColors=calNameColors,
                    military=military,
@@ -1865,9 +1748,8 @@ def BowChickaWowWow(token):
                    calWidth=calWidth,
                    calMonday=calMonday,
                    calOwnerColor=calOwnerColor,
-                   calEditorColor=calEditorColor,
-                   calContributorColor=calContributorColor,
-                   calReadColor=calReadColor,
+                   calWriterColor=calWriterColor,
+                   calReaderColor=calReaderColor,
                    calFreeBusyColor=calFreeBusyColor,
                    dateColor=dateColor,
                    borderColor=borderColor,
@@ -1979,7 +1861,6 @@ def BowChickaWowWow(token):
         ueEnd   = unicode(eEnd,   locale.getpreferredencoding())
         ueDescr = unicode(eDescr, locale.getpreferredencoding())
 
-        # http://code.google.com/apis/calendar/data/1.0/developers_guide_python.html#CreatingSingle
         gcal.ExtendedAdd(ueTitle, ueWhere, ueStart, ueEnd, ueDescr, reminder)
 
     elif args[0] == 'remind':
@@ -2007,35 +1888,34 @@ def BowChickaWowWow(token):
             PrintErrMsg('Error: invalid import arguments\n')
             sys.exit(1)
 
+    elif args[0] == 'help':
+        Usage()
+
     else:
         PrintErrMsg('Error: unknown command (--help)\n')
         sys.exit(1)
 
 
-import pickle
-authFile = os.path.expanduser('~') + '/.gcalcli_auth'
-try:
-    af = open(authFile)
-    token = pickle.load(af)
-    af.close()
-except IOError:
-    token = OAuth2Token(client_id='232867676714.apps.googleusercontent.com',
-                        client_secret='3tZSxItw6_VnZMezQwC8lUqy',
-                        scope='https://www.google.com/calendar/feeds',
-                        user_agent=__program__+'-'+__version__)
-    uri = token.generate_authorize_url()
-    print 'Please visit this URL to authorize the application:'
-    print uri
-    code = raw_input('What is the verification code? ').strip()
-    token.get_access_token(code)
-    af = open(authFile, 'w')
-    pickle.dump(token, af)
-    af.close()
+#-------------------------------------------------------------------------------
+http = httplib2.Http()
 
-# Authorize the client.
-#client = gdata.calendar.client.CalendarClient(token.user_agent)
-#token.authorize(client)
+flow = OAuth2WebServerFlow(
+           client_id='232867676714.apps.googleusercontent.com',
+           client_secret='3tZSxItw6_VnZMezQwC8lUqy',
+           scope=['https://www.googleapis.com/auth/calendar',
+                  'https://www.googleapis.com/auth/urlshortener'],
+           user_agent=__program__+'/'+__version__)
+storage = Storage(os.path.expanduser('~') + '/.gcalcli_oauth')
+credentials = storage.get()
+if credentials is None or credentials.invalid == True:
+    credentials = run(flow, storage)
+http = credentials.authorize(http)
+calService = build(serviceName='calendar', version='v3', http=http,
+                   developerKey='AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc')
+urlService = build(serviceName='urlshortener', version='v1', http=http,
+                   developerKey='AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc')
+#-------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    BowChickaWowWow(token)
+    BowChickaWowWow(calService, urlService)
 

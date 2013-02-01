@@ -62,23 +62,11 @@ gcalcli [options] command [command args]
 
   --config <file>          config file to read (default is '~/.gcalclirc')
 
-  --user <username>        google username
-
-  --pw <password>          password
-
-  --cals [all,             'calendars' to work with (default is all calendars)
-          default,         - default (your default main calendar)
-          owner,           - owner (your owned calendars)
-          editor,          - editor (editable calendar)
-          contributor,     - contributor (non-owner but able to edit)
-          read,            - read (read only calendars)
-          freebusy]        - freebusy (only free/busy info visible)
-
   --cal <name>[#color]     'calendar' to work with (default is all calendars)
                            - you can specify a calendar by name or by substring
                              which can match multiple calendars
                            - you can use multiple '--cal' arguments on the
-                             command line
+                             command line for the query commands
                            - in the config file specify multiple calendars in
                              quotes separated by commas as:
                                cal: "foo", "bar", "my cal"
@@ -94,8 +82,8 @@ gcalcli [options] command [command args]
   --detail-location        - the description width defaults to 80 characters
   --detail-length          - if 'short' is specified for the url then the event
   --detail-reminders         link is shortened using http://goo.gl (slow!)
-  --detail-descr
-  --detail-descr-width
+  --detail-descr           - the --detail-url can be used for both the 'quick'
+  --detail-descr-width       and 'add' commands as well
   --detail-url [short,
                 long]
 
@@ -120,38 +108,38 @@ gcalcli [options] command [command args]
                            the 'execpi' command in your conkyrc)
 
   --cal-owner-color        specify the colors used for the calendars and dates
-  --cal-editor-color       each of these argument requires a <color> argument
-  --cal-contributor-color  which must be one of [ default, black, brightblack,
-  --cal-read-color         red, brightred, green, brightgreen, yellow,
-  --cal-freebusy-color     brightyellow, blue, brightblue, magenta,
-  --date-color             brightmagenta, cyan, brightcyan, white,
-  --border-color           brightwhite ]
+  --cal-writer-color       each of these argument requires a <color> argument
+  --cal-reader-color       which must be one of [ default, black, brightblack,
+  --cal-freebusy-color     red, brightred, green, brightgreen, yellow,
+  --date-color             brightyellow, blue, brightblue, magenta,
+  --border-color           brightmagenta, cyan, brightcyan, white,
+                           brightwhite ]
 
   --tsv                    tab-separated output for 'agenda'. Format is:
-                           'date' 'start' 'end' 'title' 'location' 'description'
+                           date, start, end, link, title, location, description
 
   --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
                            supported locales of your system first.
 
   --reminder <mins>        number of minutes to use when setting reminders for
-                           the 'quick' and 'add' commands; if not specified,
-                           Google code's default behavior occurs: no reminder is
-                           set (documented, incorrectly, otherwise: as using the
-                           default for the calendar, but this does not actually
-                           happen)
+                           the 'quick' and 'add' commands; if not specified
+                           the calendar's default reminder settings are used
 
    --title <title>         event details used by the 'add' command
    --where <location>      - the duration is specified in minutes
    --when <datetime>       - make sure to quote strings with spaces
-   --duration <#>          - the datetime format is 'MM/DD/YYYY HH:MM'
-   --descr <description>   - the '--reminder' option can be specified as well
+   --duration <#>          - datetime examples see 'agenda' below
+   --descr <description>
 
  Commands:
 
   list                     list all calendars
 
   search <text>            search for events
-                           - only matches whole words
+                           - case insensitive search terms to find events that
+                             match these terms in any field, like traditional
+                             Google search with quotes, exclusion, etc.
+                           - for example to get just games: "soccer -practice"
 
   agenda [start] [end]     get an agenda for a time period
                            - start time default is 12am today
@@ -177,17 +165,18 @@ gcalcli [options] command [command args]
                              and only one month will be displayed
 
   quick <text>             quick add an event to a calendar
-                           - if a --cal is not specified then the event is
-                             added to the default calendar
-                           - example:
+                           - a single --cal must specified
+                           - the --detail-url option will show the event link
+                           - example text:
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
 
   add                      add a detailed event to a calendar
-                           - if a --cal is not specified then the event is
-                             added to the default calendar
+                           - a single --cal must specified
+                           - the --detail-url option will show the event link
                            - example:
-                              gcalcli --title 'Analysis of Algorithms Final'
+                              gcalcli --cal 'Eric Davis'
+                                      --title 'Analysis of Algorithms Final'
                                       --where UCI
                                       --when '12/14/2012 10:00'
                                       --duration 60
@@ -196,8 +185,7 @@ gcalcli [options] command [command args]
                                       add
 
   import [-v] [file]       import an ics/vcal file to a calendar
-                           - if a --cal is not specified then the event is
-                             added to the default calendar
+                           - a single --cal must specified
                            - if a file is not specified then the data is read
                              from standard input
                            - if -v is given then each event in the file is
