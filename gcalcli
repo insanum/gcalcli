@@ -32,7 +32,7 @@
 # add caching, should be easy (dump all calendar JSON data to file)
 # maybe add support for freebusy ?
 # complete the implementation of _EditEvent iteration hook
-# add a ctrl-c signal handler to huge backtraces aren't dumped to the console
+# add a ctrl-c signal handler so huge backtraces aren't dumped to the console
 
 #############################################################################
 #                                                                           #
@@ -159,8 +159,8 @@ gcalcli [options] command [command args]
   --cal-reader-color       which must be one of [ default, black, brightblack,
   --cal-freebusy-color     red, brightred, green, brightgreen, yellow,
   --date-color             brightyellow, blue, brightblue, magenta,
-  --border-color           brightmagenta, cyan, brightcyan, white,
-                           brightwhite ]
+  --now-marker-color       brightmagenta, cyan, brightcyan, white,
+  --border-color           brightwhite ]
 
   --tsv                    tab-separated output for 'agenda'. Format is:
                            date, start, end, link, title, location, description
@@ -373,11 +373,9 @@ def GetTimeFromStr(eWhen, eDuration):
 
 class gcalcli:
 
-    gcal          = None
     allCals       = None
     cals          = []
     now           = datetime.now(tzlocal())
-    feedPrefix    = 'https://www.google.com/calendar/feeds/'
     agendaLength  = 5
     calService    = None
     urlService    = None
@@ -398,10 +396,11 @@ class gcalcli:
     detailUrl        = None
 
     calOwnerColor    = CLR_CYN()
-    calWriterColor   = CLR_NRM()
+    calWriterColor   = CLR_GRN()
     calReaderColor   = CLR_MAG()
     calFreeBusyColor = CLR_NRM()
     dateColor        = CLR_YLW()
+    nowMarkerColor   = CLR_BRRED()
     borderColor      = CLR_WHT()
 
     ACCESS_OWNER    = 'owner'
@@ -429,7 +428,8 @@ class gcalcli:
                  calWriterColor=CLR_GRN(),
                  calReaderColor=CLR_MAG(),
                  calFreeBusyColor=CLR_NRM(),
-                 dateColor=CLR_GRN(),
+                 dateColor=CLR_YLW(),
+                 nowMarkerColor=CLR_BRRED(),
                  borderColor=CLR_WHT(),
                  tsv=False,
                  customLocale=None):
@@ -457,6 +457,7 @@ class gcalcli:
         self.calReaderColor   = calReaderColor
         self.calFreeBusyColor = calFreeBusyColor
         self.dateColor        = dateColor
+        self.nowMarkerColor   = nowMarkerColor
         self.borderColor      = borderColor
 
         # set customLocale if correct
@@ -539,6 +540,11 @@ class gcalcli:
 
         weekEventStrings = [ '', '', '', '', '', '', '' ]
 
+        nowMarkerPrinted = False
+        if self.now < startDateTime or self.now > endDateTime:
+            # now isn't in this week
+            nowMarkerPrinted = True
+
         for event in eventList:
 
             if cmd == 'calm' and curMonth != event['s'].strftime("%b"):
@@ -555,12 +561,20 @@ class gcalcli:
                 if event['s'].hour == 0 and event['s'].minute == 0 and \
                    event['e'].hour == 0 and event['e'].minute == 0:
                     tmpTimeStr = ''
-                elif self.military:
-                    tmpTimeStr = event['s'].strftime("%H:%M")
                 else:
-                    tmpTimeStr = \
-                        event['s'].strftime("%I:%M").lstrip('0') + \
-                        event['s'].strftime('%p').lower()
+                    if not nowMarkerPrinted and self.now <= event['e']:
+                        nowMarkerPrinted = True
+                        weekEventStrings[dayNum] += \
+                            "\n" + \
+                            str(self.nowMarkerColor) + \
+                            (self.calWidth * '-')
+
+                    if self.military:
+                        tmpTimeStr = event['s'].strftime("%H:%M")
+                    else:
+                        tmpTimeStr = \
+                            event['s'].strftime("%I:%M").lstrip('0') + \
+                            event['s'].strftime('%p').lower()
 
                 # newline and empty string are the keys to turn off coloring
                 weekEventStrings[dayNum] += \
@@ -654,20 +668,9 @@ class gcalcli:
         while (len(eventList) and eventList[0]['s'] < startDateTime):
             eventList = eventList[1:]
 
-        dayDivider = ''
-        for i in xrange(self.calWidth):
-            dayDivider += '-'
-
-        weekDivider = ''
-        for i in xrange(7):
-            weekDivider += '+'
-            weekDivider += dayDivider
-        weekDivider += '+'
+        weekDivider = (7 * ('+' + (self.calWidth * '-'))) + '+'
         weekDivider = str(self.borderColor) + weekDivider + str(CLR_NRM())
-
-        empty = ''
-        for i in xrange(self.calWidth):
-            empty += ' '
+        empty       = self.calWidth * ' '
 
         dayFormat = '%-' + str(self.calWidth) + '.' + str(self.calWidth) + 's'
 
@@ -727,12 +730,14 @@ class gcalcli:
                     if curMonth != (startWeekDateTime + \
                                     timedelta(days=j)).strftime("%b"):
                         d = ''
-                todayMarker = ''
+                tmpDateColor = self.dateColor
+                tmpTodayMarker = ''
                 if self.now.strftime("%d%b%Y") == \
                    (startWeekDateTime + timedelta(days=j)).strftime("%d%b%Y"):
-                    todayMarker = " **"
-                line += str(self.dateColor) + \
-                            dayFormat % (d + todayMarker) + \
+                    tmpDateColor = self.nowMarkerColor
+                    tmpTodayMarker = " **"
+                line += str(tmpDateColor) + \
+                            dayFormat % (d + tmpTodayMarker) + \
                         str(CLR_NRM()) + \
                         str(self.borderColor) + \
                             '|' + \
@@ -861,8 +866,8 @@ class gcalcli:
                     new_descr += wrapper.fill(line) + "\n"
             return new_descr.rstrip()
 
-        indent = 10*' '
-        detailsIndent = 19*' '
+        indent = 10 * ' '
+        detailsIndent = 19 * ' '
 
         if self.military:
             timeFormat = '%-5s'
@@ -1657,6 +1662,7 @@ def BowChickaWowWow(calService, urlService):
                                     "cal-reader-color=",
                                     "cal-freebusy-color=",
                                     "date-color=",
+                                    "now-marker-color=",
                                     "border-color=",
                                     "locale=",
                                     "reminder=",
@@ -1706,6 +1712,8 @@ def BowChickaWowWow(calService, urlService):
         GetColor(GetConfig(cfg, 'cal-freebusy-color', 'default'), True)
     dateColor = \
         GetColor(GetConfig(cfg, 'date-color', 'yellow'), True)
+    nowMarkerColor = \
+        GetColor(GetConfig(cfg, 'now-marker-color', 'brightred'), True)
     borderColor = \
         GetColor(GetConfig(cfg, 'border-color', 'white'), True)
 
@@ -1800,6 +1808,9 @@ def BowChickaWowWow(calService, urlService):
         elif opt == "--date-color":
             dateColor = GetColor(arg, True)
 
+        elif opt == "--now-marker-color":
+            nowMarkerColor = GetColor(arg, True)
+
         elif opt == "--border-color":
             borderColor = GetColor(arg, True)
 
@@ -1870,6 +1881,7 @@ def BowChickaWowWow(calService, urlService):
                    calReaderColor=calReaderColor,
                    calFreeBusyColor=calFreeBusyColor,
                    dateColor=dateColor,
+                   nowMarkerColor=nowMarkerColor,
                    borderColor=borderColor,
                    tsv=tsv,
                    customLocale=customLocale)
