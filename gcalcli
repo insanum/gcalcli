@@ -509,11 +509,11 @@ class gcalcli:
             return CLR_NRM()
 
 
-    def _ValidTitle(self, title):
-        if title == None:
-            return "(No title)"
+    def _ValidTitle(self, event):
+        if 'summary' in event and event['summary'].strip():
+            return event['summary']
         else:
-            return title
+            return "(No title)"
 
 
     def _GetWeekEventStrings(self, cmd, curMonth,
@@ -550,7 +550,7 @@ class gcalcli:
                     str(self._CalendarColor(event['gcalcli_cal'])) + \
                     tmpTimeStr.strip() + \
                     " " + \
-                    self._ValidTitle(event['summary']).strip()
+                    self._ValidTitle(event).strip()
 
         return weekEventStrings
 
@@ -808,7 +808,7 @@ class gcalcli:
                 tmpTimeStr,
                 tmpTimeStp,
                 tmpLink,
-                self._ValidTitle(event['summary']).strip(),
+                self._ValidTitle(event).strip(),
                 tmpWhere,
                 tmpContent
             )
@@ -875,11 +875,13 @@ class gcalcli:
                event['e'].hour == 0 and event['e'].minute == 0:
                 fmt = '  ' + timeFormat + '  %s\n'
                 PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
-                         ('', self._ValidTitle(event['summary']).strip()))
+                         ('', self._ValidTitle(event).strip()))
             else:
                 fmt = '  ' + timeFormat + '  %s\n'
+                if 'summary' not in event:
+                    dprint(event)
                 PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
-                         (tmpTimeStr, self._ValidTitle(event['summary']).strip()))
+                         (tmpTimeStr, self._ValidTitle(event).strip()))
 
             if self.detailUrl:
                 hLink = self._ShortenURL(event['htmlLink'])
@@ -1242,7 +1244,7 @@ class gcalcli:
                     event['s'].strftime('%p').lower()
 
             message += '%s  %s\n' % \
-                       (tmpTimeStr, self._ValidTitle(event['summary']).strip())
+                       (tmpTimeStr, self._ValidTitle(event).strip())
 
         if message == '':
             return
