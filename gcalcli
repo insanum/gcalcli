@@ -1554,12 +1554,9 @@ def GetConfig(config, key, default):
         value = default
 
     if value and value.startswith('`'):
-        # Value is a shell command
+        # execute shell command
         cmd = value.strip()[1:-1]
-        parts = []
-        for part in cmd.split():
-            parts.append(os.path.expanduser(part))
-        value = subprocess.check_output(parts).strip()
+        value = subprocess.check_output(cmd, shell=True)
 
     return value
 

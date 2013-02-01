@@ -285,7 +285,16 @@ border-color: <color>
 
 Note that you can specify a shell command and the output will be the value for
 the config variable. A shell command is determined if the first character is a
-backtick (i.e. '`'). The entire command must be wrapped with backticks.
+backtick (i.e. '`') and the entire command must be wrapped with backticks. For
+example, we can specify the width dynamically for the 'calw' and 'calm'
+commands based on the terminal size:
+
+```
+width: `echo "(((`stty size | cut -d' ' -f2`) - 8) / 7)" | bc`
+```
+
+Note that the command is executed in a sub-shell which has access to the full
+environment, except for LINES and COLUMNS hence this example.
 
 #### Importing VCS/VCAL/ICS Files from Exchange (or other)
 
