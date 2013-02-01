@@ -1,8 +1,30 @@
 
+v3.1
+  * Enhancements
+    - Ported to use the Google API Client library and Google Calendar v3 spec
+        now required: https://developers.google.com/api-client-library/python
+        the Google GData python module is now deprecated and no longer used
+    - OAuth2 authentication, all traces of username and password removed
+    - support for URL shortening via goo.gl
+    - the --detail-url=[long,short] is now accepted by most commands
+    - new 'delete' command used to interactively delete event(s)
+        new --iama-expert option is automatically delete event(s)
+    - new 'edit' command used to interactively edit event(s)
+    - new "now marker" in the 'calw' and 'calm' output that shows a line
+        representing the current time (i.e. like that seen in the Google
+        Calendar week/day views), new --now-marker-color changes line color
+    - new --detail-calendar option to print the calendar an event belongs
+    - the --cals option to limit calendars by access role has been removed
+    - the 'search' command now supports proper Google-like search terms
+  * Fixes
+    - the 'quick', 'add', and 'import' commands now require a single --cal option
+    - lots of code reduction and simplification based on new Google API Client
+
 v2.3
   * Enhancements
-    - new 'add' command for adding new events either interactively or automatically
-        via the new --title --where --when --duration --descr options
+    - new 'add' command for adding new events either interactively or
+        automatically with the new --title --where --when --duration --descr
+        options
     - new --reminder option to specify a reminder time (in minutes) for the
         'quick' and 'add' commands
     - event details in 'agenda' output can now be selectively seen using

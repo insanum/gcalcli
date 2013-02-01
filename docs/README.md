@@ -5,34 +5,40 @@ gcalcli
 
 gcalcli is a Python application that allows you to access your Google
 Calendar(s) from a command line. It's easy to get your agenda, search for
-events, quickly add new events, and even import those annoying vCal invites
-from Microsoft Exchange. Additionally, gcalcli can be used as a reminder
-service to execute any application you want.
+events, add new events, delete events, edit events, and even import those
+annoying ICS/vCal invites from Microsoft Exchange and/or other sources.
+Additionally, gcalcli can be used as a reminder service and execute any
+application you want when an event is coming up.
 
-Check your OS Distribution for packages.
+Check your OS distribution for packages.
 
 Requirements
 ------------
 
  * [Python 2](http://www.python.org)
- * Google's [GData](http://code.google.com/p/gdata-python-client) Python 2 module
- * [dateutil](http://www.labix.org/python-dateutil) Python module
- * [vobject](http://vobject.skyhouseconsulting.com) Python module
+ * [Google API Client](https://developers.google.com/api-client-library/python) Python 2 module
+ * [dateutil](http://www.labix.org/python-dateutil) Python 2 module
+ * [vobject](http://vobject.skyhouseconsulting.com) Python 2 module
+ * [simplejson](https://github.com/simplejson/simplejson) Python 2 module
  * A love for the command line!
 
 Features
 --------
 
+ * OAuth2 authention with your Google account
  * list your calendars
  * show an agenda using a specified start/end date and time
  * ascii text graphical calendar display with variable width
- * search for past and/or future calendar events
+ * search for past and/or future events
  * "quick add" new events to a specified calendar
  * "add" a new event to a specified calendar (interactively or automatically)
- * import events from ICS/VCAL files to a specified calendar
+ * "delete" event(s) from a calendar(s) (interactively or automatically)
+ * "edit" event(s) interactively
+ * import events from ICS/vCal files to a specified calendar
+ * support for URL shortening via goo.gl
  * easy integration with your favorite mail client (attachment handler)
  * run as a cron job and execute a command for reminders
- * work against specific calendars (by calendar type or calendar name regex)
+ * work against specific calendars (by calendar name w/ regex)
  * config file support for specifying option defaults
  * colored output and unicode character support
  * super fun hacking with shell scripts, cron, screen, tmux, conky, etc
@@ -112,8 +118,8 @@ gcalcli [options] command [command args]
   --cal-reader-color       which must be one of [ default, black, brightblack,
   --cal-freebusy-color     red, brightred, green, brightgreen, yellow,
   --date-color             brightyellow, blue, brightblue, magenta,
-  --border-color           brightmagenta, cyan, brightcyan, white,
-                           brightwhite ]
+  --now-marker-color       brightmagenta, cyan, brightcyan, white,
+  --border-color           brightwhite ]
 
   --tsv                    tab-separated output for 'agenda'. Format is:
                            date, start, end, link, title, location, description
@@ -216,18 +222,9 @@ gcalcli [options] command [command args]
 
 #### Login Information
 
-You can provide gcalcli with your Google Calendar login information via one of
-the following:
-
- * on the command line using the --user and --pw options
- * the config file
- * or interactively when prompted
-
-In any case make sure you protect the information. It is highly recommended
-you turn on
-[Google's 2-Step Verification](http://support.google.com/accounts/bin/topic.py?hl=en&topic=28786)
-and use different application specific passwords for each system you're using
-gcalcli on.
+OAuth2 is used for authenticating with your Google account. The resulting token
+is placed in the ~/.gcalcli_oauth file. When you first start gcalcli the
+authentication process will proceed. Simply follow the instructions.
 
 #### HTTP Proxy Support
 
@@ -261,39 +258,34 @@ command line.  Note that any value specified on the command line overrides the
 config file.
 
 ```
-user: <username>
-pw: <password>
-cals: <type>
 cal: <name>[#color], <name>[#color], ...
 24hr: <true|false>
+ignore-started: <true|false>
+width: <width>
+mon: <true|false>
+tsv: <true|false>
+locale: <locale>
+reminder: <minutes>
 detail-all: <true|false>
+detail-calendar: <true|false>
 detail-location: <true|false>
 detail-length: <true|false>
 detail-reminders: <true|false>
 detail-descr: <true|false>
 detail-descr-width: <width>
-ignore-started: <true|false>
-width: <width>
-mon: <true|false>
-nd: <true|false>
+detail-url: [long|short]
 cal-owner-color: <color>
-cal-editor-color: <color>
-cal-contributor-color: <color>
-cal-read-color: <color>
+cal-writer-color: <color>
+cal-reader-color: <color>
 cal-freebusy-color: <color>
 date-color: <color>
+now-marker-color: <color>
 border-color: <color>
-locale: <locale>
-reminder: <mins>
 ```
 
 Note that you can specify a shell command and the output will be the value for
 the config variable. A shell command is determined if the first character is a
-backtick (i.e. '`'). An example is pulling a password from gpg:
-
-```
-pw: `gpg --decrypt ~/mypw.gpg`
-```
+backtick (i.e. '`'). The entire command must be wrapped with backticks.
 
 #### Importing VCS/VCAL/ICS Files from Exchange (or other)
 
@@ -309,7 +301,9 @@ TERMINAL=evilvte
 CONFIG=~/.gcalclirc
 
 $TERMINAL -e bash -c "echo 'Importing invite...' ; \
-                      gcalcli --config=$CONFIG import -v \"$1\" ; \
+                      gcalcli --detail-url=short \
+                              --cal='Eric Davis' \
+                              import -v \"$1\" ; \
                       read -p 'press enter to exit: '"
 ```
 
@@ -342,7 +336,7 @@ in via X:
 
 if [ -x /usr/bin/gcalcli ]; then 
   while true; do
-    /usr/bin/gcalcli --config=~/.gcalclirc --cal="davis" remind
+    /usr/bin/gcalcli --cal="davis" remind
     sleep 300
   done &
 fi
@@ -370,7 +364,7 @@ ${execpi 300 gcalcli --conky agenda}
 To also get a graphical calendar that shows the next three weeks add:
 
 ```
-${execpi 300 gcalcli --conky --cals=owner calw 3}
+${execpi 300 gcalcli --conky calw 3}
 ```
 
 #### Agenda Integration With tmux

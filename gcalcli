@@ -53,11 +53,11 @@
 #        http://www.python.org                                              #
 #  - Google APIs Client Library for Python 2                                #
 #        https://developers.google.com/api-client-library/python            #
-#  - dateutil Python module                                                 #
+#  - dateutil Python 2 module                                               #
 #        http://www.labix.org/python-dateutil                               #
 #  - vobject Python module (optional, needed for importing ics/vcal files)  #
 #        http://vobject.skyhouseconsulting.com                              #
-#  - simplejson Python module                                               #
+#  - simplejson Python 2 module                                             #
 #        https://github.com/simplejson/simplejson                           #
 #                                                                           #
 #############################################################################
