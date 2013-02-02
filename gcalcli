@@ -30,8 +30,8 @@
 # if threading works then move pageToken processing from GetAllEvents to thread
 # support different types of reminders plus multiple ones (popup, sms, email)
 # add caching, should be easy (dump all calendar JSON data to file)
+# add support for multiline description input in the 'add' and 'edit' commands
 # maybe add support for freebusy ?
-# complete the implementation of _EditEvent iteration hook
 
 #############################################################################
 #                                                                           #
@@ -961,19 +961,22 @@ class gcalcli:
             PrintMsg(CLR_RED(), "Deleted!\n")
             return
 
-        PrintMsg(CLR_YLW(), "Delete? [N]o [y]es [q]uit: ")
+        PrintMsg(CLR_MAG(), "Delete? [N]o [y]es [q]uit: ")
         val = raw_input()
 
         if not val or val.lower() == 'n':
             return
+
         elif val.lower() == 'y':
             self.calService.events().\
                  delete(calendarId = event['gcalcli_cal']['id'],
                         eventId = event['id']).execute()
             PrintMsg(CLR_RED(), "Deleted!\n")
+
         elif val.lower() == 'q':
             sys.stdout.write('\n')
             sys.exit(0)
+
         else:
             PrintErrMsg('Error: invalid input\n')
             sys.stdout.write('\n')
@@ -982,10 +985,105 @@ class gcalcli:
 
     def _EditEvent(self, event):
 
-        # XXX
-        PrintMsg(CLR_RED(), "Edit '%s'\n" % event['summary'])
-        PrintMsg(CLR_RED(), "Not yet!")
-        sys.stdout.write('\n')
+        while True:
+
+            PrintMsg(CLR_MAG(), "Edit?\n" +
+                                "[N]o [s]ave [q]uit " +
+                                "[t]itle [l]ocation " +
+                                "[w]hen len[g]th " +
+                                "[r]eminder [d]escr: ")
+            val = raw_input()
+
+            if not val or val.lower() == 'n':
+                return
+
+            elif val.lower() == 's':
+                # copy only editable event details for patching
+                modEvent = {}
+                keys = ['summary', 'location', 'start', 'end',
+                        'reminders', 'description']
+                for k in keys:
+                    if k in event:
+                        modEvent[k] = event[k]
+
+                self.calService.events().\
+                     patch(calendarId = event['gcalcli_cal']['id'],
+                           eventId = event['id'],
+                           body = modEvent).execute()
+                PrintMsg(CLR_RED(), "Saved!\n")
+                return
+
+            elif not val or val.lower() == 'q':
+                sys.stdout.write('\n')
+                sys.exit(0)
+
+            elif val.lower() == 't':
+                PrintMsg(CLR_MAG(), "Title: ")
+                val = raw_input()
+                if val.strip():
+                    event['summary'] = \
+                        unicode(val.strip(), locale.getpreferredencoding())
+
+            elif val.lower() == 'l':
+                PrintMsg(CLR_MAG(), "Location: ")
+                val = raw_input()
+                if val.strip():
+                    event['location'] = \
+                        unicode(val.strip(), locale.getpreferredencoding())
+
+            elif val.lower() == 'w':
+                PrintMsg(CLR_MAG(), "When: ")
+                val = raw_input()
+                if val.strip():
+                    td = (event['e'] - event['s'])
+                    length = ((td.days * 1440) + (td.seconds / 60))
+                    newStart, newEnd = GetTimeFromStr(val.strip(), length)
+                    event['s'] = parse(newStart)
+                    event['e'] = parse(newEnd)
+                    event['start'] = \
+                        { 'dateTime' : newStart,
+                          'timeZone' : event['gcalcli_cal']['timeZone'] }
+                    event['end'] = \
+                        { 'dateTime' : newEnd,
+                          'timeZone' : event['gcalcli_cal']['timeZone'] }
+
+            elif val.lower() == 'g':
+                PrintMsg(CLR_MAG(), "Length (mins): ")
+                val = raw_input()
+                if val.strip():
+                    newStart, newEnd = \
+                        GetTimeFromStr(event['start']['dateTime'], val.strip())
+                    event['s'] = parse(newStart)
+                    event['e'] = parse(newEnd)
+                    event['start'] = \
+                        { 'dateTime' : newStart,
+                          'timeZone' : event['gcalcli_cal']['timeZone'] }
+                    event['end'] = \
+                        { 'dateTime' : newEnd,
+                          'timeZone' : event['gcalcli_cal']['timeZone'] }
+
+            elif val.lower() == 'r':
+                PrintMsg(CLR_MAG(), "Reminder (mins): ")
+                val = raw_input()
+                if val.strip().isdigit():
+                    event['reminders'] = \
+                        {'useDefault' : False,
+                         'overrides'  : [{'minutes' : int(val.strip()),
+                                          'method'  : 'popup'}]}
+
+            elif val.lower() == 'd':
+                PrintMsg(CLR_MAG(), "Description: ")
+                val = raw_input()
+                if val.strip():
+                    event['description'] = \
+                        unicode(val.strip(), locale.getpreferredencoding())
+
+            else:
+                PrintErrMsg('Error: invalid input\n')
+                sys.stdout.write('\n')
+                sys.exit(1)
+
+            self._PrintEvent(event, event['s'].strftime('\n%F'))
 
 
     def _IterateEvents(self, startDateTime, eventList,
@@ -1522,7 +1620,7 @@ class gcalcli:
                 continue
 
             #dprint(event)
-            PrintMsg(CLR_YLW(), "\n[S]kip [i]mport [q]uit: ")
+            PrintMsg(CLR_MAG(), "\n[S]kip [i]mport [q]uit: ")
             val = raw_input()
             if not val or val.lower() == 's':
                 continue
@@ -1959,22 +2057,22 @@ def BowChickaWowWow(calService, urlService):
 
     elif (args[0] == 'add'):
         if eTitle == None:
-            PrintMsg(CLR_YLW(), "Title: ")
+            PrintMsg(CLR_MAG(), "Title: ")
             eTitle = raw_input()
         if eWhere == None:
-            PrintMsg(CLR_YLW(), "Location: ")
+            PrintMsg(CLR_MAG(), "Location: ")
             eWhere = raw_input()
         if eWhen == None:
-            PrintMsg(CLR_YLW(), "When: ")
+            PrintMsg(CLR_MAG(), "When: ")
             eWhen = raw_input()
         if eDuration == None:
-            PrintMsg(CLR_YLW(), "Duration (mins): ")
+            PrintMsg(CLR_MAG(), "Duration (mins): ")
             eDuration = raw_input()
         if eDescr == None:
-            PrintMsg(CLR_YLW(), "Description: ")
+            PrintMsg(CLR_MAG(), "Description: ")
             eDescr = raw_input()
         if reminder == None:
-            PrintMsg(CLR_YLW(), "Reminder (mins): ")
+            PrintMsg(CLR_MAG(), "Reminder (mins): ")
             reminder = raw_input()
 
         # calculate "when" time:
@@ -2044,7 +2142,7 @@ def BowChickaWowWow(calService, urlService):
 
 
 def SIGINT_handler(signum, frame):
-    PrintErrMsg('Signal caught, bye!\n');
+    PrintErrMsg('Signal caught, bye!\n')
     sys.exit(1)
 
 signal.signal(signal.SIGINT, SIGINT_handler)
