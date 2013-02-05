@@ -15,12 +15,19 @@ Check your OS distribution for packages.
 Requirements
 ------------
 
- * [Python 2](http://www.python.org)
- * [Google API Client](https://developers.google.com/api-client-library/python) Python 2 module
- * [dateutil](http://www.labix.org/python-dateutil) Python 2 module
- * [vobject](http://vobject.skyhouseconsulting.com) Python 2 module
- * [simplejson](https://github.com/simplejson/simplejson) Python 2 module
- * A love for the command line!
+* [Python 2](http://www.python.org)
+* [Google API Client](https://developers.google.com/api-client-library/python) Python 2 module
+* [dateutil](http://www.labix.org/python-dateutil) Python 2 module
+* A love for the command line!
+
+### Optional packages
+* [vobject](http://vobject.skyhouseconsulting.com) Python module
+
+    Used for ics/vcal importing.
+
+* [parsedatetime](http://github.com/bear/parsedatetime) Python module
+
+    Used for fuzzy dates/times like "now", "today", "eod tomorrow", etc.
 
 Features
 --------
@@ -122,7 +129,7 @@ gcalcli [options] command [command args]
   --border-color           brightwhite ]
 
   --tsv                    tab-separated output for 'agenda'. Format is:
-                           date, start, end, link, title, location, description
+                           start date, start time, end date, end time, link, title, location, description
 
   --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
                            supported locales of your system first.

@@ -1,4 +1,3 @@
-
 v3.1
   * Enhancements
     - Ported to use the Google API Client library and Google Calendar v3 spec
@@ -19,6 +18,16 @@ v3.1
   * Fixes
     - the 'quick', 'add', and 'import' commands now require a single --cal option
     - lots of code reduction and simplification based on new Google API Client
+
+v2.4
+  * Added support for conky color sequences
+  * Support --reminder when using ics/vcal import
+  * Don't print empty descriptions
+  * Add support for fuzzy dates (today, tomorrow, next week) using parsedatetime
+  * Empty descriptions no longer printed
+  * Fixed print locations and reminders for agenda
+  * Allow outputing event URL as short URL using goo.gl
+  * Really minor change to display end dates in the --tsv view mode.
 
 v2.3
   * Enhancements
