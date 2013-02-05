@@ -557,16 +557,24 @@ class gcalcli:
 
             if event['s'] >= startDateTime and event['s'] < endDateTime:
 
+                forceEventColorAsMarker = False
+
                 if event['s'].hour == 0 and event['s'].minute == 0 and \
                    event['e'].hour == 0 and event['e'].minute == 0:
                     tmpTimeStr = ''
                 else:
-                    if not nowMarkerPrinted and self.now <= event['e']:
-                        nowMarkerPrinted = True
-                        weekEventStrings[dayNum] += \
-                            "\n" + \
-                            str(self.nowMarkerColor) + \
-                            (self.calWidth * '-')
+                    if not nowMarkerPrinted:
+                        if self.now <= event['s']:
+                            # add a line marker before next event
+                            nowMarkerPrinted = True
+                            weekEventStrings[dayNum] += \
+                                "\n" + \
+                                str(self.nowMarkerColor) + \
+                                (self.calWidth * '-')
+                        elif self.now >= event['s'] and self.now <= event['e']:
+                            # line marker is during the event (recolor event)
+                            nowMarkerPrinted = True
+                            forceEventColorAsMarker = True
 
                     if self.military:
                         tmpTimeStr = event['s'].strftime("%H:%M")
@@ -575,10 +583,15 @@ class gcalcli:
                             event['s'].strftime("%I:%M").lstrip('0') + \
                             event['s'].strftime('%p').lower()
 
+                if forceEventColorAsMarker:
+                    eventColor = self.nowMarkerColor
+                else:
+                    eventColor = self._CalendarColor(event['gcalcli_cal'])
+
                 # newline and empty string are the keys to turn off coloring
                 weekEventStrings[dayNum] += \
                     "\n" + \
-                    str(self._CalendarColor(event['gcalcli_cal'])) + \
+                    str(eventColor) + \
                     tmpTimeStr.strip() + \
                     " " + \
                     self._ValidTitle(event).strip()
