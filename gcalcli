@@ -888,8 +888,10 @@ class gcalcli:
             if self.detailUrl == "short":
                 tmpLink = ShortenURL(tmpLink)
             tmpDayStr = event.s.strftime(dayFormat)
+            tmpDayEnd = event.e.strftime(dayFormat)
             tmpTimeStr = event.s.strftime("%H:%M")
             tmpTimeStp = event.e.strftime("%H:%M")
+
             if event.where and len(event.where) > 0 and \
                event.where[0].value_string:
                 tmpWhere = event.where[0].value_string
@@ -902,6 +904,7 @@ class gcalcli:
             str = "%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
                 tmpDayStr,
                 tmpTimeStr,
+                tmpDayEnd,
                 tmpTimeStp,
                 tmpLink,
                 self._ValidTitle(event.title.text).strip(),

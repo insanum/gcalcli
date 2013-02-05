@@ -128,7 +128,7 @@ gcalcli [options] command [command args]
   --border-color           brightwhite ]
 
   --tsv                    tab-separated output for 'agenda'. Format is:
-                           'date' 'start' 'end' 'title' 'location' 'description'
+                           'start date' 'start time' 'end date' 'end time' 'title' 'location' 'description'
 
   --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
                            supported locales of your system first.

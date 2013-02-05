@@ -6,6 +6,7 @@ v2.4 (dev)
  * Empty descriptions no longer printed
  * Fixed print locations and reminders for agenda
  * Allow outputing event URL as short URL using goo.gl
+ * Really minor change to display end dates in the --tsv view mode.
 
 v2.3
   * Enhancements
