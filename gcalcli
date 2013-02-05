@@ -22,7 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-# Dude... just buy me a beer. :-)
+# Dude... just buy us a beer. :-)
 #
 
 #############################################################################
@@ -37,9 +37,8 @@
 #                 \___|  \___|/_/ \_\ |____| \___||____||___|               #
 #                                                                           #
 # Author: Eric Davis <http://www.insanum.com>                               #
+#         Brian Hartvigsen <http://github.com/tresni>                       #
 # Home: http://code.google.com/p/gcalcli                                    #
-#                                                                           #
-# Author: Eric Davis <http://www.insanum.com>                               #
 #                                                                           #
 # Requirements:                                                             #
 #  - Python 2                                                               #
@@ -48,16 +47,20 @@
 #        http://code.google.com/p/gdata-python-client                       #
 #  - dateutil Python module                                                 #
 #        http://www.labix.org/python-dateutil                               #
-#  - vobject Python module (optional, needed for importing ics/vcal files)  #
+#                                                                           #
+# Optional:                                                                 #
+#  - vobject Python module (needed for importing ics/vcal files)            #
 #        http://vobject.skyhouseconsulting.com                              #
-#  - simpleson Python module (optional, needed for url shortening)          #
+#  - simplejson Python module (needed for url shortening)                    #
 #        https://github.com/simplejson/simplejson                           #
+#  - parsedatetime Python module (needed for fuzzy date parsing)            #
+#        https://github.com/bear/parsedatetime                              #
 #                                                                           #
 #############################################################################
 
 __program__         = 'gcalcli'
-__version__         = 'v2.3'
-__author__          = 'Eric Davis'
+__version__         = 'v2.4'
+__author__          = 'Eric Davis, Brian Hartvigsen'
 __gcalcli_api_key__ = 'AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc'
 
 import inspect

@@ -1,4 +1,4 @@
-v2.4 (dev)
+v2.4
  * Added support for conky color sequences
  * Support --reminder when using ics/vcal import
  * Don't print empty descriptions

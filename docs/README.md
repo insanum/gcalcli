@@ -15,10 +15,18 @@ Requirements
 ------------
 
  * [Python 2](http://www.python.org)
- * Google's [GData](http://code.google.com/p/gdata-python-client) Python 2 module
+ * Google's [GData](http://code.google.com/p/gdata-python-client) Python module
  * [dateutil](http://www.labix.org/python-dateutil) Python module
- * [vobject](http://vobject.skyhouseconsulting.com) Python module
  * A love for the command line!
+
+### Optional packages
+ * [vobject](http://vobject.skyhouseconsulting.com) Python module
+     Used for ics/vcal importing.
+ * [simplejson](http://github.com/simplejson/simplejson) Python module
+     Used for URL shortening. We'll fallback to the stdlib json module if it's
+     not available.
+ * [parsedatetime](http://github.com/bear/parsedatetime) Python module
+     Used for fuzzy dates/times like "now", "today", "eod tomorrow", etc.
 
 Features
 --------
