@@ -380,11 +380,11 @@ def GetTimeFromStr(eWhen, eDuration=0):
 
 
 def ShortenURL(url):
+    from urllib2 import urlopen, Request
     try:
-        from urllib2 import urlopen, Request
         import simplejson as json
-    except:
-        return url
+    except ImportError:
+        import json
     gshort  = 'https://www.googleapis.com/urlshortener/v1/url'
     data    = {"longUrl":url, "key":__gcalcli_api_key__}
     headers = {'Content-Type':'application/json', 'User-Agent':'gcalcli'}
