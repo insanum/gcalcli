@@ -77,6 +77,14 @@ except ImportError, e:
     print "ERROR: Missing module - %s" % e.args[0]
     sys.exit(1)
 
+try:
+    # If they have parsedatetime, we'll use it for fuzzy datetime comparison
+    from parsedatetime import parsedatetime
+except:
+    class parsedatetime:
+        class Calendar:
+            def parse(self, string):
+                return ([], 0)
 
 def Version():
     sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
@@ -326,14 +334,35 @@ def DebugPrint(msg):
     sys.stdout.write(str(CLR_NRM()))
 
 
-def GetTimeFromStr(eWhen, eDuration):
-    defaultDateTime = datetime.now().replace(hour=0,
-                                             minute=0,
-                                             second=0,
-                                             microsecond=0)
+class DateTimeParser:
+    def __init__(self):
+        self.pdtCalendar = parsedatetime.Calendar();
+
+    def fromString(self, eWhen, useMidnight=True):
+        if useMidnight:
+            defaultDateTime = datetime.now(tzlocal()).replace(hour=0,
+                                                     minute=0,
+                                                     second=0,
+                                                     microsecond=0)
+        else:
+            defaultDateTime = datetime.now(tzlocal())
+
+        try:
+            eTimeStart = parse(eWhen, default=defaultDateTime)
+        except:
+            struct, result = self.pdtCalendar.parse(eWhen)
+            eTimeStart = datetime.fromtimestamp(time.mktime(struct), tzlocal())
+            if not result:
+                raise ValueError("Date and time is invalid")
+
+
+        return eTimeStart
+
+def GetTimeFromStr(eWhen, eDuration=0):
+    dtp = DateTimeParser()
 
     try:
-        eTimeStart = parse(eWhen, default=defaultDateTime)
+        eTimeStart = dtp.fromString(eWhen)
     except:
         PrintErrMsg('Date and time is invalid!\n')
         sys.exit(1)
@@ -382,6 +411,7 @@ class gcalcli:
     command       = 'notify-send -u critical -a gcalcli %s'
     tsv           = False
     customLocale  = None
+    dateParser    = DateTimeParser()
 
     detailLocation   = False
     detailLength     = False
@@ -1144,21 +1174,18 @@ class gcalcli:
 
 
     def AgendaQuery(self, startText='', endText=''):
-
-        if self.ignoreStarted:
-            defaultDateTime = self.now
-        else:
-            # convert now to midnight this morning and use for default
-            defaultDateTime = self.now.replace(hour=0,
-                                               minute=0,
-                                               second=0,
-                                               microsecond=0)
-
         if startText == '':
-            start = defaultDateTime
+            if self.ignoreStarted:
+                start = self.now
+            else:
+                # convert now to midnight this morning and use for default
+                start = self.now.replace(hour=0,
+                                         minute=0,
+                                         second=0,
+                                         microsecond=0)
         else:
             try:
-                start = parse(startText, default=defaultDateTime)
+                start = self.dateParser.fromString(startText, not self.ignoreStarted)
             except:
                 PrintErrMsg('Error: failed to parse start time\n')
                 return
@@ -1167,7 +1194,7 @@ class gcalcli:
             end = (start + timedelta(days=self.agendaLength))
         else:
             try:
-                end = parse(endText, default=defaultDateTime)
+                end = self.dateParser.fromString(endText, not self.ignoreStarted)
             except:
                 PrintErrMsg('Error: failed to parse end time\n')
                 return
@@ -1182,17 +1209,15 @@ class gcalcli:
 
     def CalQuery(self, cmd, startText='', count=1):
 
-        # convert now to midnight this morning and use for default
-        defaultDateTime = self.now.replace(hour=0,
-                                           minute=0,
-                                           second=0,
-                                           microsecond=0)
-
         if startText == '':
-            start = defaultDateTime
+            # convert now to midnight this morning and use for default
+            start = self.now.replace(hour=0,
+                                     minute=0,
+                                     second=0,
+                                     microsecond=0)
         else:
             try:
-                start = parse(startText, default=defaultDateTime)
+                start = self.dateParser.fromString(startText)
                 start = start.replace(hour=0, minute=0, second=0, microsecond=0)
             except:
                 PrintErrMsg('Error: failed to parse start time\n')
