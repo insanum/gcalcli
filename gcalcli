@@ -91,6 +91,11 @@ except ImportError, e:
     sys.exit(1)
 
 try:
+    from simplejson import json
+except ImportError:
+    import json
+
+try:
     # If they have parsedatetime, we'll use it for fuzzy datetime comparison
     from parsedatetime import parsedatetime
 except:
@@ -188,6 +193,8 @@ gcalcli [options] command [command args]
    --when <datetime>       - make sure to quote strings with spaces
    --duration <#>          - datetime examples see 'agenda' below
    --descr <description>
+
+   --refresh               refresh all caches
 
  Commands:
 
@@ -378,9 +385,10 @@ def dprint(obj):
     except ImportError, e:
         print obj
 
+
 class DateTimeParser:
     def __init__(self):
-        self.pdtCalendar = parsedatetime.Calendar();
+        self.pdtCalendar = parsedatetime.Calendar()
 
     def fromString(self, eWhen, useMidnight=True):
         if useMidnight:
@@ -402,6 +410,7 @@ class DateTimeParser:
 
         return eTimeStart
 
+
 def GetTimeFromStr(eWhen, eDuration=0):
     dtp = DateTimeParser()
 
@@ -422,6 +431,7 @@ def GetTimeFromStr(eWhen, eDuration=0):
 
     return sTimeStart, sTimeStop
 
+
 class gcalcli:
 
     allCals       = None
@@ -437,6 +447,7 @@ class gcalcli:
     command       = 'notify-send -u critical -a gcalcli %s'
     tsv           = False
     customLocale  = None
+    refreshCache  = False
     dateParser    = DateTimeParser()
 
     detailCalendar   = False
@@ -484,7 +495,8 @@ class gcalcli:
                  nowMarkerColor=CLR_BRRED(),
                  borderColor=CLR_WHT(),
                  tsv=False,
-                 customLocale=None):
+                 customLocale=None,
+                 refreshCache=False):
 
         self.calService    = calService
         self.urlService    = urlService
@@ -495,6 +507,7 @@ class gcalcli:
         self.calMonday     = calMonday
         self.tsv           = tsv
         self.customLocale  = customLocale
+        self.refreshCache  = refreshCache
 
         self.detailCalendar   = detailCalendar
         self.detailLocation   = detailLocation
@@ -520,27 +533,7 @@ class gcalcli:
                         "Check supported locales of your system.\n")
             sys.exit(1)
 
-        self.allCals = []
-        calList = calService.calendarList().list().execute()
-        while True:
-            for cal in calList['items']:
-                self.allCals.append(cal)
-            pageToken = calList.get('nextPageToken')
-            if pageToken:
-                calList = calService.calendarList().\
-                          list(pageToken = pageToken).execute()
-            else:
-                break
-
-        # gcalcli defined way to order calendars
-        order = { self.ACCESS_OWNER    : 1,
-                  self.ACCESS_WRITER   : 2,
-                  self.ACCESS_READER   : 3,
-                  self.ACCESS_FREEBUSY : 4 }
-
-        self.allCals.sort(lambda x, y:
-                           cmp(order[x['accessRole']],
-                               order[y['accessRole']]))
+        self._GetAllCals()
 
         for cal in self.allCals:
             if len(calNames):
@@ -551,6 +544,41 @@ class gcalcli:
             else:
                 self.cals.append(cal)
                 cal['colorSpec'] = None
+
+
+    def _GetAllCals(self):
+        allCalsCache = os.path.expanduser('~') + '/.gcalcli_cals'
+        if self.refreshCache:
+            os.remove(allCalsCache)
+
+        try:
+            with open(allCalsCache, 'rb') as jf:
+                self.allCals = json.load(jf)
+        except IOError:
+            self.allCals = []
+            calList = calService.calendarList().list().execute()
+            while True:
+                for cal in calList['items']:
+                    self.allCals.append(cal)
+                pageToken = calList.get('nextPageToken')
+                if pageToken:
+                    calList = calService.calendarList().\
+                              list(pageToken = pageToken).execute()
+                else:
+                    break
+
+            # gcalcli defined way to order calendars
+            order = { self.ACCESS_OWNER    : 1,
+                      self.ACCESS_WRITER   : 2,
+                      self.ACCESS_READER   : 3,
+                      self.ACCESS_FREEBUSY : 4 }
+
+            self.allCals.sort(lambda x, y:
+                               cmp(order[x['accessRole']],
+                                   order[y['accessRole']]))
+
+            with open(allCalsCache, 'wb') as jf:
+                json.dump(self.allCals, jf)
 
 
     def _ShortenURL(self, url):
@@ -1889,7 +1917,8 @@ def BowChickaWowWow(calService, urlService):
                                     "when=",
                                     "duration=",
                                     "descr=",
-                                    "iama-expert"])
+                                    "iama-expert",
+                                    "refresh"])
     except getopt.error:
         sys.exit(1)
 
@@ -1941,7 +1970,9 @@ def BowChickaWowWow(calService, urlService):
     eDuration = None
     eDescr    = None
 
-    iamaExpert = False # this option CANNOT be set in the config file
+    # this options do not need to be in the config file
+    iamaExpert   = False
+    refreshCache = False
 
     # fix wokCalNames when not specified in config file
     if len(calNames) == 1 and calNames[0] == None:
@@ -2062,6 +2093,9 @@ def BowChickaWowWow(calService, urlService):
         elif (opt == "--iama-expert"):
             iamaExpert = True
 
+        elif (opt == "--refresh"):
+            refreshCache = True
+
     if detailUrl and detailUrl != 'short' and detailUrl != 'long':
         PrintErrMsg('Error: invalid detail url\n')
         sys.exit(1)
@@ -2105,7 +2139,8 @@ def BowChickaWowWow(calService, urlService):
                    nowMarkerColor=nowMarkerColor,
                    borderColor=borderColor,
                    tsv=tsv,
-                   customLocale=customLocale)
+                   customLocale=customLocale,
+                   refreshCache=refreshCache)
 
     if args[0] == 'list':
         gcal.ListAllCalendars()
