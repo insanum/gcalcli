@@ -159,6 +159,8 @@ gcalcli [options] command [command args]
 
   --nc                     don't use colors
 
+  --nl                     don't use line graphics
+
   --conky                  use conky color escapes sequences instead of ansi
                            terminal color escape sequences (requires using
                            the 'execpi' command in your conkyrc)
@@ -279,8 +281,7 @@ class CLR:
     conky    = False
 
     def __str__(self):
-        if self.useColor: return self.color
-        else: return ""
+        return self.color if self.useColor else ""
 
 class CLR_NRM(CLR):   color = "\033[0m"
 class CLR_BLK(CLR):   color = "\033[0;30m"
@@ -321,6 +322,28 @@ def SetConkyColors():
     CLR_BRCYN.color = "${color cyan}"
     CLR_WHT.color   = "${color white}"
     CLR_BRWHT.color = "${color white}"
+
+
+class ART:
+
+    useArt = True
+    fancy  = ''
+    plain  = ''
+
+    def __str__(self):
+        return self.fancy if self.useArt else self.plain
+
+class ART_HRZ(ART): fancy = '\033(0\x71\033(B' ; plain = '-'
+class ART_VRT(ART): fancy = '\033(0\x78\033(B' ; plain = '|'
+class ART_LRC(ART): fancy = '\033(0\x6A\033(B' ; plain = '+'
+class ART_URC(ART): fancy = '\033(0\x6B\033(B' ; plain = '+'
+class ART_ULC(ART): fancy = '\033(0\x6C\033(B' ; plain = '+'
+class ART_LLC(ART): fancy = '\033(0\x6D\033(B' ; plain = '+'
+class ART_CRS(ART): fancy = '\033(0\x6E\033(B' ; plain = '+'
+class ART_LTE(ART): fancy = '\033(0\x74\033(B' ; plain = '+'
+class ART_RTE(ART): fancy = '\033(0\x75\033(B' ; plain = '+'
+class ART_BTE(ART): fancy = '\033(0\x76\033(B' ; plain = '+'
+class ART_UTE(ART): fancy = '\033(0\x77\033(B' ; plain = '+'
 
 
 def PrintErrMsg(msg):
@@ -598,9 +621,9 @@ class gcalcli:
                             # add a line marker before next event
                             nowMarkerPrinted = True
                             weekEventStrings[dayNum] += \
-                                "\n" + \
-                                str(self.nowMarkerColor) + \
-                                (self.calWidth * '-')
+                                ("\n" +
+                                 str(self.nowMarkerColor) +
+                                 (self.calWidth * str(ART_HRZ())))
                         elif self.now >= event['s'] and self.now <= event['e']:
                             # line marker is during the event (recolor event)
                             nowMarkerPrinted = True
@@ -710,8 +733,23 @@ class gcalcli:
         while (len(eventList) and eventList[0]['s'] < startDateTime):
             eventList = eventList[1:]
 
-        weekDivider = (7 * ('+' + (self.calWidth * '-'))) + '+'
-        weekDivider = str(self.borderColor) + weekDivider + str(CLR_NRM())
+        dayWidthLine = (self.calWidth * str(ART_HRZ()))
+
+        topWeekDivider = (str(self.borderColor) +
+                          str(ART_ULC()) + dayWidthLine +
+                          (6 * (str(ART_UTE()) + dayWidthLine)) +
+                          str(ART_URC()) + str(CLR_NRM()))
+
+        midWeekDivider = (str(self.borderColor) +
+                          str(ART_LTE()) + dayWidthLine +
+                          (6 * (str(ART_CRS()) + dayWidthLine)) +
+                          str(ART_RTE()) + str(CLR_NRM()))
+
+        botWeekDivider = (str(self.borderColor) +
+                          str(ART_LLC()) + dayWidthLine +
+                          (6 * (str(ART_BTE()) + dayWidthLine)) +
+                          str(ART_LRC()) + str(CLR_NRM()))
+
         empty       = self.calWidth * ' '
 
         dayFormat = '%-' + str(self.calWidth) + '.' + str(self.calWidth) + 's'
@@ -720,7 +758,7 @@ class gcalcli:
         dayNames = [ date(2001, 1, i+1).strftime('%A') for i in range(7) ]
         dayNames = dayNames[6:] + dayNames[:6]
 
-        dayHeader = str(self.borderColor) + '|' + str(CLR_NRM())
+        dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
         for i in xrange(7):
             if self.calMonday:
                 if i == 6:
@@ -730,20 +768,41 @@ class gcalcli:
             else:
                 dayName = dayFormat % (dayNames[i])
             dayHeader += str(self.dateColor) + dayName + str(CLR_NRM())
-            dayHeader += str(self.borderColor) + '|' + str(CLR_NRM())
+            dayHeader += str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
 
-        PrintMsg(CLR_NRM(), "\n" + weekDivider + "\n")
         if cmd == 'calm':
+            topMonthDivider = (str(self.borderColor) +
+                               str(ART_ULC()) + dayWidthLine +
+                               (6 * (str(ART_HRZ()) + dayWidthLine)) +
+                               str(ART_URC()) + str(CLR_NRM()))
+            PrintMsg(CLR_NRM(), "\n" + topMonthDivider + "\n")
+
             m = startDateTime.strftime('%B %Y')
             mw = str((self.calWidth * 7) + 6)
             mwf = '%-' + mw + '.' + mw + 's'
             PrintMsg(CLR_NRM(),
-                     str(self.borderColor) + '|' + str(CLR_NRM()) +
-                     str(self.dateColor) + mwf % (m) + str(CLR_NRM()) +
-                     str(self.borderColor) + '|' + str(CLR_NRM()) + '\n')
-            PrintMsg(CLR_NRM(), weekDivider + "\n")
+                     str(self.borderColor) +
+                     str(ART_VRT()) +
+                     str(CLR_NRM()) +
+                     str(self.dateColor) +
+                     mwf % (m) +
+                     str(CLR_NRM()) +
+                     str(self.borderColor) +
+                     str(ART_VRT()) +
+                     str(CLR_NRM()) +
+                     '\n')
+
+            botMonthDivider = (str(self.borderColor) +
+                               str(ART_LTE()) + dayWidthLine +
+                               (6 * (str(ART_UTE()) + dayWidthLine)) +
+                               str(ART_RTE()) + str(CLR_NRM()))
+            PrintMsg(CLR_NRM(), botMonthDivider + "\n")
+
+        else: # calw
+            PrintMsg(CLR_NRM(), "\n" + topWeekDivider + "\n")
+
         PrintMsg(CLR_NRM(), dayHeader + "\n")
-        PrintMsg(CLR_NRM(), weekDivider + "\n")
+        PrintMsg(CLR_NRM(), midWeekDivider + "\n")
 
         curMonth = startDateTime.strftime("%b")
 
@@ -761,7 +820,7 @@ class gcalcli:
         for i in xrange(count):
 
             # create/print date line
-            line = str(self.borderColor) + '|' + str(CLR_NRM())
+            line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
             for j in xrange(7):
                 if cmd == 'calw':
                     d = (startWeekDateTime +
@@ -782,7 +841,7 @@ class gcalcli:
                             dayFormat % (d + tmpTodayMarker) + \
                         str(CLR_NRM()) + \
                         str(self.borderColor) + \
-                            '|' + \
+                            str(ART_VRT()) + \
                         str(CLR_NRM())
             PrintMsg(CLR_NRM(), line + "\n")
 
@@ -805,14 +864,16 @@ class gcalcli:
             while 1:
 
                 done = True
-                line = str(self.borderColor) + '|' + str(CLR_NRM())
+                line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
 
                 for j in xrange(7):
 
                     if weekEventStrings[j] == '':
                         weekColorStrings[j] = ''
-                        line += empty + \
-                                str(self.borderColor) + '|' + str(CLR_NRM())
+                        line += (empty +
+                                 str(self.borderColor) +
+                                 str(ART_VRT()) +
+                                 str(CLR_NRM()))
                         continue
 
                     # get/skip over a color sequence
@@ -829,8 +890,10 @@ class gcalcli:
                     if weekEventStrings[j][0] == '\n':
                         weekColorStrings[j] = ''
                         weekEventStrings[j] = weekEventStrings[j][1:]
-                        line += empty + \
-                                str(self.borderColor) + '|' + str(CLR_NRM())
+                        line += (empty +
+                                 str(self.borderColor) +
+                                 str(ART_VRT()) +
+                                 str(CLR_NRM()))
                         done = False
                         continue
 
@@ -839,21 +902,26 @@ class gcalcli:
                     printLen, cut = self._GetCutIndex(weekEventStrings[j])
                     padding = ' ' * (self.calWidth - printLen)
 
-                    line += weekColorStrings[j] + \
-                            weekEventStrings[j][:cut] + \
-                            padding + \
-                            str(CLR_NRM())
+                    line += (weekColorStrings[j] +
+                             weekEventStrings[j][:cut] +
+                             padding +
+                             str(CLR_NRM()))
                     weekEventStrings[j] = weekEventStrings[j][cut:]
 
                     done = False
-                    line += str(self.borderColor) + '|' + str(CLR_NRM())
+                    line += (str(self.borderColor) +
+                             str(ART_VRT()) +
+                             str(CLR_NRM()))
 
                 if done:
                     break
 
                 PrintMsg(CLR_NRM(), line + "\n")
 
-            PrintMsg(CLR_NRM(), weekDivider + "\n")
+            if i < range(count)[len(range(count))-1]:
+                PrintMsg(CLR_NRM(), midWeekDivider + "\n")
+            else:
+                PrintMsg(CLR_NRM(), botWeekDivider + "\n")
 
 
     def _tsv(self, startDateTime, eventList):
@@ -869,7 +937,7 @@ class gcalcli:
             tmpContent = ''
             if 'description' in event and event['description'].strip():
                 tmpContent = event['description'].strip()
-            str = "%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
+            xstr = "%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
                 tmpDayStr,
                 tmpTimeStr,
                 tmpDayStp,
@@ -879,8 +947,8 @@ class gcalcli:
                 tmpWhere,
                 tmpContent
             )
-            str2 = "%s\n" % str.replace('\n', '''\\n''')
-            sys.stdout.write(str2)
+            xstr2 = "%s\n" % xstr.replace('\n', '''\\n''')
+            sys.stdout.write(xstr2)
 
 
     def _PrintEvent(self, event, prefix):
@@ -902,10 +970,10 @@ class gcalcli:
                     for singleLine in tmpLine.split("\n"):
                         singleLine = singleLine.ljust(self.detailDescrWidth,' ')
                         new_descr += singleLine[:len(indent)] + \
-                                     '|' + \
+                                     str(ART_VRT()) + \
                                      singleLine[(len(indent)+1) :
                                                 (self.detailDescrWidth-1)] + \
-                                     '|' + '\n'
+                                     str(ART_VRT()) + '\n'
                 else:
                     new_descr += wrapper.fill(line) + "\n"
             return new_descr.rstrip()
@@ -939,62 +1007,77 @@ class gcalcli:
                      (tmpTimeStr, self._ValidTitle(event).strip()))
 
         if self.detailCalendar:
-            str = "%s  Calendar: %s\n" % (
+            xstr = "%s  Calendar: %s\n" % (
                 detailsIndent,
                 event['gcalcli_cal']['summary']
             )
-            PrintMsg(CLR_NRM(), str)
+            PrintMsg(CLR_NRM(), xstr)
 
         if self.detailUrl:
             hLink = self._ShortenURL(event['htmlLink'])
-            str = "%s  Link: %s\n" % (detailsIndent, hLink)
-            PrintMsg(CLR_NRM(), str)
+            xstr = "%s  Link: %s\n" % (detailsIndent, hLink)
+            PrintMsg(CLR_NRM(), xstr)
 
         if self.detailLocation and \
            'location' in event and \
            event['location'].strip():
-            str = "%s  Location: %s\n" % (
+            xstr = "%s  Location: %s\n" % (
                 detailsIndent,
                 event['location'].strip()
             )
-            PrintMsg(CLR_NRM(), str)
+            PrintMsg(CLR_NRM(), xstr)
 
         if self.detailLength:
             diffDateTime = (event['e'] - event['s'])
-            str = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
-            PrintMsg(CLR_NRM(), str)
+            xstr = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
+            PrintMsg(CLR_NRM(), xstr)
 
         if self.detailReminders and 'reminders' in event:
             if event['reminders']['useDefault'] == True:
-                str = "%s  Reminder: (default)\n" % (detailsIndent)
-                PrintMsg(CLR_NRM(), str)
+                xstr = "%s  Reminder: (default)\n" % (detailsIndent)
+                PrintMsg(CLR_NRM(), xstr)
             elif 'overrides' in event['reminders']:
                 for rem in event['reminders']['overrides']:
-                    str = "%s  Reminder: %s %d minutes\n" % \
-                          (detailsIndent, rem['method'], rem['minutes'])
-                    PrintMsg(CLR_NRM(), str)
+                    xstr = "%s  Reminder: %s %d minutes\n" % \
+                           (detailsIndent, rem['method'], rem['minutes'])
+                    PrintMsg(CLR_NRM(), xstr)
 
         if self.detailDescr and \
            'description' in event and \
            event['description'].strip():
             descrIndent = detailsIndent + '  '
-            marker = descrIndent + '-' * \
-                     (self.detailDescrWidth - len(descrIndent))
             box = True # leave old non-box code for option later
             if box:
-                marker = marker[:len(descrIndent)] + \
-                         '+' + \
-                         marker[(len(descrIndent)+1) :
-                                (self.detailDescrWidth-1)] + \
-                         '+'
-            str = "%s  Description:\n%s\n%s\n%s\n" % (
-                detailsIndent,
-                marker,
-                _formatDescr(event['description'].strip(),
-                             descrIndent, box),
-                marker
-            )
-            PrintMsg(CLR_NRM(), str)
+                topMarker = (descrIndent +
+                             str(ART_ULC()) +
+                             (str(ART_HRZ()) *
+                              ((self.detailDescrWidth - len(descrIndent)) -
+                               2)) +
+                             str(ART_URC()))
+                botMarker = (descrIndent +
+                             str(ART_LLC()) +
+                             (str(ART_HRZ()) *
+                              ((self.detailDescrWidth - len(descrIndent)) -
+                               2)) +
+                             str(ART_LRC()))
+                xstr = "%s  Description:\n%s\n%s\n%s\n" % (
+                    detailsIndent,
+                    topMarker,
+                    _formatDescr(event['description'].strip(),
+                                 descrIndent, box),
+                    botMarker
+                )
+            else:
+                marker = descrIndent + '-' * \
+                         (self.detailDescrWidth - len(descrIndent))
+                xstr = "%s  Description:\n%s\n%s\n%s\n" % (
+                    detailsIndent,
+                    marker,
+                    _formatDescr(event['description'].strip(),
+                                 descrIndent, box),
+                    marker
+                )
+            PrintMsg(CLR_NRM(), xstr)
 
 
     def _DeleteEvent(self, event):
@@ -1790,6 +1873,7 @@ def BowChickaWowWow(calService, urlService):
                                     "width=",
                                     "mon",
                                     "nc",
+                                    "nl",
                                     "conky",
                                     "cal-owner-color=",
                                     "cal-writer-color=",
@@ -1923,6 +2007,9 @@ def BowChickaWowWow(calService, urlService):
 
         elif opt == "--nc":
             CLR.useColor = False
+
+        elif opt == "--nl":
+            ART.useArt = False
 
         elif opt == "--conky":
             SetConkyColors()

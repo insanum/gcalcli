@@ -116,6 +116,8 @@ gcalcli [options] command [command args]
 
   --nc                     don't use colors
 
+  --nl                     don't use line graphics
+
   --conky                  use conky color escapes sequences instead of ansi
                            terminal color escape sequences (requires using
                            the 'execpi' command in your conkyrc)

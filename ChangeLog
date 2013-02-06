@@ -13,6 +13,7 @@ v3.1
         representing the current time (i.e. like that seen in the Google
         Calendar week/day views), new --now-marker-color changes line color
     - new --detail-calendar option to print the calendar an event belongs
+    - terminal graphics now used for lines, use --nl option to turn them off
     - the --cals option to limit calendars by access role has been removed
     - the 'search' command now supports proper Google-like search terms
   * Fixes
