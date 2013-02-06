@@ -86,6 +86,7 @@ try:
     from oauth2client.file import Storage
     from oauth2client.client import OAuth2WebServerFlow
     from oauth2client.tools import run
+    import cPickle as pickle
 except ImportError, e:
     print "ERROR: Missing module - %s" % e.args[0]
     sys.exit(1)
@@ -194,7 +195,8 @@ gcalcli [options] command [command args]
    --duration <#>          - datetime examples see 'agenda' below
    --descr <description>
 
-   --refresh               refresh all caches
+   --refresh               delete and refresh the cache
+   --no-cache              execute the command without using any cached data
 
  Commands:
 
@@ -434,10 +436,15 @@ def GetTimeFromStr(eWhen, eDuration=0):
 
 class gcalcli:
 
-    allCals       = None
+    cache         = {}
+    refreshCache  = False
+    useCache      = True
+    allCals       = []
+    allEvents     = []
     cals          = []
     now           = datetime.now(tzlocal())
     agendaLength  = 5
+    authHttp      = None
     calService    = None
     urlService    = None
     military      = False
@@ -447,7 +454,6 @@ class gcalcli:
     command       = 'notify-send -u critical -a gcalcli %s'
     tsv           = False
     customLocale  = None
-    refreshCache  = False
     dateParser    = DateTimeParser()
 
     detailCalendar   = False
@@ -472,8 +478,6 @@ class gcalcli:
     ACCESS_FREEBUSY = 'freeBusyReader'
 
     def __init__(self,
-                 calService=None,
-                 urlService=None,
                  calNames=[],
                  calNameColors=[],
                  military=False,
@@ -496,10 +500,8 @@ class gcalcli:
                  borderColor=CLR_WHT(),
                  tsv=False,
                  customLocale=None,
-                 refreshCache=False):
-
-        self.calService    = calService
-        self.urlService    = urlService
+                 refreshCache=False,
+                 useCache=True):
 
         self.military      = military
         self.ignoreStarted = ignoreStarted
@@ -508,6 +510,7 @@ class gcalcli:
         self.tsv           = tsv
         self.customLocale  = customLocale
         self.refreshCache  = refreshCache
+        self.useCache      = useCache
 
         self.detailCalendar   = detailCalendar
         self.detailLocation   = detailLocation
@@ -533,7 +536,7 @@ class gcalcli:
                         "Check supported locales of your system.\n")
             sys.exit(1)
 
-        self._GetAllCals()
+        self._GetCached()
 
         for cal in self.allCals:
             if len(calNames):
@@ -546,39 +549,158 @@ class gcalcli:
                 cal['colorSpec'] = None
 
 
-    def _GetAllCals(self):
-        allCalsCache = os.path.expanduser('~') + '/.gcalcli_cals'
+    def _GoogleAuth(self):
+        if not self.authHttp:
+            storage = Storage(os.path.expanduser('~') + '/.gcalcli_oauth')
+            credentials = storage.get()
+
+            if credentials is None or credentials.invalid == True:
+                credentials = run(
+                    OAuth2WebServerFlow(
+                        client_id='232867676714.apps.googleusercontent.com',
+                        client_secret='3tZSxItw6_VnZMezQwC8lUqy',
+                        scope=['https://www.googleapis.com/auth/calendar',
+                               'https://www.googleapis.com/auth/urlshortener'],
+                        user_agent=__program__+'/'+__version__),
+                    storage)
+
+            self.authHttp = credentials.authorize(httplib2.Http())
+
+        return self.authHttp
+
+
+    def _CalService(self):
+        if not self.calService:
+            self.calService = \
+                 build(serviceName='calendar',
+                       version='v3',
+                       http=self._GoogleAuth(),
+                       developerKey='AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc')
+
+        return self.calService
+
+
+    def _UrlService(self):
+        if not self.urlService:
+            self._GoogleAuth()
+            self.urlService = \
+                 build(serviceName='urlshortener',
+                       version='v1',
+                       http=self._GoogleAuth(),
+                       developerKey='AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc')
+
+        return self.urlService
+
+
+    def _GetCached(self):
+        cacheFile = os.path.expanduser('~') + '/.gcalcli_cache'
+
         if self.refreshCache:
-            os.remove(allCalsCache)
+            os.remove(cacheFile)
 
-        try:
-            with open(allCalsCache, 'rb') as jf:
-                self.allCals = json.load(jf)
-        except IOError:
-            self.allCals = []
-            calList = calService.calendarList().list().execute()
-            while True:
-                for cal in calList['items']:
-                    self.allCals.append(cal)
-                pageToken = calList.get('nextPageToken')
-                if pageToken:
-                    calList = calService.calendarList().\
-                              list(pageToken = pageToken).execute()
+        self.cache     = {}
+        self.allCals   = []
+        self.allEvents = []
+
+        if self.useCache:
+            # note that we need to use pickle for cache data since we stuff
+            # various non-JSON data in the runtime storage structures
+            try:
+                with open(cacheFile, 'rb') as _cache_:
+                    self.cache     = pickle.load(_cache_)
+                    self.allCals   = self.cache['allCals']
+                    self.allEvents = self.cache['allEvents']
+                # XXX assuming data is valid, need some verification check here
+                return
+            except IOError:
+                pass
+                # fall through
+
+        calList = self._CalService().calendarList().list().execute()
+
+        while True:
+            for cal in calList['items']:
+                self.allCals.append(cal)
+            pageToken = calList.get('nextPageToken')
+            if pageToken:
+                calList = self._CalService().calendarList().\
+                          list(pageToken = pageToken).execute()
+            else:
+                break
+
+        # gcalcli defined way to order calendars
+        order = { self.ACCESS_OWNER    : 1,
+                  self.ACCESS_WRITER   : 2,
+                  self.ACCESS_READER   : 3,
+                  self.ACCESS_FREEBUSY : 4 }
+
+        self.allCals.sort(lambda x, y:
+                           cmp(order[x['accessRole']],
+                               order[y['accessRole']]))
+
+        for cal in self.allCals:
+            events = self._CalService().events().\
+                     list(calendarId = cal['id'],
+                          singleEvents = True).execute()
+
+            if 'items' not in events:
+                continue
+
+            for event in events['items']:
+
+                event['gcalcli_cal'] = cal
+
+                if 'status' in event and event['status'] == 'cancelled':
+                    continue
+
+                if 'dateTime' in event['start']:
+                    event['s'] = parse(event['start']['dateTime'])
                 else:
-                    break
+                    # all day events
+                    event['s'] = parse(event['start']['date'])
 
-            # gcalcli defined way to order calendars
-            order = { self.ACCESS_OWNER    : 1,
-                      self.ACCESS_WRITER   : 2,
-                      self.ACCESS_READER   : 3,
-                      self.ACCESS_FREEBUSY : 4 }
+                if event['s'].tzinfo == None:
+                    event['s'] = event['s'].replace(tzinfo=tzlocal())
+                else:
+                    event['s'] = event['s'].astimezone(tzlocal())
 
-            self.allCals.sort(lambda x, y:
-                               cmp(order[x['accessRole']],
-                                   order[y['accessRole']]))
+                if 'dateTime' in event['end']:
+                    event['e'] = parse(event['end']['dateTime'])
+                else:
+                    # all day events
+                    event['e'] = parse(event['end']['date'])
 
-            with open(allCalsCache, 'wb') as jf:
-                json.dump(self.allCals, jf)
+                if event['e'].tzinfo == None:
+                    event['e'] = event['e'].replace(tzinfo=tzlocal())
+                else:
+                    event['e'] = event['e'].astimezone(tzlocal())
+
+                # http://en.wikipedia.org/wiki/Year_2038_problem
+                # Catch the year 2038 problem here as the python dateutil
+                # module can choke throwing a ValueError exception. If
+                # either the start or end time for an event has a year
+                # '>= 2038' dump it.
+                if event['s'].year >= 2038 or event['e'].year >= 2038:
+                    continue
+
+                self.allEvents.append(event)
+
+            pageToken = events.get('nextPageToken')
+            if pageToken:
+                events = self._CalService().events().\
+                         list(calendarId = cal['id'],
+                              pageToken = pageToken).execute()
+            else:
+                continue
+
+        # sort all events across all calendars together
+        self.allEvents.sort(lambda x, y: cmp(x['s'], y['s']))
+
+        if self.useCache:
+            self.cache['allCals']   = self.allCals
+            self.cache['allEvents'] = self.allEvents
+            with open(cacheFile, 'wb') as _cache_:
+                pickle.dump(self.cache, _cache_)
 
 
     def _ShortenURL(self, url):
@@ -586,7 +708,7 @@ class gcalcli:
             return url
         # Note that when authenticated to a google account different shortUrls
         # can be returned for the same longUrl. See: http://goo.gl/Ya0A9
-        shortUrl = urlService.url().insert(body={'longUrl':url}).execute()
+        shortUrl = self._UrlService().url().insert(body={'longUrl':url}).execute()
         return shortUrl['id']
 
 
@@ -1111,7 +1233,7 @@ class gcalcli:
     def _DeleteEvent(self, event):
 
         if self.iamaExpert:
-            self.calService.events().\
+            self._CalService().events().\
                  delete(calendarId = event['gcalcli_cal']['id'],
                         eventId = event['id']).execute()
             PrintMsg(CLR_RED(), "Deleted!\n")
@@ -1124,7 +1246,7 @@ class gcalcli:
             return
 
         elif val.lower() == 'y':
-            self.calService.events().\
+            self._CalService().events().\
                  delete(calendarId = event['gcalcli_cal']['id'],
                         eventId = event['id']).execute()
             PrintMsg(CLR_RED(), "Deleted!\n")
@@ -1162,7 +1284,7 @@ class gcalcli:
                     if k in event:
                         modEvent[k] = event[k]
 
-                self.calService.events().\
+                self._CalService().events().\
                      patch(calendarId = event['gcalcli_cal']['id'],
                            eventId = event['id'],
                            body = modEvent).execute()
@@ -1321,7 +1443,7 @@ class gcalcli:
 
             pageToken = events.get('nextPageToken')
             if pageToken:
-                events = self.calService.events().\
+                events = self._CalService().events().\
                          list(calendarId = cal['id'],
                               pageToken = pageToken).execute()
             else:
@@ -1343,7 +1465,7 @@ class gcalcli:
 
         for cal in self.cals:
 
-            work = self.calService.events().\
+            work = self._CalService().events().\
                    list(calendarId = cal['id'],
                         timeMin = start.isoformat() if start else None,
                         timeMax = end.isoformat() if end else None,
@@ -1496,7 +1618,7 @@ class gcalcli:
             PrintErrMsg("Must specify a single calendar\n")
             return
 
-        newEvent = self.calService.events().\
+        newEvent = self._CalService().events().\
                    quickAdd(calendarId = self.cals[0]['id'],
                             text = eventText).execute()
 
@@ -1506,7 +1628,7 @@ class gcalcli:
                                 'overrides'  : [{'minutes' : reminder,
                                                  'method'  : 'popup'}]}
 
-            newEvent = self.calService.events().\
+            newEvent = self._CalService().events().\
                        patch(calendarId = self.cals[0]['id'],
                              eventId = newEvent['id'],
                              body = rem).execute()
@@ -1537,7 +1659,7 @@ class gcalcli:
                                   'overrides'  : [{'minutes' : reminder,
                                                    'method'  : 'popup'}]}
 
-        newEvent = self.calService.events().\
+        newEvent = self._CalService().events().\
                    insert(calendarId = self.cals[0]['id'],
                           body = event).execute()
 
@@ -1765,7 +1887,7 @@ class gcalcli:
                                                 'email'       : email })
 
             if not verbose:
-                newEvent = self.calService.events().\
+                newEvent = self._CalService().events().\
                            insert(calendarId = self.cals[0]['id'],
                                   body = event).execute()
                 continue
@@ -1776,7 +1898,7 @@ class gcalcli:
             if not val or val.lower() == 's':
                 continue
             if val.lower() == 'i':
-                newEvent = self.calService.events().\
+                newEvent = self._CalService().events().\
                            insert(calendarId = self.cals[0]['id'],
                                   body = event).execute()
                 hLink = self._ShortenURL(newEvent['htmlLink'])
@@ -1878,7 +2000,7 @@ def GetCalColors(calNames):
     return calColors
 
 
-def BowChickaWowWow(calService, urlService):
+def BowChickaWowWow():
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "",
@@ -1918,8 +2040,10 @@ def BowChickaWowWow(calService, urlService):
                                     "duration=",
                                     "descr=",
                                     "iama-expert",
-                                    "refresh"])
+                                    "refresh",
+                                    "no-cache"])
     except getopt.error:
+        PrintErrMsg('Error: unknown argument\n')
         sys.exit(1)
 
     configFile = os.path.expanduser('~') + '/.gcalclirc'
@@ -1970,9 +2094,10 @@ def BowChickaWowWow(calService, urlService):
     eDuration = None
     eDescr    = None
 
-    # this options do not need to be in the config file
+    # these options do not need to be in the config file
     iamaExpert   = False
     refreshCache = False
+    useCache     = True
 
     # fix wokCalNames when not specified in config file
     if len(calNames) == 1 and calNames[0] == None:
@@ -1987,7 +2112,7 @@ def BowChickaWowWow(calService, urlService):
         if opt == "--help":
             Usage()
 
-        if opt == "--version":
+        elif opt == "--version":
             Version()
 
         elif opt == "--cal":
@@ -2096,12 +2221,15 @@ def BowChickaWowWow(calService, urlService):
         elif (opt == "--refresh"):
             refreshCache = True
 
+        elif (opt == "--no-cache"):
+            useCache = False
+
     if detailUrl and detailUrl != 'short' and detailUrl != 'long':
         PrintErrMsg('Error: invalid detail url\n')
         sys.exit(1)
 
     if len(args) == 0:
-        PrintErrMsg('Error: no command (--help)\n')
+        PrintErrMsg('Error: no command\n')
         sys.exit(1)
 
     calColors = GetCalColors(calNames)
@@ -2116,9 +2244,7 @@ def BowChickaWowWow(calService, urlService):
         calNameColors.append(calColors[calNameSimple])
     calNames = calNamesFiltered
 
-    gcal = gcalcli(calService=calService,
-                   urlService=urlService,
-                   calNames=calNames,
+    gcal = gcalcli(calNames=calNames,
                    calNameColors=calNameColors,
                    military=military,
                    detailCalendar=detailCalendar,
@@ -2140,7 +2266,8 @@ def BowChickaWowWow(calService, urlService):
                    borderColor=borderColor,
                    tsv=tsv,
                    customLocale=customLocale,
-                   refreshCache=refreshCache)
+                   refreshCache=refreshCache,
+                   useCache=useCache)
 
     if args[0] == 'list':
         gcal.ListAllCalendars()
@@ -2299,7 +2426,7 @@ def BowChickaWowWow(calService, urlService):
         Usage()
 
     else:
-        PrintErrMsg('Error: unknown command (--help)\n')
+        PrintErrMsg('Error: unknown command\n')
         sys.exit(1)
 
 
@@ -2309,26 +2436,6 @@ def SIGINT_handler(signum, frame):
 
 signal.signal(signal.SIGINT, SIGINT_handler)
 
-#-------------------------------------------------------------------------------
-http = httplib2.Http()
-
-flow = OAuth2WebServerFlow(
-           client_id='232867676714.apps.googleusercontent.com',
-           client_secret='3tZSxItw6_VnZMezQwC8lUqy',
-           scope=['https://www.googleapis.com/auth/calendar',
-                  'https://www.googleapis.com/auth/urlshortener'],
-           user_agent=__program__+'/'+__version__)
-storage = Storage(os.path.expanduser('~') + '/.gcalcli_oauth')
-credentials = storage.get()
-if credentials is None or credentials.invalid == True:
-    credentials = run(flow, storage)
-http = credentials.authorize(http)
-calService = build(serviceName='calendar', version='v3', http=http,
-                   developerKey='AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc')
-urlService = build(serviceName='urlshortener', version='v1', http=http,
-                   developerKey='AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc')
-#-------------------------------------------------------------------------------
-
 if __name__ == '__main__':
-    BowChickaWowWow(calService, urlService)
+    BowChickaWowWow()
 
