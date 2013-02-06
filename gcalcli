@@ -623,7 +623,7 @@ class gcalcli:
                             weekEventStrings[dayNum] += \
                                 ("\n" +
                                  str(self.nowMarkerColor) +
-                                 (self.calWidth * str(ART_HRZ())))
+                                 (self.calWidth * '-'))
                         elif self.now >= event['s'] and self.now <= event['e']:
                             # line marker is during the event (recolor event)
                             nowMarkerPrinted = True
