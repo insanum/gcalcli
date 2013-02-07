@@ -596,7 +596,11 @@ class gcalcli:
         cacheFile = os.path.expanduser('~') + '/.gcalcli_cache'
 
         if self.refreshCache:
-            os.remove(cacheFile)
+            try:
+                os.remove(cacheFile)
+            except OSError:
+                pass
+                # fall through
 
         self.cache     = {}
         self.allCals   = []
