@@ -639,59 +639,62 @@ class gcalcli:
                                order[y['accessRole']]))
 
         for cal in self.allCals:
+
             events = self._CalService().events().\
                      list(calendarId = cal['id'],
-                          singleEvents = True).execute()
+                          singleEvents = False).execute()
 
-            if 'items' not in events:
-                continue
+            while True:
+                if 'items' not in events:
+                    break
 
-            for event in events['items']:
+                for event in events['items']:
 
-                event['gcalcli_cal'] = cal
+                    event['gcalcli_cal'] = cal
 
-                if 'status' in event and event['status'] == 'cancelled':
-                    continue
+                    if 'status' in event and event['status'] == 'cancelled':
+                        continue
 
-                if 'dateTime' in event['start']:
-                    event['s'] = parse(event['start']['dateTime'])
+                    if 'dateTime' in event['start']:
+                        event['s'] = parse(event['start']['dateTime'])
+                    else:
+                        # all day events
+                        event['s'] = parse(event['start']['date'])
+
+                    if event['s'].tzinfo == None:
+                        event['s'] = event['s'].replace(tzinfo=tzlocal())
+                    else:
+                        event['s'] = event['s'].astimezone(tzlocal())
+
+                    if 'dateTime' in event['end']:
+                        event['e'] = parse(event['end']['dateTime'])
+                    else:
+                        # all day events
+                        event['e'] = parse(event['end']['date'])
+
+                    if event['e'].tzinfo == None:
+                        event['e'] = event['e'].replace(tzinfo=tzlocal())
+                    else:
+                        event['e'] = event['e'].astimezone(tzlocal())
+
+                    # http://en.wikipedia.org/wiki/Year_2038_problem
+                    # Catch the year 2038 problem here as the python dateutil
+                    # module can choke throwing a ValueError exception. If
+                    # either the start or end time for an event has a year
+                    # '>= 2038' dump it.
+                    if event['s'].year >= 2038 or event['e'].year >= 2038:
+                        continue
+
+                    self.allEvents.append(event)
+
+                pageToken = events.get('nextPageToken')
+                if pageToken:
+                    events = self._CalService().events().\
+                             list(calendarId = cal['id'],
+                                  singleEvents = False,
+                                  pageToken = pageToken).execute()
                 else:
-                    # all day events
-                    event['s'] = parse(event['start']['date'])
-
-                if event['s'].tzinfo == None:
-                    event['s'] = event['s'].replace(tzinfo=tzlocal())
-                else:
-                    event['s'] = event['s'].astimezone(tzlocal())
-
-                if 'dateTime' in event['end']:
-                    event['e'] = parse(event['end']['dateTime'])
-                else:
-                    # all day events
-                    event['e'] = parse(event['end']['date'])
-
-                if event['e'].tzinfo == None:
-                    event['e'] = event['e'].replace(tzinfo=tzlocal())
-                else:
-                    event['e'] = event['e'].astimezone(tzlocal())
-
-                # http://en.wikipedia.org/wiki/Year_2038_problem
-                # Catch the year 2038 problem here as the python dateutil
-                # module can choke throwing a ValueError exception. If
-                # either the start or end time for an event has a year
-                # '>= 2038' dump it.
-                if event['s'].year >= 2038 or event['e'].year >= 2038:
-                    continue
-
-                self.allEvents.append(event)
-
-            pageToken = events.get('nextPageToken')
-            if pageToken:
-                events = self._CalService().events().\
-                         list(calendarId = cal['id'],
-                              pageToken = pageToken).execute()
-            else:
-                continue
+                    break
 
         # sort all events across all calendars together
         self.allEvents.sort(lambda x, y: cmp(x['s'], y['s']))
