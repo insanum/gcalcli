@@ -59,7 +59,7 @@
 #############################################################################
 
 __program__         = 'gcalcli'
-__version__         = 'v2.4'
+__version__         = 'v2.4.1'
 __author__          = 'Eric Davis, Brian Hartvigsen'
 __gcalcli_api_key__ = 'AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc'
 
@@ -883,7 +883,7 @@ class gcalcli:
     def _tsv(self, startDateTime, eventList):
         # tab-separated output for easier shellscripting.
         # Format:
-        # "Date" "start" "end" "Event-Title" "Location" "Eventdescription"
+        # "Date" "start" "date" "end" "link" "Title" "Location" "description"
         dayFormat = '%F'
 
         for event in eventList:
@@ -904,7 +904,7 @@ class gcalcli:
                 tmpContent = event.content.text
             else:
                 tmpContent = ''
-            str = "%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
+            str = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
                 tmpDayStr,
                 tmpTimeStr,
                 tmpDayEnd,
