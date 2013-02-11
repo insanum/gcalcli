@@ -1094,7 +1094,7 @@ class gcalcli:
             tmpContent = ''
             if 'description' in event and event['description'].strip():
                 tmpContent = event['description'].strip()
-            xstr = "%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
+            xstr = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
                 tmpDayStr,
                 tmpTimeStr,
                 tmpDayStp,

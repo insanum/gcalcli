@@ -19,6 +19,7 @@ v3.1
   * Fixes
     - the 'quick', 'add', and 'import' commands now require a single --cal option
     - lots of code reduction and simplification based on new Google API Client
+    - tsv output
 
 v2.4
   * Added support for conky color sequences
