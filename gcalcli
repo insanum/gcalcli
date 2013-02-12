@@ -1803,55 +1803,35 @@ class gcalcli:
                 DebugPrint("RRULE: %s\n" % ve.rrule.value)
                 if verbose:
                     print "Recurrence...%s" % ve.rrule.value
-                    # XXX Need to print a NICE recurrence string
-                    #rr = rrulestr(ve.rrule.value)
-                    #print dir(rr)
 
-                #
-                # In order to add an RRULE using a DTSTART and DTEND in the
-                # local timezone, there needs to be a TIMEZONE section in the
-                # recurrence field. Since that is a pain and I'm lazy... as
-                # a workaround I convert the DTSTART and DTEND to UTC. Google
-                # handles this properly and keys off the timezone setting of
-                # the calendar being added to.  The event will be shown at the
-                # correct local time. :-)
-                #
+                event['recurrence'] = [ "RRULE:" + ve.rrule.value ]
 
-                if False:
-                    # A TIMEZONE section is needed for this to work XXX
-                    recurrence = \
-                        "DTSTART;TZID=" + \
-                            ve.dtstart.value.tzinfo._tzid + ":" + \
-                            ve.dtstart.value.strftime('%Y%m%dT%H%M%S') + \
-                            '\r\n' + \
-                        "DTEND;TZID=" + \
-                            ve.dtend.value.tzinfo._tzid + ":" + \
-                            ve.dtend.value.strftime('%Y%m%dT%H%M%S') + \
-                            '\r\n' + \
-                        "RRULE:" + ve.rrule.value + '\r\n'
-                else:
-                    ve.dtstart.value -= ve.dtstart.value.utcoffset()
-                    ve.dtstart.value = ve.dtstart.value.replace(tzinfo=None)
-                    ve.dtend.value -= ve.dtend.value.utcoffset()
-                    ve.dtend.value = ve.dtend.value.replace(tzinfo=None)
-                    recurrence = \
-                        "DTSTART:" + \
-                            ve.dtstart.value.strftime('%Y%m%dT%H%M%S') + \
-                            '\r\n' + \
-                        "DTEND:" + \
-                            ve.dtend.value.strftime('%Y%m%dT%H%M%S') + \
-                            '\r\n' + \
-                        "RRULE:" + ve.rrule.value + '\r\n'
-
-                DebugPrint("RECURRENCE:\n%s\n" % recurrence)
-                event['recurrence'] = [ recurrence ]
-
-            elif hasattr(ve, 'dtstart') and hasattr(ve, 'dtend'):
+            if hasattr(ve, 'dtstart') and hasattr(ve, 'dtend'):
 
                 start = ve.dtstart.value.isoformat()
                 end   = ve.dtend.value.isoformat()
-                event['start'] = { 'dateTime' : start }
-                event['end']   = { 'dateTime' : end }
+
+                # XXX
+                # Timezone madness! Note that we're using the timezone for the
+                # calendar being added to. This is OK if the event is in the
+                # same timezone. This needs to be changed to use the timezone
+                # from the DTSTART and DTEND values. Problem is, for example,
+                # the TZID might be "Pacific Standard Time" and Google expects
+                # a timezone string like "America/Los_Angeles". Need to find
+                # a way in python to convert to the more specific timezone
+                # string.
+                # XXX
+                # print ve.dtstart.params['X-VOBJ-ORIGINAL-TZID'][0]
+                # print self.cals[0]['timeZone']
+                # print dir(ve.dtstart.value.tzinfo)
+                # print vars(ve.dtstart.value.tzinfo)
+
+                event['start'] = { 'dateTime' : start,
+                                   'timeZone' : self.cals[0]['timeZone'] }
+                                   #'timeZone' : ve.dtstart.value.tzinfo._tzid }
+                event['end']   = { 'dateTime' : end,
+                                   'timeZone' : self.cals[0]['timeZone'] }
+                                   #'timeZone' : ve.dtend.value.tzinfo._tzid }
 
                 if reminder:
                     event['reminders'] = {'useDefault' : False,
