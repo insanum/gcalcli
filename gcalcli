@@ -2000,27 +2000,27 @@ def BowChickaWowWow():
         calNames = calNamesFiltered
 
     if 'all' in FLAGS.details or FLAGS.detail_all:
-        if not FLAGS['details_calendar'].present: FLAGS['details_calendar'] = True
-        if not FLAGS['details_location'].present: FLAGS['details_location'] = True
-        if not FLAGS['details_length'].present: FLAGS['details_length'] = True
-        if not FLAGS['details_reminders'].present: FLAGS['details_reminders'] = True
-        if not FLAGS['details_description'].present: FLAGS['details_description'] = True
-        if not FLAGS['details_url'].present: FLAGS['details_url'] = "long"
+        if not FLAGS['detail_calendar'].present: FLAGS['detail_calendar'].value = True
+        if not FLAGS['detail_location'].present: FLAGS['detail_location'].value = True
+        if not FLAGS['detail_length'].present: FLAGS['detail_length'].value = True
+        if not FLAGS['detail_reminders'].present: FLAGS['detail_reminders'].value = True
+        if not FLAGS['detail_descr'].present: FLAGS['detail_descr'].value = True
+        if not FLAGS['detail_url'].present: FLAGS['detail_url'].value = "long"
     else:
         if 'calendar' in FLAGS.details:
-            FLAGS['details_calendar'] = True
+            FLAGS['details_calendar'].value = True
         if 'location' in FLAGS.details:
-            FLAGS['details_location'] = True
+            FLAGS['details_location'].value = True
         if 'length' in FLAGS.details:
-            FLAGS['details_length'] = True
+            FLAGS['details_length'].value = True
         if 'reminders' in FLAGS.details:
-            FLAGS['details_reminders'] = True
+            FLAGS['details_reminders'].value = True
         if 'description' in FLAGS.details:
-            FLAGS['details_description'] = True
+            FLAGS['details_description'].value = True
         if 'longurl' in FLAGS.details:
-            FLAGS['details_url'] = 'long'
+            FLAGS['details_url'].value = 'long'
         elif 'shorturl' in FLAGS.details:
-            FLAGS['details_url'] = 'short'
+            FLAGS['details_url'].value = 'short'
 
     gcal = gcalcli(calNames=calNames,
                    calNameColors=calNameColors,
