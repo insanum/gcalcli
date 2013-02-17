@@ -70,133 +70,10 @@ __program__         = 'gcalcli'
 __version__         = 'v3.1'
 __author__          = 'Eric Davis, Brian Hartvigsen'
 __gcalcli_api_key__ = 'AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc'
-
-try:
-    import sys, os, re, urllib, getopt, shlex, subprocess, time
-    import codecs, locale, csv, threading, textwrap, signal
-    from Queue import Queue
-    from ConfigParser import RawConfigParser
-    from datetime import datetime, timedelta, date
-    from dateutil.tz import *
-    from dateutil.parser import *
-    from dateutil.rrule import *
-    from unicodedata import east_asian_width
-    import httplib2
-    from apiclient.discovery import build
-    from oauth2client.file import Storage
-    from oauth2client.client import OAuth2WebServerFlow
-    from oauth2client.tools import run
-    import cPickle as pickle
-except ImportError, e:
-    print "ERROR: Missing module - %s" % e.args[0]
-    sys.exit(1)
-
-try:
-    from simplejson import json
-except ImportError:
-    import json
-
-try:
-    # If they have parsedatetime, we'll use it for fuzzy datetime comparison
-    from parsedatetime import parsedatetime
-except:
-    class parsedatetime:
-        class Calendar:
-            def parse(self, string):
-                return ([], 0)
-
-def Version():
-    sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
-    sys.exit(1)
-
-
-def Usage():
-    sys.stdout.write('''
+__doc__             = '''
 Usage:
 
-gcalcli [options] command [command args]
-
- Options:
-
-  --help                   this usage text
-
-  --version                version information
-
-  --config <file>          config file to read (default is '~/.gcalclirc')
-
-  --cal <name>[#color]     'calendar' to work with (default is all calendars)
-                           - you can specify a calendar by name or by substring
-                             which can match multiple calendars
-                           - you can use multiple '--cal' arguments on the
-                             command line for the query commands
-                           - in the config file specify multiple calendars in
-                             quotes separated by commas as:
-                               cal: "foo", "bar", "my cal"
-                           - an optional color override can be specified per
-                             calendar using the ending hashtag:
-                               --cal "Eric Davis"#green --cal foo#red
-                             or via the config file:
-                               cal: "foo"#red, "bar"#yellow, "my cal"#green
-
-  --24hr                   show all dates in 24 hour format
-
-  --detail-all             show event details in the 'agenda' output
-  --detail-location        - the description width defaults to 80 characters
-  --detail-length          - if 'short' is specified for the url then the event
-  --detail-reminders         link is shortened using http://goo.gl (slow!)
-  --detail-descr           - the --detail-url can be used for both the 'quick'
-  --detail-descr-width       and 'add' commands as well
-  --detail-url [short,
-                long]
-
-  --ignore-started         ignore old or already started events
-                           - when used with the 'agenda' command, ignore events
-                             that have already started and are in-progress with
-                             respect to the specified [start] time
-                           - when used with the 'search' command, ignore events
-                             that have already occurred and only show future
-                             events
-
-  --width                  the number of characters to use for each column in
-                           the 'calw' and 'calm' command outputs (default is 10)
-
-  --mon                    week begins with Monday for 'calw' and 'calm' command
-                           outputs (default is Sunday)
-
-  --nc                     don't use colors
-
-  --nl                     don't use line graphics
-
-  --conky                  use conky color escapes sequences instead of ansi
-                           terminal color escape sequences (requires using
-                           the 'execpi' command in your conkyrc)
-
-  --cal-owner-color        specify the colors used for the calendars and dates
-  --cal-writer-color       each of these argument requires a <color> argument
-  --cal-reader-color       which must be one of [ default, black, brightblack,
-  --cal-freebusy-color     red, brightred, green, brightgreen, yellow,
-  --date-color             brightyellow, blue, brightblue, magenta,
-  --now-marker-color       brightmagenta, cyan, brightcyan, white,
-  --border-color           brightwhite ]
-
-  --tsv                    tab-separated output for 'agenda'. Format is:
-                           date, start, end, link, title, location, description
-
-  --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
-                           supported locales of your system first.
-
-  --reminder <mins>        number of minutes to use when setting reminders for
-                           the 'quick' and 'add' commands; if not specified
-                           the calendar's default reminder settings are used
-
-   --title <title>         event details used by the 'add' command
-   --where <location>      - the duration is specified in minutes
-   --when <datetime>       - make sure to quote strings with spaces
-   --duration <#>          - datetime examples see 'agenda' below
-   --descr <description>
-
-   --refresh               delete and refresh the cache
-   --no-cache              execute the command without using any cached data
+%s [options] command [command args or options]
 
  Commands:
 
@@ -264,7 +141,7 @@ gcalcli [options] command [command args]
                              events, just like the 'search' command
                            - editing is interactive
 
-  import [-v] [file]       import an ics/vcal file to a calendar
+  import [file]       import an ics/vcal file to a calendar
                            - a single --cal must specified
                            - if a file is not specified then the data is read
                              from standard input
@@ -274,15 +151,68 @@ gcalcli [options] command [command args]
                              quietly without any interaction
 
   remind <mins> <command>  execute command if event occurs within <mins>
-                           minutes time ('%s' in <command> is replaced with
+                           minutes time ('%%s' in <command> is replaced with
                            event start time and title text)
                            - <mins> default is 10
                            - default command:
-                              'notify-send -u critical -a gcalcli %s'
+                              'notify-send -u critical -a gcalcli %%s'
+'''
 
-''')
+
+# These are standard libraries and should never fail
+import sys, os, re, gflags, shlex
+import locale, textwrap, signal
+from Queue import Queue
+from datetime import datetime, timedelta, date
+from unicodedata import east_asian_width
+
+# Required 3rd partie libraries
+try:
+    from dateutil.tz import *
+    from dateutil.parser import *
+    from dateutil.rrule import *
+    import httplib2
+    from apiclient.discovery import build
+    from oauth2client.file import Storage
+    from oauth2client.client import OAuth2WebServerFlow
+    from oauth2client.tools import run
+except ImportError, e:
+    print "ERROR: Missing module - %s" % e.args[0]
     sys.exit(1)
 
+# cPickle is a standard library, but in case someone did something really
+# dumb, fall back to pickle.  If that's not their, your python is fucked
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
+# simplejson is the upstream version of the json standard library.  Use it if
+# it's available, otherwise, just use the standard library
+try:
+    from simplejson import json
+except ImportError:
+    import json
+
+# If they have parsedatetime, we'll use it for fuzzy datetime comparison.  If
+# not, we just return a fake failure every time and use only dateutil.
+try:
+    from parsedatetime import parsedatetime
+except:
+    class parsedatetime:
+        class Calendar:
+            def parse(self, string):
+                return ([], 0)
+
+def Version():
+    sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
+    sys.exit(1)
+
+def Usage(expanded=False):
+    sys.stdout.write(__doc__ % sys.argv[0])
+    if expanded:
+        print FLAGS.MainModuleHelp()
+    sys.exit(1)
 
 class CLR:
 
@@ -405,9 +335,9 @@ class DateTimeParser:
             eTimeStart = parse(eWhen, default=defaultDateTime)
         except:
             struct, result = self.pdtCalendar.parse(eWhen)
-            eTimeStart = datetime.fromtimestamp(time.mktime(struct), tzlocal())
             if not result:
                 raise ValueError("Date and time is invalid")
+            eTimeStart = datetime.fromtimestamp(time.mktime(struct), tzlocal())
 
 
         return eTimeStart
@@ -453,7 +383,6 @@ class gcalcli:
     calMonday     = False
     command       = 'notify-send -u critical -a gcalcli %s'
     tsv           = False
-    customLocale  = None
     dateParser    = DateTimeParser()
 
     detailCalendar   = False
@@ -499,7 +428,6 @@ class gcalcli:
                  nowMarkerColor=CLR_BRRED(),
                  borderColor=CLR_WHT(),
                  tsv=False,
-                 customLocale=None,
                  refreshCache=False,
                  useCache=True):
 
@@ -508,7 +436,6 @@ class gcalcli:
         self.calWidth      = calWidth
         self.calMonday     = calMonday
         self.tsv           = tsv
-        self.customLocale  = customLocale
         self.refreshCache  = refreshCache
         self.useCache      = useCache
 
@@ -527,14 +454,6 @@ class gcalcli:
         self.dateColor        = dateColor
         self.nowMarkerColor   = nowMarkerColor
         self.borderColor      = borderColor
-
-        # set customLocale if correct
-        try:
-            locale.setlocale(locale.LC_ALL, customLocale)
-        except Exception, e:
-            PrintErrMsg("Error: " + str(e) + "!\n" +
-                        "Check supported locales of your system.\n")
-            sys.exit(1)
 
         self._GetCached()
 
@@ -1652,15 +1571,15 @@ class gcalcli:
             return
 
         event = {}
-        event['summary'] = eTitle
+        event['summary'] = unicode(eTitle, locale.getpreferredencoding())
         event['start']   = { 'dateTime' : eStart,
                              'timeZone' : self.cals[0]['timeZone'] }
         event['end']     = { 'dateTime' : eEnd,
                              'timeZone' : self.cals[0]['timeZone'] }
         if eWhere:
-            event['location'] = eWhere
+            event['location'] = unicode(eWhere, locale.getpreferredencoding())
         if eDescr:
-            event['description'] = eDescr
+            event['description'] = unicode(eDescr, locale.getpreferredencoding())
         if reminder:
             event['reminders'] = {'useDefault' : False,
                                   'overrides'  : [{'minutes' : reminder,
@@ -1896,53 +1815,7 @@ class gcalcli:
                 PrintErrMsg('Error: invalid input\n')
                 sys.exit(1)
 
-
-def LoadConfig(configFile):
-
-    config = RawConfigParser()
-    config.read(os.path.expanduser(configFile))
-    return config
-
-
-def GetConfig(config, key, default):
-
-    try:
-        value = config.get('gcalcli', key)
-    except:
-        value = default
-
-    if value and value.startswith('`'):
-        # execute shell command
-        cmd = value.strip()[1:-1]
-        value = subprocess.check_output(cmd, shell=True)
-
-    return value
-
-
-def GetConfigMultiple(config, key, default):
-
-    try:
-        values = config.get('gcalcli', key)
-    except:
-        values = default
-
-    if values == None:
-        return [ None ]
-
-    valueList = csv.reader([ values ],
-                           delimiter=',',
-                           quotechar='"',
-                           skipinitialspace=True).next()
-    return valueList
-
-
-def GetTrueFalse(value):
-
-    if value.lower() == 'false': return False
-    else: return True
-
-
-def GetColor(value, exitFlag):
+def GetColor(value):
 
     colors = { 'default'       : CLR_NRM(),
                'black'         : CLR_BLK(),
@@ -1960,17 +1833,13 @@ def GetColor(value, exitFlag):
                'cyan'          : CLR_CYN(),
                'brightcyan'    : CLR_BRCYN(),
                'white'         : CLR_WHT(),
-               'brightwhite'   : CLR_BRWHT() }
+               'brightwhite'   : CLR_BRWHT(),
+               None            : CLR_NRM() }
 
-    try:
+    if value in colors:
         return colors[value]
-    except:
-        if exitFlag:
-            PrintErrMsg('Error: invalid color name\n')
-            sys.exit(1)
-        else:
-            return None
-
+    else:
+        return None
 
 def GetCalColors(calNames):
     calColors = {}
@@ -1980,281 +1849,180 @@ def GetCalColors(calNames):
         calColor = calColors.get(calNameSimple)
         if len(calNameParts) > 0:
             calColorRaw = calNameParts[-1]
-            calColorNew = GetColor(calColorRaw, False)
+            calColorNew = GetColor(calColorRaw)
             if calColorNew is not None:
                 calColor = calColorNew
         calColors[calNameSimple] = calColor
     return calColors
 
 
+FLAGS = gflags.FLAGS
+# allow mixing of commands and options
+FLAGS.UseGnuGetOpt()
+
+gflags.DEFINE_bool("help", None, "Show this help")
+gflags.DEFINE_bool("helpshort", None, "Show command help only")
+gflags.DEFINE_bool("version", False, "Show the version and exit")
+gflags.DEFINE_multistring("cal", None, "Which calendars to use", short_name="c")
+gflags.DEFINE_bool("24hr", False, "Use 24 hour display")
+
+# Single --detail that allows you to specify what parts you want
+#gflags.DEFINE_multistring("details", None, "Which parts to display, can be:"
+#                          "'all', 'calendar', 'location', 'length', 'reminders',"
+#                          "'descr', 'longurl', 'shorturl'")
+# old style flags for backwards compatibility
+gflags.DEFINE_bool("detail-all", False, "Display all details")
+gflags.DEFINE_bool("detail-calendar", False, "Display calendar name")
+gflags.DEFINE_bool("detail-location", False, "Display event location")
+gflags.DEFINE_bool("detail-length", False, "Display length of event")
+gflags.DEFINE_bool("detail-reminders", False, "Display reminders")
+gflags.DEFINE_bool("detail-descr", False, "Display description")
+gflags.DEFINE_integer("detail-descr-width", 80, "Set description width")
+gflags.DEFINE_enum("detail-url", None, ["long", "short"], "Set URL output")
+
+gflags.DEFINE_bool("tsv", False, "Use Tab Seperated Value output")
+gflags.DEFINE_bool("ignore-started", False, "Ignore events that have started")
+gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
+gflags.DEFINE_bool("mon", False, "Start the week on Monday")
+gflags.DEFINE_bool("nc", False, "Disable all color output")
+gflags.DEFINE_bool("nl", False, "Disable line art")
+gflags.DEFINE_bool("conky", False, "Use Conky color codes")
+gflags.DEFINE_string("cal-owner-color", None, "Color for owned calendars")
+gflags.DEFINE_string("cal-writer-color", None, "Color for writable calendars")
+gflags.DEFINE_string("cal-reader-color", None, "Color for read-only calendars")
+gflags.DEFINE_string("cal-freebusy-color", None, "Color for free/busy calendars")
+gflags.DEFINE_string("date-color", None, "Color for the date")
+gflags.DEFINE_string("now-marker-color", None, "Color for the now marker")
+gflags.DEFINE_string("border-color", None, "Color of line borders")
+gflags.DEFINE_string("locale", None, "System locale")
+
+gflags.DEFINE_integer("reminder", None, "Reminder minutes")
+gflags.DEFINE_string("title", None, "Event title")
+gflags.DEFINE_string("where", None, "Event location")
+gflags.DEFINE_string("when", None, "Event time")
+gflags.DEFINE_integer("duration", None, "Event duration")
+gflags.DEFINE_string("descr", None, "Event description")
+gflags.DEFINE_bool("prompt", True, "Prompt for missing data when adding events")
+
+gflags.DEFINE_bool("iama-expert", False, "Probably not")
+gflags.DEFINE_bool("refresh", False, "Delete and refresh cached data")
+gflags.DEFINE_bool("no-cache", False, "Execute command without using cache")
+
+gflags.DEFINE_bool("verbose", False, "Be verbose on imports", short_name="v")
+
+#gflags.RegisterValidator("details",
+#                        lambda value: value in [None, "all", "calendar",
+#                           "location", "length", "reminders", "descr",
+#                           "longurl", "shorturl"])
+gflags.RegisterValidator("cal-owner-color",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("cal-writer-color",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("cal-reader-color",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("cal-freebusy-color",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("date-color",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("now-marker-color",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("border-color",
+                         lambda value: GetColor(value) != None)
+
+gflags.ADOPT_module_key_flags(gflags)
+
 def BowChickaWowWow():
-
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "",
-                                   ["help",
-                                    "version",
-                                    "config=",
-                                    "cals=",
-                                    "cal=",
-                                    "24hr",
-                                    "detail-all",
-                                    "detail-calendar",
-                                    "detail-location",
-                                    "detail-length",
-                                    "detail-reminders",
-                                    "detail-descr",
-                                    "detail-descr-width=",
-                                    "detail-url=",
-                                    "tsv",
-                                    "ignore-started",
-                                    "width=",
-                                    "mon",
-                                    "nc",
-                                    "nl",
-                                    "conky",
-                                    "cal-owner-color=",
-                                    "cal-writer-color=",
-                                    "cal-reader-color=",
-                                    "cal-freebusy-color=",
-                                    "date-color=",
-                                    "now-marker-color=",
-                                    "border-color=",
-                                    "locale=",
-                                    "reminder=",
-                                    "title=",
-                                    "where=",
-                                    "when=",
-                                    "duration=",
-                                    "descr=",
-                                    "iama-expert",
-                                    "refresh",
-                                    "no-cache"])
-    except getopt.error:
-        PrintErrMsg('Error: unknown argument\n')
+        argv = sys.argv
+        if os.path.exists(os.path.expanduser('~/.gcalclirc')):
+            argv = [argv[0], "--flagfile=~/.gcalclirc"] + argv[1:]
+        args = FLAGS(argv)
+    except gflags.FlagsError, e:
+        PrintErrMsg(str(e))
+        Usage(True)
         sys.exit(1)
 
-    configFile = os.path.expanduser('~') + '/.gcalclirc'
+    if FLAGS.version:
+        Version()
 
-    # look for config file override then load the config file
-    # we do this first because command line args take precedence
-    for opt, arg in opts:
-        if opt == "--config": configFile = arg
+    if FLAGS.help:
+        Usage(True)
+        sys.exit()
 
-    cfg = LoadConfig(configFile)
+    if FLAGS.helpshort:
+        Usage()
+        sys.exit()
 
-    calNames      = GetConfigMultiple(cfg, 'cal', None)
-    military      = GetTrueFalse(GetConfig(cfg, '24hr', 'false'))
-    ignoreStarted = GetTrueFalse(GetConfig(cfg, 'ignore-started', 'false'))
-    calWidth      = int(GetConfig(cfg, 'width', '10'))
-    calMonday     = GetTrueFalse(GetConfig(cfg, 'mon', 'false'))
-    tsv           = GetTrueFalse(GetConfig(cfg, 'tsv', 'false'))
-    customLocale  = GetConfig(cfg, 'locale', None)
-    reminder      = GetConfig(cfg, 'reminder', None)
+    if FLAGS.nc:
+        CLR.useColor = False
 
-    detailAll        = GetTrueFalse(GetConfig(cfg, 'detail-all', 'false'))
-    detailCalendar   = GetTrueFalse(GetConfig(cfg, 'detail-calendar', 'false'))
-    detailLocation   = GetTrueFalse(GetConfig(cfg, 'detail-location', 'false'))
-    detailLength     = GetTrueFalse(GetConfig(cfg, 'detail-length', 'false'))
-    detailReminders  = GetTrueFalse(GetConfig(cfg, 'detail-reminders', 'false'))
-    detailDescr      = GetTrueFalse(GetConfig(cfg, 'detail-descr', 'false'))
-    detailDescrWidth = int(GetConfig(cfg, 'detail-descr-width', '80'))
-    detailUrl        = GetConfig(cfg, 'detail-url', None)
+    if FLAGS.nl:
+        ART.useArt = False
 
-    calOwnerColor = \
-        GetColor(GetConfig(cfg, 'cal-owner-color', 'cyan'), True)
-    calWriterColor = \
-        GetColor(GetConfig(cfg, 'cal-writer-color', 'green'), True)
-    calReaderColor = \
-        GetColor(GetConfig(cfg, 'cal-reader-color', 'magenta'), True)
-    calFreeBusyColor = \
-        GetColor(GetConfig(cfg, 'cal-freebusy-color', 'default'), True)
-    dateColor = \
-        GetColor(GetConfig(cfg, 'date-color', 'yellow'), True)
-    nowMarkerColor = \
-        GetColor(GetConfig(cfg, 'now-marker-color', 'brightred'), True)
-    borderColor = \
-        GetColor(GetConfig(cfg, 'border-color', 'white'), True)
+    if FLAGS.conky:
+        SetConkyColors()
 
-    eTitle    = None
-    eWhere    = None
-    eWhen     = None
-    eDuration = None
-    eDescr    = None
+    if FLAGS.locale:
+        try:
+            locale.setlocale(locale.LC_ALL, FLAGS.locale)
+        except Exception, e:
+            PrintErrMsg("Error: " + str(e) + "!\n" +
+                        "Check supported locales of your system.\n")
+            sys.exit(1)
 
-    # these options do not need to be in the config file
-    iamaExpert   = False
-    refreshCache = False
-    useCache     = True
 
-    # fix wokCalNames when not specified in config file
-    if len(calNames) == 1 and calNames[0] == None:
-        calNames      = []
-        calNameColors = []
-
-    calNamesCommandLine = []
-
-    # Process options
-    for opt, arg in opts:
-
-        if opt == "--help":
-            Usage()
-
-        elif opt == "--version":
-            Version()
-
-        elif opt == "--cal":
-            calNames.append(arg)
-            calNamesCommandLine.append(arg)
-
-        elif opt == "--24hr":
-            military = True
-
-        elif opt == "--detail-all":
-            detailCalendar  = True
-            detailLocation  = True
-            detailLength    = True
-            detailReminders = True
-            detailDescr     = True
-            if detailUrl != "short":
-                detailUrl = "long"
-
-        elif opt == "--detail-calendar":
-            detailCalendar = True
-
-        elif opt == "--detail-location":
-            detailLocation = True
-
-        elif opt == "--detail-length":
-            detailLength = True
-
-        elif opt == "--detail-reminders":
-            detailReminders = True
-
-        elif opt == "--detail-descr":
-            detailDescr = True
-
-        elif opt == "--detail-descr-width":
-            detailDescrWidth = int(arg)
-
-        elif opt == "--detail-url":
-            detailUrl = arg
-
-        elif opt == "--ignore-started":
-            ignoreStarted = True
-
-        elif opt == "--width":
-            calWidth = int(arg)
-
-        elif opt == "--mon":
-            calMonday = True
-
-        elif opt == "--nc":
-            CLR.useColor = False
-
-        elif opt == "--nl":
-            ART.useArt = False
-
-        elif opt == "--conky":
-            SetConkyColors()
-
-        elif opt == "--cal-owner-color":
-            calOwnerColor = GetColor(arg, True)
-
-        elif opt == "--cal-writer-color":
-            calWriterColor = GetColor(arg, True)
-
-        elif opt == "--cal-reader-color":
-            calReaderColor = GetColor(arg, True)
-
-        elif opt == "--cal-freebusy-color":
-            calFreeBusyColor = GetColor(arg, True)
-
-        elif opt == "--date-color":
-            dateColor = GetColor(arg, True)
-
-        elif opt == "--now-marker-color":
-            nowMarkerColor = GetColor(arg, True)
-
-        elif opt == "--border-color":
-            borderColor = GetColor(arg, True)
-
-        elif opt == "--tsv":
-            tsv = True
-
-        elif opt == "--locale":
-            customLocale = arg
-
-        elif opt == "--reminder":
-            reminder = arg
-
-        elif (opt == "--title"):
-            eTitle = arg
-
-        elif (opt == "--where"):
-            eWhere = arg
-
-        elif (opt == "--when"):
-            eWhen = arg
-
-        elif (opt == "--duration"):
-            eDuration = arg
-
-        elif (opt == "--descr"):
-            eDescr = arg
-
-        elif (opt == "--iama-expert"):
-            iamaExpert = True
-
-        elif (opt == "--refresh"):
-            refreshCache = True
-
-        elif (opt == "--no-cache"):
-            useCache = False
-
-    if detailUrl and detailUrl != 'short' and detailUrl != 'long':
-        PrintErrMsg('Error: invalid detail url\n')
-        sys.exit(1)
-
+    # pop executable off the stack
+    args = args[1:]
     if len(args) == 0:
         PrintErrMsg('Error: no command\n')
         sys.exit(1)
 
-    calColors = GetCalColors(calNames)
-    if len(calNamesCommandLine) > 0:
-        calNames = calNamesCommandLine
+    # No sense instaniating gcalcli for nothing
+    if not args[0] in ['list', 'search', 'agenda', 'calw', 'calm', 'quick',
+        'add', 'delete', 'edit', 'remind', 'import', 'help']:
+        PrintErrMsg('Error: %s is an invalid command' % args[0])
+        sys.exit(1)
 
-    calNamesFiltered = []
+    # all other commands require gcalcli be brought up
+    if args[0] == 'help':
+        Usage()
+        sys.exit(0)
+
+    calNames = []
     calNameColors = []
-    for calName in calNames:
-        calNameSimple = calName.split("#")[0]
-        calNamesFiltered.append(calNameSimple)
-        calNameColors.append(calColors[calNameSimple])
-    calNames = calNamesFiltered
+    if FLAGS.cal:
+        calColors = GetCalColors(FLAGS.cal)
+        calNamesFiltered = []
+        for calName in FLAGS.cal:
+            calNameSimple = calName.split("#")[0]
+            calNamesFiltered.append(calNameSimple)
+            calNameColors.append(calColors[calNameSimple])
+        calNames = calNamesFiltered
 
     gcal = gcalcli(calNames=calNames,
                    calNameColors=calNameColors,
-                   military=military,
-                   detailCalendar=detailCalendar,
-                   detailLocation=detailLocation,
-                   detailLength=detailLength,
-                   detailReminders=detailReminders,
-                   detailDescr=detailDescr,
-                   detailDescrWidth=detailDescrWidth,
-                   detailUrl=detailUrl,
-                   ignoreStarted=ignoreStarted,
-                   calWidth=calWidth,
-                   calMonday=calMonday,
-                   calOwnerColor=calOwnerColor,
-                   calWriterColor=calWriterColor,
-                   calReaderColor=calReaderColor,
-                   calFreeBusyColor=calFreeBusyColor,
-                   dateColor=dateColor,
-                   nowMarkerColor=nowMarkerColor,
-                   borderColor=borderColor,
-                   tsv=tsv,
-                   customLocale=customLocale,
-                   refreshCache=refreshCache,
-                   useCache=useCache)
+                   military=FLAGS.get('24hr', False),
+                   detailCalendar=FLAGS.get('detail-calendar', None),
+                   detailLocation=FLAGS.get('detail-location', None),
+                   detailLength=FLAGS.get('detail-length', None),
+                   detailReminders=FLAGS.get('detail-reminders', None),
+                   detailDescr=FLAGS.get('detail-descr', None),
+                   detailDescrWidth=FLAGS.get('detail-descr-width', None),
+                   detailUrl=FLAGS.get('detail-url', None),
+                   ignoreStarted=FLAGS.get('ignore-started', False),
+                   calWidth=FLAGS.width,
+                   calMonday=FLAGS.mon,
+                   calOwnerColor=GetColor(FLAGS.get('cal-owner-color', None)),
+                   calWriterColor=GetColor(FLAGS.get('cal-writer-color', None)),
+                   calReaderColor=GetColor(FLAGS.get('cal-reader-color', None)),
+                   calFreeBusyColor=GetColor(FLAGS.get('cal-freebusy-color', None)),
+                   dateColor=GetColor(FLAGS.get('date-color', None)),
+                   nowMarkerColor=GetColor(FLAGS.get('now-marker-color', None)),
+                   borderColor=GetColor(FLAGS.get('border-color', None)),
+                   tsv=FLAGS.tsv,
+                   refreshCache=FLAGS.refresh,
+                   useCache=not FLAGS.get('no-cache', False)
+                   )
 
     if args[0] == 'list':
         gcal.ListAllCalendars()
@@ -2280,11 +2048,11 @@ def BowChickaWowWow():
             PrintErrMsg('Error: invalid agenda arguments\n')
             sys.exit(1)
 
-        if not tsv:
+        if not FLAGS.tsv:
             sys.stdout.write('\n')
 
     elif args[0] == 'calw':
-        if not calWidth:
+        if not FLAGS.width:
             PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
             sys.exit(1)
 
@@ -2308,7 +2076,7 @@ def BowChickaWowWow():
         sys.stdout.write('\n')
 
     elif args[0] == 'calm':
-        if not calWidth:
+        if not FLAGS.width:
             PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
             sys.exit(1)
 
@@ -2329,39 +2097,32 @@ def BowChickaWowWow():
 
         # allow unicode strings for input
         gcal.QuickAddEvent(unicode(args[1], locale.getpreferredencoding()),
-                           reminder=reminder)
+                           reminder=FLAGS.reminder)
 
     elif (args[0] == 'add'):
-        if eTitle == None:
+        if FLAGS.title == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Title: ")
-            eTitle = raw_input()
-        if eWhere == None:
+            FLAGS['title'] = raw_input()
+        if FLAGS.where == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Location: ")
-            eWhere = raw_input()
-        if eWhen == None:
+            FLAGS['where'] = raw_input()
+        if FLAGS.when == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "When: ")
-            eWhen = raw_input()
-        if eDuration == None:
+            FLAGS['when'] = raw_input()
+        if FLAGS.duration == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Duration (mins): ")
-            eDuration = raw_input()
-        if eDescr == None:
+            FLAGS['duration'] = raw_input()
+        if FLAGS.descr == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Description: ")
-            eDescr = raw_input()
-        if reminder == None:
+            FLAGS['descr'] = raw_input()
+        if FLAGS.reminder == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Reminder (mins): ")
-            reminder = raw_input()
+            FLAGS['reminder'] = raw_input()
 
         # calculate "when" time:
-        eStart, eEnd = GetTimeFromStr(eWhen, eDuration)
+        eStart, eEnd = GetTimeFromStr(FLAGS.when, FLAGS.duration)
 
-        # allow unicode strings for input
-        ueTitle = unicode(eTitle, locale.getpreferredencoding())
-        ueWhere = unicode(eWhere, locale.getpreferredencoding())
-        ueStart = unicode(eStart, locale.getpreferredencoding())
-        ueEnd   = unicode(eEnd,   locale.getpreferredencoding())
-        ueDescr = unicode(eDescr, locale.getpreferredencoding())
-
-        gcal.AddEvent(ueTitle, ueWhere, ueStart, ueEnd, ueDescr, reminder)
+        gcal.AddEvent(FLAGS.title, FLAGS.where, eStart, eEnd, FLAGS.descr, FLAGS.reminder)
 
     elif args[0] == 'delete':
         if len(args) != 2:
@@ -2370,7 +2131,7 @@ def BowChickaWowWow():
 
         # allow unicode strings for input
         gcal.DeleteEvents(unicode(args[1], locale.getpreferredencoding()),
-                          iamaExpert)
+                          FLAGS.get('iama-expert', False))
 
         sys.stdout.write('\n')
 
@@ -2396,26 +2157,13 @@ def BowChickaWowWow():
             sys.exit(1)
 
     elif args[0] == 'import':
-        args = args[1:]
-        verbose = False
-        if len(args) >= 1 and args[0] == "-v":
-            verbose = True
-            args = args[1:]
         if len(args) == 0: # stdin
-            gcal.ImportICS(verbose, reminder)
+            gcal.ImportICS(FLAGS.verbose, FLAGS.reminder)
         elif len(args) == 1: # ics file
-            gcal.ImportICS(verbose, reminder, args[0])
+            gcal.ImportICS(FLAGS.verbose, FLAGS.reminder, args[0])
         else:
             PrintErrMsg('Error: invalid import arguments\n')
             sys.exit(1)
-
-    elif args[0] == 'help':
-        Usage()
-
-    else:
-        PrintErrMsg('Error: unknown command\n')
-        sys.exit(1)
-
 
 def SIGINT_handler(signum, frame):
     PrintErrMsg('Signal caught, bye!\n')
