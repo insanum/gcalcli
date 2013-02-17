@@ -160,7 +160,7 @@ Usage:
 
 
 # These are standard libraries and should never fail
-import sys, os, re, gflags, shlex
+import sys, os, re, gflags, shlex, time
 import locale, textwrap, signal
 from Queue import Queue
 from datetime import datetime, timedelta, date
@@ -2125,22 +2125,22 @@ def BowChickaWowWow():
     elif (args[0] == 'add'):
         if FLAGS.title == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Title: ")
-            FLAGS['title'] = raw_input()
+            FLAGS.title = raw_input()
         if FLAGS.where == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Location: ")
-            FLAGS['where'] = raw_input()
+            FLAGS.where = raw_input()
         if FLAGS.when == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "When: ")
-            FLAGS['when'] = raw_input()
+            FLAGS.when = raw_input()
         if FLAGS.duration == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Duration (mins): ")
-            FLAGS['duration'] = raw_input()
+            FLAGS.duration = raw_input()
         if FLAGS.descr == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Description: ")
-            FLAGS['descr'] = raw_input()
+            FLAGS.descr = raw_input()
         if FLAGS.reminder == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Reminder (mins): ")
-            FLAGS['reminder'] = raw_input()
+            FLAGS.reminder = raw_input()
 
         # calculate "when" time:
         eStart, eEnd = GetTimeFromStr(FLAGS.when, FLAGS.duration)
