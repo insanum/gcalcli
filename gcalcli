@@ -2008,19 +2008,19 @@ def BowChickaWowWow():
         if not FLAGS['detail_url'].present: FLAGS['detail_url'].value = "long"
     else:
         if 'calendar' in FLAGS.details:
-            FLAGS['details_calendar'].value = True
+            FLAGS['detail_calendar'].value = True
         if 'location' in FLAGS.details:
-            FLAGS['details_location'].value = True
+            FLAGS['detail_location'].value = True
         if 'length' in FLAGS.details:
-            FLAGS['details_length'].value = True
+            FLAGS['detail_length'].value = True
         if 'reminders' in FLAGS.details:
-            FLAGS['details_reminders'].value = True
+            FLAGS['detail_reminders'].value = True
         if 'description' in FLAGS.details:
-            FLAGS['details_description'].value = True
+            FLAGS['detail_description'].value = True
         if 'longurl' in FLAGS.details:
-            FLAGS['details_url'].value = 'long'
+            FLAGS['detail_url'].value = 'long'
         elif 'shorturl' in FLAGS.details:
-            FLAGS['details_url'].value = 'short'
+            FLAGS['detail_url'].value = 'short'
 
     gcal = gcalcli(calNames=calNames,
                    calNameColors=calNameColors,
@@ -2036,7 +2036,7 @@ def BowChickaWowWow():
                    calWidth=FLAGS.width,
                    calMonday=FLAGS.monday,
                    calOwnerColor=GetColor(FLAGS.color_owner),
-                   calWriterColor=GetColor(FLAGS.color_write),
+                   calWriterColor=GetColor(FLAGS.color_writer),
                    calReaderColor=GetColor(FLAGS.color_reader),
                    calFreeBusyColor=GetColor(FLAGS.color_freebusy),
                    dateColor=GetColor(FLAGS.color_date),
