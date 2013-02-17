@@ -160,7 +160,7 @@ Usage:
 
 
 # These are standard libraries and should never fail
-import sys, os, re, gflags, shlex
+import sys, os, re, gflags, shlex, time
 import locale, textwrap, signal
 from Queue import Queue
 from datetime import datetime, timedelta, date
