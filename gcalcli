@@ -1999,6 +1999,14 @@ def BowChickaWowWow():
             calNameColors.append(calColors[calNameSimple])
         calNames = calNamesFiltered
 
+    if FLAGS.get('detail-all', None):
+        if not FLAGS['detail-calendar'].present: FLAGS['detail-calendar'].value = True
+        if not FLAGS['detail-location'].present: FLAGS['detail-location'].value = True
+        if not FLAGS['detail-length'].present: FLAGS['detail-length'].value = True
+        if not FLAGS['detail-reminders'].present: FLAGS['detail-reminders'].value = True
+        if not FLAGS['detail-descr'].present: FLAGS['detail-descr'].value = True
+        if not FLAGS['detail-url'].present: FLAGS['detail-url'].value = "long"
+
     gcal = gcalcli(calNames=calNames,
                    calNameColors=calNameColors,
                    military=FLAGS.get('24hr', False),
