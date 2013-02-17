@@ -1863,13 +1863,14 @@ FLAGS.UseGnuGetOpt()
 gflags.DEFINE_bool("help", None, "Show this help")
 gflags.DEFINE_bool("helpshort", None, "Show command help only")
 gflags.DEFINE_bool("version", False, "Show the version and exit")
-gflags.DEFINE_multistring("calendar", None, "Which calendars to use", short_name="c")
+gflags.DEFINE_multistring("calendar", [], "Which calendars to use",
+                          short_name="c")
 gflags.DEFINE_bool("military", False, "Use 24 hour display")
 
 # Single --detail that allows you to specify what parts you want
-gflags.DEFINE_multistring("details", [], "Which parts to display, can be:"
-                          "'all', 'calendar', 'location', 'length', 'reminders',"
-                          "'descr', 'longurl', 'shorturl'")
+gflags.DEFINE_multistring("details", [], "Which parts to display, can be: "
+                          "'all', 'calendar', 'location', 'length', "
+                          "'reminders', 'descr', 'longurl', 'shorturl'")
 # old style flags for backwards compatibility
 gflags.DEFINE_bool("detail_all", False, "Display all details")
 gflags.DEFINE_bool("detail_calendar", False, "Display calendar name")
@@ -1990,14 +1991,13 @@ def BowChickaWowWow():
 
     calNames = []
     calNameColors = []
-    if FLAGS.calendar:
-        calColors = GetCalColors(FLAGS.calendar)
-        calNamesFiltered = []
-        for calName in FLAGS.calendar:
-            calNameSimple = calName.split("#")[0]
-            calNamesFiltered.append(calNameSimple)
-            calNameColors.append(calColors[calNameSimple])
-        calNames = calNamesFiltered
+    calColors = GetCalColors(FLAGS.calendar)
+    calNamesFiltered = []
+    for calName in FLAGS.calendar:
+        calNameSimple = calName.split("#")[0]
+        calNamesFiltered.append(calNameSimple)
+        calNameColors.append(calColors[calNameSimple])
+    calNames = calNamesFiltered
 
     if 'all' in FLAGS.details or FLAGS.detail_all:
         if not FLAGS['detail_calendar'].present: FLAGS['detail_calendar'].value = True
