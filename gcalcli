@@ -1867,7 +1867,7 @@ gflags.DEFINE_multistring("calendar", None, "Which calendars to use", short_name
 gflags.DEFINE_bool("military", False, "Use 24 hour display")
 
 # Single --detail that allows you to specify what parts you want
-gflags.DEFINE_multistring("details", None, "Which parts to display, can be:"
+gflags.DEFINE_multistring("details", [], "Which parts to display, can be:"
                           "'all', 'calendar', 'location', 'length', 'reminders',"
                           "'descr', 'longurl', 'shorturl'")
 # old style flags for backwards compatibility
@@ -1911,7 +1911,7 @@ gflags.DEFINE_bool("cache", True, "Execute command without using cache")
 gflags.DEFINE_bool("verbose", False, "Be verbose on imports", short_name="v")
 
 gflags.RegisterValidator("details",
-                        lambda value: all(x in [None, "all", "calendar",
+                        lambda value: all(x in ["all", "calendar",
                            "location", "length", "reminders", "descr",
                            "longurl", "shorturl"] for x in value))
 gflags.RegisterValidator("color_owner",
