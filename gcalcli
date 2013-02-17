@@ -1863,7 +1863,7 @@ FLAGS.UseGnuGetOpt()
 gflags.DEFINE_bool("help", None, "Show this help")
 gflags.DEFINE_bool("helpshort", None, "Show command help only")
 gflags.DEFINE_bool("version", False, "Show the version and exit")
-gflags.DEFINE_multistring("cal", None, "Which calendars to use", short_name="c")
+gflags.DEFINE_multistring("cal", [], "Which calendars to use", short_name="c")
 gflags.DEFINE_bool("24hr", False, "Use 24 hour display")
 
 # Single --detail that allows you to specify what parts you want
@@ -1990,14 +1990,13 @@ def BowChickaWowWow():
 
     calNames = []
     calNameColors = []
-    if FLAGS.cal:
-        calColors = GetCalColors(FLAGS.cal)
-        calNamesFiltered = []
-        for calName in FLAGS.cal:
-            calNameSimple = calName.split("#")[0]
-            calNamesFiltered.append(calNameSimple)
-            calNameColors.append(calColors[calNameSimple])
-        calNames = calNamesFiltered
+    calColors = GetCalColors(FLAGS.cal)
+    calNamesFiltered = []
+    for calName in FLAGS.cal:
+        calNameSimple = calName.split("#")[0]
+        calNamesFiltered.append(calNameSimple)
+        calNameColors.append(calColors[calNameSimple])
+    calNames = calNamesFiltered
 
     if FLAGS.get('detail-all', None):
         if not FLAGS['detail-calendar'].present: FLAGS['detail-calendar'].value = True
