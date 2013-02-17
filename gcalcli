@@ -1911,9 +1911,9 @@ gflags.DEFINE_bool("cache", True, "Execute command without using cache")
 gflags.DEFINE_bool("verbose", False, "Be verbose on imports", short_name="v")
 
 gflags.RegisterValidator("details",
-                        lambda value: value in [None, "all", "calendar",
+                        lambda value: all(x in [None, "all", "calendar",
                            "location", "length", "reminders", "descr",
-                           "longurl", "shorturl"])
+                           "longurl", "shorturl"] for x in value))
 gflags.RegisterValidator("color_owner",
                          lambda value: GetColor(value) != None)
 gflags.RegisterValidator("color_writer",
