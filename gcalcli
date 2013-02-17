@@ -1863,37 +1863,37 @@ FLAGS.UseGnuGetOpt()
 gflags.DEFINE_bool("help", None, "Show this help")
 gflags.DEFINE_bool("helpshort", None, "Show command help only")
 gflags.DEFINE_bool("version", False, "Show the version and exit")
-gflags.DEFINE_multistring("cal", None, "Which calendars to use", short_name="c")
-gflags.DEFINE_bool("24hr", False, "Use 24 hour display")
+gflags.DEFINE_multistring("calendar", None, "Which calendars to use", short_name="c")
+gflags.DEFINE_bool("military", False, "Use 24 hour display")
 
 # Single --detail that allows you to specify what parts you want
-#gflags.DEFINE_multistring("details", None, "Which parts to display, can be:"
-#                          "'all', 'calendar', 'location', 'length', 'reminders',"
-#                          "'descr', 'longurl', 'shorturl'")
+gflags.DEFINE_multistring("details", None, "Which parts to display, can be:"
+                          "'all', 'calendar', 'location', 'length', 'reminders',"
+                          "'descr', 'longurl', 'shorturl'")
 # old style flags for backwards compatibility
-gflags.DEFINE_bool("detail-all", False, "Display all details")
-gflags.DEFINE_bool("detail-calendar", False, "Display calendar name")
-gflags.DEFINE_bool("detail-location", False, "Display event location")
-gflags.DEFINE_bool("detail-length", False, "Display length of event")
-gflags.DEFINE_bool("detail-reminders", False, "Display reminders")
-gflags.DEFINE_bool("detail-descr", False, "Display description")
-gflags.DEFINE_integer("detail-descr-width", 80, "Set description width")
-gflags.DEFINE_enum("detail-url", None, ["long", "short"], "Set URL output")
+gflags.DEFINE_bool("detail_all", False, "Display all details")
+gflags.DEFINE_bool("detail_calendar", False, "Display calendar name")
+gflags.DEFINE_bool("detail_location", False, "Display event location")
+gflags.DEFINE_bool("detail_length", False, "Display length of event")
+gflags.DEFINE_bool("detail_reminders", False, "Display reminders")
+gflags.DEFINE_bool("detail_description", False, "Display description")
+gflags.DEFINE_integer("detail_description_width", 80, "Set description width")
+gflags.DEFINE_enum("detail_url", None, ["long", "short"], "Set URL output")
 
 gflags.DEFINE_bool("tsv", False, "Use Tab Seperated Value output")
-gflags.DEFINE_bool("ignore-started", False, "Ignore events that have started")
+gflags.DEFINE_bool("ignore_started", False, "Ignore events that have started")
 gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
-gflags.DEFINE_bool("mon", False, "Start the week on Monday")
-gflags.DEFINE_bool("nc", False, "Disable all color output")
-gflags.DEFINE_bool("nl", False, "Disable line art")
+gflags.DEFINE_bool("monday", False, "Start the week on Monday")
+gflags.DEFINE_bool("color", True, "Enable/Disable all color output")
+gflags.DEFINE_bool("lineart", True, "Enable/Disable line art")
 gflags.DEFINE_bool("conky", False, "Use Conky color codes")
-gflags.DEFINE_string("cal-owner-color", None, "Color for owned calendars")
-gflags.DEFINE_string("cal-writer-color", None, "Color for writable calendars")
-gflags.DEFINE_string("cal-reader-color", None, "Color for read-only calendars")
-gflags.DEFINE_string("cal-freebusy-color", None, "Color for free/busy calendars")
-gflags.DEFINE_string("date-color", None, "Color for the date")
-gflags.DEFINE_string("now-marker-color", None, "Color for the now marker")
-gflags.DEFINE_string("border-color", None, "Color of line borders")
+gflags.DEFINE_string("color_owner", None, "Color for owned calendars")
+gflags.DEFINE_string("color_writer", None, "Color for writable calendars")
+gflags.DEFINE_string("color_reader", None, "Color for read-only calendars")
+gflags.DEFINE_string("color_freebusy", None, "Color for free/busy calendars")
+gflags.DEFINE_string("color_date", None, "Color for the date")
+gflags.DEFINE_string("color_now_marker", None, "Color for the now marker")
+gflags.DEFINE_string("color_border", None, "Color of line borders")
 gflags.DEFINE_string("locale", None, "System locale")
 
 gflags.DEFINE_integer("reminder", None, "Reminder minutes")
@@ -1901,32 +1901,32 @@ gflags.DEFINE_string("title", None, "Event title")
 gflags.DEFINE_string("where", None, "Event location")
 gflags.DEFINE_string("when", None, "Event time")
 gflags.DEFINE_integer("duration", None, "Event duration")
-gflags.DEFINE_string("descr", None, "Event description")
+gflags.DEFINE_string("description", None, "Event description")
 gflags.DEFINE_bool("prompt", True, "Prompt for missing data when adding events")
 
-gflags.DEFINE_bool("iama-expert", False, "Probably not")
+gflags.DEFINE_bool("iamaexpert", False, "Probably not")
 gflags.DEFINE_bool("refresh", False, "Delete and refresh cached data")
-gflags.DEFINE_bool("no-cache", False, "Execute command without using cache")
+gflags.DEFINE_bool("cache", True, "Execute command without using cache")
 
 gflags.DEFINE_bool("verbose", False, "Be verbose on imports", short_name="v")
 
-#gflags.RegisterValidator("details",
-#                        lambda value: value in [None, "all", "calendar",
-#                           "location", "length", "reminders", "descr",
-#                           "longurl", "shorturl"])
-gflags.RegisterValidator("cal-owner-color",
+gflags.RegisterValidator("details",
+                        lambda value: value in [None, "all", "calendar",
+                           "location", "length", "reminders", "descr",
+                           "longurl", "shorturl"])
+gflags.RegisterValidator("color_owner",
                          lambda value: GetColor(value) != None)
-gflags.RegisterValidator("cal-writer-color",
+gflags.RegisterValidator("color_writer",
                          lambda value: GetColor(value) != None)
-gflags.RegisterValidator("cal-reader-color",
+gflags.RegisterValidator("color_reader",
                          lambda value: GetColor(value) != None)
-gflags.RegisterValidator("cal-freebusy-color",
+gflags.RegisterValidator("color_freebusy",
                          lambda value: GetColor(value) != None)
-gflags.RegisterValidator("date-color",
+gflags.RegisterValidator("color_date",
                          lambda value: GetColor(value) != None)
-gflags.RegisterValidator("now-marker-color",
+gflags.RegisterValidator("color_now_marker",
                          lambda value: GetColor(value) != None)
-gflags.RegisterValidator("border-color",
+gflags.RegisterValidator("color_border",
                          lambda value: GetColor(value) != None)
 
 gflags.ADOPT_module_key_flags(gflags)
@@ -1953,10 +1953,10 @@ def BowChickaWowWow():
         Usage()
         sys.exit()
 
-    if FLAGS.nc:
+    if not FLAGS.color:
         CLR.useColor = False
 
-    if FLAGS.nl:
+    if not FLAGS.lineart:
         ART.useArt = False
 
     if FLAGS.conky:
@@ -1990,38 +1990,61 @@ def BowChickaWowWow():
 
     calNames = []
     calNameColors = []
-    if FLAGS.cal:
-        calColors = GetCalColors(FLAGS.cal)
+    if FLAGS.calendar:
+        calColors = GetCalColors(FLAGS.calendar)
         calNamesFiltered = []
-        for calName in FLAGS.cal:
+        for calName in FLAGS.calendar:
             calNameSimple = calName.split("#")[0]
             calNamesFiltered.append(calNameSimple)
             calNameColors.append(calColors[calNameSimple])
         calNames = calNamesFiltered
 
+    if 'all' in FLAGS.details or FLAGS.detail_all:
+        if not FLAGS['details_calendar'].present: FLAGS['details_calendar'] = True
+        if not FLAGS['details_location'].present: FLAGS['details_location'] = True
+        if not FLAGS['details_length'].present: FLAGS['details_length'] = True
+        if not FLAGS['details_reminders'].present: FLAGS['details_reminders'] = True
+        if not FLAGS['details_description'].present: FLAGS['details_description'] = True
+        if not FLAGS['details_url'].present: FLAGS['details_url'] = "long"
+    else:
+        if 'calendar' in FLAGS.details:
+            FLAGS['details_calendar'] = True
+        if 'location' in FLAGS.details:
+            FLAGS['details_location'] = True
+        if 'length' in FLAGS.details:
+            FLAGS['details_length'] = True
+        if 'reminders' in FLAGS.details:
+            FLAGS['details_reminders'] = True
+        if 'description' in FLAGS.details:
+            FLAGS['details_description'] = True
+        if 'longurl' in FLAGS.details:
+            FLAGS['details_url'] = 'long'
+        elif 'shorturl' in FLAGS.details:
+            FLAGS['details_url'] = 'short'
+
     gcal = gcalcli(calNames=calNames,
                    calNameColors=calNameColors,
-                   military=FLAGS.get('24hr', False),
-                   detailCalendar=FLAGS.get('detail-calendar', None),
-                   detailLocation=FLAGS.get('detail-location', None),
-                   detailLength=FLAGS.get('detail-length', None),
-                   detailReminders=FLAGS.get('detail-reminders', None),
-                   detailDescr=FLAGS.get('detail-descr', None),
-                   detailDescrWidth=FLAGS.get('detail-descr-width', None),
-                   detailUrl=FLAGS.get('detail-url', None),
-                   ignoreStarted=FLAGS.get('ignore-started', False),
+                   military=FLAGS.military,
+                   detailCalendar=FLAGS.detail_calendar,
+                   detailLocation=FLAGS.detail_location,
+                   detailLength=FLAGS.detail_length,
+                   detailReminders=FLAGS.detail_reminders,
+                   detailDescr=FLAGS.detail_description,
+                   detailDescrWidth=FLAGS.detail_description_width,
+                   detailUrl=FLAGS.detail_url,
+                   ignoreStarted=FLAGS.ignore_started,
                    calWidth=FLAGS.width,
-                   calMonday=FLAGS.mon,
-                   calOwnerColor=GetColor(FLAGS.get('cal-owner-color', None)),
-                   calWriterColor=GetColor(FLAGS.get('cal-writer-color', None)),
-                   calReaderColor=GetColor(FLAGS.get('cal-reader-color', None)),
-                   calFreeBusyColor=GetColor(FLAGS.get('cal-freebusy-color', None)),
-                   dateColor=GetColor(FLAGS.get('date-color', None)),
-                   nowMarkerColor=GetColor(FLAGS.get('now-marker-color', None)),
-                   borderColor=GetColor(FLAGS.get('border-color', None)),
+                   calMonday=FLAGS.monday,
+                   calOwnerColor=GetColor(FLAGS.color_owner),
+                   calWriterColor=GetColor(FLAGS.color_write),
+                   calReaderColor=GetColor(FLAGS.color_reader),
+                   calFreeBusyColor=GetColor(FLAGS.color_freebusy),
+                   dateColor=GetColor(FLAGS.color_date),
+                   nowMarkerColor=GetColor(FLAGS.color_now_marker),
+                   borderColor=GetColor(FLAGS.color_border),
                    tsv=FLAGS.tsv,
                    refreshCache=FLAGS.refresh,
-                   useCache=not FLAGS.get('no-cache', False)
+                   useCache=FLAGS.cache
                    )
 
     if args[0] == 'list':
@@ -2131,7 +2154,7 @@ def BowChickaWowWow():
 
         # allow unicode strings for input
         gcal.DeleteEvents(unicode(args[1], locale.getpreferredencoding()),
-                          FLAGS.get('iama-expert', False))
+                          FLAGS.iamaexpert)
 
         sys.stdout.write('\n')
 
