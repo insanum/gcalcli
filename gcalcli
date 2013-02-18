@@ -2164,10 +2164,10 @@ def BowChickaWowWow():
             sys.exit(1)
 
     elif args[0] == 'import':
-        if len(args) == 0: # stdin
+        if len(args) == 1: # stdin
             gcal.ImportICS(FLAGS.verbose, FLAGS.reminder)
-        elif len(args) == 1: # ics file
-            gcal.ImportICS(FLAGS.verbose, FLAGS.reminder, args[0])
+        elif len(args) == 2: # ics file
+            gcal.ImportICS(FLAGS.verbose, FLAGS.reminder, args[1])
         else:
             PrintErrMsg('Error: invalid import arguments\n')
             sys.exit(1)
