@@ -1745,33 +1745,9 @@ class gcalcli:
 
 
     def ImportICS(self, verbose=False, reminder=None, icsFile=None):
-        try:
-            import vobject
-        except:
-            PrintErrMsg('Python vobject module not installed!\n')
-            sys.exit(1)
 
-        if len(self.cals) != 1:
-            PrintErrMsg("Must specify a single calendar\n")
-            return
+        def CreateEventFromVOBJ(ve):
 
-        f = sys.stdin
-
-        if icsFile:
-            try:
-                f = file(icsFile)
-            except Exception, e:
-                PrintErrMsg("Error: " + str(e) + "!\n")
-                sys.exit(1)
-
-        while True:
-
-            try:
-                v = vobject.readComponents(f).next()
-            except StopIteration:
-                break
-
-            ve = v.vevent
             event = {}
 
             if hasattr(ve, 'summary'):
@@ -1788,7 +1764,7 @@ class gcalcli:
 
             if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
                 PrintErrMsg("Error: event does not have a dtstart and dtend!\n")
-                continue
+                return None
 
             DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
             DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
@@ -1873,28 +1849,65 @@ class gcalcli:
                     event['attendees'].append({ 'displayName' : attendee.name,
                                                 'email'       : email })
 
-            if not verbose:
-                newEvent = self._CalService().events().\
-                           insert(calendarId = self.cals[0]['id'],
-                                  body = event).execute()
-                continue
+            return event
 
-            #dprint(event)
-            PrintMsg(CLR_MAG(), "\n[S]kip [i]mport [q]uit: ")
-            val = raw_input()
-            if not val or val.lower() == 's':
-                continue
-            if val.lower() == 'i':
-                newEvent = self._CalService().events().\
-                           insert(calendarId = self.cals[0]['id'],
-                                  body = event).execute()
-                hLink = self._ShortenURL(newEvent['htmlLink'])
-                PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
-            elif val.lower() == 'q':
-                sys.exit(0)
-            else:
-                PrintErrMsg('Error: invalid input\n')
+        try:
+            import vobject
+        except:
+            PrintErrMsg('Python vobject module not installed!\n')
+            sys.exit(1)
+
+        if len(self.cals) != 1:
+            PrintErrMsg("Must specify a single calendar\n")
+            return
+
+        f = sys.stdin
+
+        if icsFile:
+            try:
+                f = file(icsFile)
+            except Exception, e:
+                PrintErrMsg("Error: " + str(e) + "!\n")
                 sys.exit(1)
+
+        while True:
+
+            try:
+                v = vobject.readComponents(f).next()
+            except StopIteration:
+                break
+
+            #v.prettyPrint()
+
+            for ve in v.vevent_list:
+
+                event = CreateEventFromVOBJ(ve)
+
+                if not event:
+                    continue
+
+                if not verbose:
+                    newEvent = self._CalService().events().\
+                               insert(calendarId = self.cals[0]['id'],
+                                      body = event).execute()
+                    continue
+
+                #dprint(event)
+                PrintMsg(CLR_MAG(), "\n[S]kip [i]mport [q]uit: ")
+                val = raw_input()
+                if not val or val.lower() == 's':
+                    continue
+                if val.lower() == 'i':
+                    newEvent = self._CalService().events().\
+                               insert(calendarId = self.cals[0]['id'],
+                                      body = event).execute()
+                    hLink = self._ShortenURL(newEvent['htmlLink'])
+                    PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
+                elif val.lower() == 'q':
+                    sys.exit(0)
+                else:
+                    PrintErrMsg('Error: invalid input\n')
+                    sys.exit(1)
 
 
 def LoadConfig(configFile):
