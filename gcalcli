@@ -429,7 +429,8 @@ class gcalcli:
                  borderColor=CLR_WHT(),
                  tsv=False,
                  refreshCache=False,
-                 useCache=True):
+                 useCache=True,
+                 configFolder=None):
 
         self.military      = military
         self.ignoreStarted = ignoreStarted
@@ -455,6 +456,8 @@ class gcalcli:
         self.nowMarkerColor   = nowMarkerColor
         self.borderColor      = borderColor
 
+        self.configFolder     = configFolder
+
         self._GetCached()
 
         for cal in self.allCals:
@@ -470,7 +473,10 @@ class gcalcli:
 
     def _GoogleAuth(self):
         if not self.authHttp:
-            storage = Storage(os.path.expanduser('~') + '/.gcalcli_oauth')
+            if self.configFolder:
+                storage = Storage(os.path.expanduser("%s/oauth" % self.configFolder))
+            else:
+                storage = Storage(os.path.expanduser('~/.gcalcli_oauth'))
             credentials = storage.get()
 
             if credentials is None or credentials.invalid == True:
@@ -512,7 +518,10 @@ class gcalcli:
 
 
     def _GetCached(self):
-        cacheFile = os.path.expanduser('~') + '/.gcalcli_cache'
+        if self.configFolder:
+            cacheFile = os.path.expanduser("%s/cache" % self.configFolder)
+        else:
+            cacheFile = os.path.expanduser('~/.gcalcli_cache')
 
         if self.refreshCache:
             try:
@@ -1863,8 +1872,10 @@ FLAGS.UseGnuGetOpt()
 gflags.DEFINE_bool("help", None, "Show this help")
 gflags.DEFINE_bool("helpshort", None, "Show command help only")
 gflags.DEFINE_bool("version", False, "Show the version and exit")
-gflags.DEFINE_multistring("calendar", [], "Which calendars to use",
-                          short_name="c")
+
+gflags.DEFINE_string("configFolder", None, "Optional directory to load/store all configuration information")
+gflags.DEFINE_bool("includeRc", False, "Whether to include ~/.gcalclirc when using configFolder")
+gflags.DEFINE_multistring("calendar", [], "Which calendars to use")
 gflags.DEFINE_bool("military", False, "Use 24 hour display")
 
 # Single --detail that allows you to specify what parts you want
@@ -1936,12 +1947,28 @@ def BowChickaWowWow():
     try:
         argv = sys.argv
         if os.path.exists(os.path.expanduser('~/.gcalclirc')):
-            argv = [argv[0], "--flagfile=~/.gcalclirc"] + argv[1:]
-        args = FLAGS(argv)
+            # We want .gcalclirc to be sourced before any other --flagfile params
+            # Since we may be told to use a specific config folder, we need to
+            # store generated argv in temp variable
+            tmpArgv = [argv[0], "--flagfile=~/.gcalclirc"] + argv[1:]
+        args = FLAGS(tmpArgv)
     except gflags.FlagsError, e:
         PrintErrMsg(str(e))
         Usage(True)
         sys.exit(1)
+
+    if FLAGS.configFolder:
+        if not os.path.exists(os.path.expanduser(FLAGS.configFolder)):
+            os.makedirs(os.path.expanduser(FLAGS.configFolder))
+        if os.path.exists(os.path.expanduser("%s/gcalcli" % FLAGS.configFolder)):
+            if not FLAGS.includeRc:
+                tmpArgv = argv + ["--flagfile=~%s/gcalclirc" % FLAGS.configFolder, ]
+            else:
+                tmpArgv += ["--flagfile=~%s/gcalclirc" % FLAGS.configFolder, ]
+
+        args = FLAGS(tmpArgv)
+
+    argv = tmpArgv
 
     if FLAGS.version:
         Version()
@@ -2044,7 +2071,8 @@ def BowChickaWowWow():
                    borderColor=GetColor(FLAGS.color_border),
                    tsv=FLAGS.tsv,
                    refreshCache=FLAGS.refresh,
-                   useCache=FLAGS.cache
+                   useCache=FLAGS.cache,
+                   configFolder=FLAGS.configFolder
                    )
 
     if args[0] == 'list':
