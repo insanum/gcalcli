@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # ** The MIT License **
 #
@@ -432,6 +432,74 @@ def GetTimeFromStr(eWhen, eDuration=0):
     sTimeStop = eTimeStop.isoformat()
 
     return sTimeStart, sTimeStop
+
+
+def PrintVobjEvent(ve):
+
+    if hasattr(ve, 'summary'):
+        print "Event........%s" % ve.summary.value
+
+    if hasattr(ve, 'location'):
+        print "Location.....%s" % ve.location.value
+
+    if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
+        PrintErrMsg("Error: event does not have a dtstart and dtend!\n")
+        return None
+
+    print "Start........%s" % ve.dtstart.value.isoformat(' ')
+    print "End..........%s" % ve.dtend.value.isoformat(' ')
+    print "Local Start..%s" % ve.dtstart.value.astimezone(tzlocal())
+    print "Local End....%s" % ve.dtend.value.astimezone(tzlocal())
+
+    if hasattr(ve, 'rrule'):
+        print "Recurrence...%s" % ve.rrule.value
+
+    if hasattr(ve, 'description') and ve.description.value.strip():
+        descr = ve.description.value.strip()
+        print "Description:\n%s" % descr
+
+    if hasattr(ve, 'organizer'):
+        if ve.organizer.value.startswith("MAILTO:"):
+            email = ve.organizer.value[7:]
+        else:
+            email = ve.organizer.value
+        print "Organizer:\n %s" % email
+
+    if hasattr(ve, 'attendee_list'):
+        print "Attendees:"
+        for attendee in ve.attendee_list:
+            if attendee.value.startswith("MAILTO:"):
+                email = attendee.value[7:]
+            else:
+                email = attendee.value
+            print " %s" % email
+
+
+def DumpICS(icsFile):
+
+    try:
+        import vobject
+    except:
+        PrintErrMsg('Python vobject module not installed!\n')
+        sys.exit(1)
+
+    try:
+        f = file(icsFile)
+    except Exception, e:
+        PrintErrMsg("Error: " + str(e) + "!\n")
+        sys.exit(1)
+
+    while True:
+
+        try:
+            v = vobject.readComponents(f).next()
+        except StopIteration:
+            break
+
+        for ve in v.vevent_list:
+            PrintVobjEvent(ve)
+
+    sys.exit(0)
 
 
 class gcalcli:
@@ -1752,14 +1820,10 @@ class gcalcli:
 
             if hasattr(ve, 'summary'):
                 DebugPrint("SUMMARY: %s\n" % ve.summary.value)
-                if verbose:
-                    print "Event........%s" % ve.summary.value
                 event['summary'] = ve.summary.value
 
             if hasattr(ve, 'location'):
                 DebugPrint("LOCATION: %s\n" % ve.location.value)
-                if verbose:
-                    print "Location.....%s" % ve.location.value
                 event['location'] = ve.location.value
 
             if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
@@ -1768,18 +1832,9 @@ class gcalcli:
 
             DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
             DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
-            if verbose:
-                print "Start........%s" % ve.dtstart.value.isoformat(' ')
-                print "End..........%s" % ve.dtend.value.isoformat(' ')
-                print "Local Start..%s" % ve.dtstart.value.astimezone(tzlocal())
-                print "Local End....%s" % ve.dtend.value.astimezone(tzlocal())
 
             if hasattr(ve, 'rrule'):
-
                 DebugPrint("RRULE: %s\n" % ve.rrule.value)
-                if verbose:
-                    print "Recurrence...%s" % ve.rrule.value
-
                 event['recurrence'] = [ "RRULE:" + ve.rrule.value ]
 
             if hasattr(ve, 'dtstart') and hasattr(ve, 'dtend'):
@@ -1817,8 +1872,6 @@ class gcalcli:
             if hasattr(ve, 'description') and ve.description.value.strip():
                 descr = ve.description.value.strip()
                 DebugPrint("DESCRIPTION: %s\n" % descr)
-                if verbose:
-                    print "Description:\n%s" % descr
                 event['description'] = descr
 
             if hasattr(ve, 'organizer'):
@@ -1828,26 +1881,23 @@ class gcalcli:
                     email = ve.organizer.value[7:]
                 else:
                     email = ve.organizer.value
-                if verbose:
-                    print "organizer:\n %s" % email
+
                 event['organizer'] = { 'displayName' : ve.organizer.name,
                                        'email'       : email }
 
             if hasattr(ve, 'attendee_list'):
                 DebugPrint("ATTENDEE_LIST : %s\n" % ve.attendee_list)
-                if verbose:
-                    print "attendees:"
                 event['attendees'] = []
                 for attendee in ve.attendee_list:
                     if attendee.value.startswith("MAILTO:"):
                         email = attendee.value[7:]
                     else:
                         email = attendee.value
-                    if verbose:
-                        print " %s" % email
 
                     event['attendees'].append({ 'displayName' : attendee.name,
                                                 'email'       : email })
+            if verbose:
+                PrintVobjEvent(ve);
 
             return event
 
@@ -2231,6 +2281,15 @@ def BowChickaWowWow():
     if len(args) == 0:
         PrintErrMsg('Error: no command\n')
         sys.exit(1)
+
+    elif args[0] == 'import':
+        if len(args) >= 2 and args[1] == "-d":
+            if len(args) == 3: # ics file
+                DumpICS(args[2])
+                sys.exit(0)
+            else:
+                PrintErrMsg('Error: invalid import arguments\n')
+                sys.exit(1)
 
     calColors = GetCalColors(calNames)
     if len(calNamesCommandLine) > 0:
