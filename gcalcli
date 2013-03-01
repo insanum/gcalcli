@@ -2282,7 +2282,7 @@ def BowChickaWowWow():
         PrintErrMsg('Error: no command\n')
         sys.exit(1)
 
-    elif args[0] == 'import':
+    if args[0] == 'import':
         if len(args) >= 2 and args[1] == "-d":
             if len(args) == 3: # ics file
                 DumpICS(args[2])
