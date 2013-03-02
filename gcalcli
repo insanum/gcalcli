@@ -1086,8 +1086,8 @@ class gcalcli:
                      ('', self._ValidTitle(event).strip()))
         else:
             fmt = '  ' + timeFormat + '  %s\n'
-            if 'summary' not in event:
-                dprint(event)
+#            if 'summary' not in event:
+#                dprint(event)
             PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
                      (tmpTimeStr, self._ValidTitle(event).strip()))
 
