@@ -1963,6 +1963,8 @@ def BowChickaWowWow():
             # Since we may be told to use a specific config folder, we need to
             # store generated argv in temp variable
             tmpArgv = [argv[0], "--flagfile=~/.gcalclirc"] + argv[1:]
+        else:
+            tmpArgv = argv
         args = FLAGS(tmpArgv)
     except gflags.FlagsError, e:
         PrintErrMsg(str(e))
