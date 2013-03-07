@@ -2179,9 +2179,9 @@ def BowChickaWowWow():
         if FLAGS.duration == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Duration (mins): ")
             FLAGS.duration = raw_input()
-        if FLAGS.descr == None and FLAGS.prompt:
+        if FLAGS.description == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Description: ")
-            FLAGS.descr = raw_input()
+            FLAGS.description = raw_input()
         if FLAGS.reminder == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Reminder (mins): ")
             FLAGS.reminder = raw_input()
@@ -2189,7 +2189,7 @@ def BowChickaWowWow():
         # calculate "when" time:
         eStart, eEnd = GetTimeFromStr(FLAGS.when, FLAGS.duration)
 
-        gcal.AddEvent(FLAGS.title, FLAGS.where, eStart, eEnd, FLAGS.descr, FLAGS.reminder)
+        gcal.AddEvent(FLAGS.title, FLAGS.where, eStart, eEnd, FLAGS.description, FLAGS.reminder)
 
     elif args[0] == 'delete':
         if len(args) != 2:
