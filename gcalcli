@@ -767,8 +767,14 @@ class gcalcli:
         printLen = self._PrintLen(eventString)
 
         if printLen <= self.calWidth:
-            DebugPrint("------ printLen=%d (end of string)\n" % printLen)
-            return (printLen, len(eventString))
+            if '\n' in eventString:
+                idx = eventString.find('\n')
+                printLen = self._PrintLen(eventString[:idx])
+            else:
+                idx = len(eventString)
+
+            DebugPrint("------ printLen=%d (end of string)\n" % idx)
+            return (printLen, idx)
 
         cutWidth, cut, forceCut = self._NextCut(eventString, 0)
         DebugPrint("------ cutWidth=%d cut=%d \"%s\"\n" %
