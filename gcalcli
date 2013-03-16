@@ -297,16 +297,16 @@ def PrintErrMsg(msg):
 def PrintMsg(color, msg):
     if CLR.useColor:
         sys.stdout.write(str(color))
-        sys.stdout.write(msg)
+        sys.stdout.write(msg.encode('utf-8'))
         sys.stdout.write(str(CLR_NRM()))
     else:
-        sys.stdout.write(msg)
+        sys.stdout.write(msg.encode('utf-8'))
 
 
 def DebugPrint(msg):
     return
     sys.stdout.write(str(CLR_YLW()))
-    sys.stdout.write(msg)
+    sys.stdout.write(msg.encode('utf-8'))
     sys.stdout.write(str(CLR_NRM()))
 
 
@@ -1033,7 +1033,7 @@ class gcalcli:
                 tmpContent
             )
             xstr2 = "%s\n" % xstr.replace('\n', '''\\n''')
-            sys.stdout.write(xstr2)
+            sys.stdout.write(xstr2.encode('utf-8'))
 
 
     def _PrintEvent(self, event, prefix):
