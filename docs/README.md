@@ -272,10 +272,10 @@ command line parameter per line.
 
 #### Configuration Folders
 
-gcalcli is able to store all its necessary information in a specific folder.
-Each folder will contain 2 files: oauth and cache.  An optional 3rd file,
-gcalclirc, can be present for specific flags that you only want to apply when
-using this configuration folder.
+gcalcli is able to store all its necessary information in a specific folder (use
+the --configFolder option.) Each folder will contain 2 files: oauth and cache.
+An optional 3rd file, gcalclirc, can be present for specific flags that you only
+want to apply when using this configuration folder.
 
 #### Importing VCS/VCAL/ICS Files from Exchange (or other)
 
