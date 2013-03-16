@@ -2047,7 +2047,7 @@ def BowChickaWowWow():
         if not FLAGS['detail_location'].present: FLAGS['detail_location'].value = True
         if not FLAGS['detail_length'].present: FLAGS['detail_length'].value = True
         if not FLAGS['detail_reminders'].present: FLAGS['detail_reminders'].value = True
-        if not FLAGS['detail_descr'].present: FLAGS['detail_descr'].value = True
+        if not FLAGS['detail_description'].present: FLAGS['detail_description'].value = True
         if not FLAGS['detail_url'].present: FLAGS['detail_url'].value = "long"
     else:
         if 'calendar' in FLAGS.details:
