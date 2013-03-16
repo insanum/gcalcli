@@ -46,7 +46,7 @@ Features
  * easy integration with your favorite mail client (attachment handler)
  * run as a cron job and execute a command for reminders
  * work against specific calendars (by calendar name w/ regex)
- * config file support for specifying option defaults
+ * flag file support for specifying option defaults
  * colored output and unicode character support
  * super fun hacking with shell scripts, cron, screen, tmux, conky, etc
 
@@ -73,34 +73,39 @@ gcalcli [options] command [command args]
 
   --version                version information
 
-  --config <file>          config file to read (default is '~/.gcalclirc')
+  --configFolder <folder>  Folder where specific configuration information is
+                           stored.  This includes a gcalclirc flags file, oauth
+                           credentials, and specific cache.
+  --[no]includerc          Whether the ~/.gcalclirc should be used in addition
+                           to the one in the config folder
 
-  --cal <name>[#color]     'calendar' to work with (default is all calendars)
+  --calendar <name>[#color]
+                           'calendar' to work with (default is all calendars)
                            - you can specify a calendar by name or by substring
                              which can match multiple calendars
                            - you can use multiple '--cal' arguments on the
                              command line for the query commands
-                           - in the config file specify multiple calendars in
-                             quotes separated by commas as:
-                               cal: "foo", "bar", "my cal"
                            - an optional color override can be specified per
                              calendar using the ending hashtag:
                                --cal "Eric Davis"#green --cal foo#red
-                             or via the config file:
-                               cal: "foo"#red, "bar"#yellow, "my cal"#green
 
-  --24hr                   show all dates in 24 hour format
+  --[no]military           show all dates in 24 hour format (default = False)
 
-  --detail-all             show event details in the 'agenda' output
-  --detail-location        - the description width defaults to 80 characters
-  --detail-length          - if 'short' is specified for the url then the event
-  --detail-reminders         link is shortened using http://goo.gl (slow!)
-  --detail-descr           - the --detail-url can be used for both the 'quick'
-  --detail-descr-width       and 'add' commands as well
-  --detail-url [short,
+  --details [all, calendar, location, length, reminders, description, url, longurl, shorturl]
+                           This has the same effect as the individual switches
+                           - you can specify this multiple times, to get just
+                             the combination of details you want.
+
+  --[no]detail_all           show event details in the 'agenda' output
+  --[no]detail_location      - the description width defaults to 80 characters
+  --[no]detail_length        - if 'short' is specified for the url then the
+  --[no]detail_reminders       event link is shortened using http://goo.gl
+  --[no]detail_description   - the --detail-url can be used for both the 'quick'
+  --detail_url [short,         and 'add' commands as well
                 long]
+  --detail_description_width
 
-  --ignore-started         ignore old or already started events
+  --[no]started           Show already started events (default = True)
                            - when used with the 'agenda' command, ignore events
                              that have already started and are in-progress with
                              respect to the specified [start] time
@@ -111,27 +116,28 @@ gcalcli [options] command [command args]
   --width                  the number of characters to use for each column in
                            the 'calw' and 'calm' command outputs (default is 10)
 
-  --mon                    week begins with Monday for 'calw' and 'calm' command
-                           outputs (default is Sunday)
+  --[no]monday             week begins with Monday for 'calw' and 'calm' command
+                           outputs (default is False meaning Sunday)
 
-  --nc                     don't use colors
+  --[no]colors             Use colors (defalt = True)
 
-  --nl                     don't use line graphics
+  --[no]lineart            Use line graphics (default = True)
 
-  --conky                  use conky color escapes sequences instead of ansi
+  --[no]conky              use conky color escapes sequences instead of ansi
                            terminal color escape sequences (requires using
-                           the 'execpi' command in your conkyrc)
+                           the 'execpi' command in conkyrc) (default = False)
 
-  --cal-owner-color        specify the colors used for the calendars and dates
-  --cal-writer-color       each of these argument requires a <color> argument
-  --cal-reader-color       which must be one of [ default, black, brightblack,
-  --cal-freebusy-color     red, brightred, green, brightgreen, yellow,
-  --date-color             brightyellow, blue, brightblue, magenta,
-  --now-marker-color       brightmagenta, cyan, brightcyan, white,
-  --border-color           brightwhite ]
+  --color_owner            specify the colors used for the calendars and dates
+  --color_writer           each of these argument requires a <color> argument
+  --color_reader           which must be one of [ default, black, brightblack,
+  --color_freebusy             red, brightred, green, brightgreen, yellow,
+  --color_date                 brightyellow, blue, brightblue, magenta,
+  --color_now_marker           brightmagenta, cyan, brightcyan, white,
+  --color_border               brightwhite ]
 
-  --tsv                    tab-separated output for 'agenda'. Format is:
+  --[no]tsv                tab-separated output for 'agenda'. Format is:
                            start date, start time, end date, end time, link, title, location, description
+                           (default = False)
 
   --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
                            supported locales of your system first.
@@ -140,11 +146,20 @@ gcalcli [options] command [command args]
                            the 'quick' and 'add' commands; if not specified
                            the calendar's default reminder settings are used
 
-   --title <title>         event details used by the 'add' command
-   --where <location>      - the duration is specified in minutes
-   --when <datetime>       - make sure to quote strings with spaces
-   --duration <#>          - datetime examples see 'agenda' below
-   --descr <description>
+  --title <title>          event details used by the 'add' command
+  --where <location>       - the duration is specified in minutes
+  --when <datetime>        - make sure to quote strings with spaces
+  --duration <#>           - datetime examples see 'agenda' below
+  --description <descr>
+  --[no]prompt             Whether we should prompt for any missing pieces of
+                           data when doing an add. (Default = True)
+
+  --[no]refresh            Force a refresh of cached data (Default = False)
+
+  --[no]cache              Use cached data (Default = True)
+
+  --[no]verbose            Output data on each event when importing from an ics
+                           file
 
  Commands:
 
@@ -180,22 +195,22 @@ gcalcli [options] command [command args]
                              and only one month will be displayed
 
   quick <text>             quick add an event to a calendar
-                           - a single --cal must specified
-                           - the --detail-url option will show the event link
+                           - a single --calendar must specified
+                           - the "--details url" option will show the event link
                            - example text:
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
 
   add                      add a detailed event to a calendar
-                           - a single --cal must specified
-                           - the --detail-url option will show the event link
+                           - a single --calendar must specified
+                           - the "--details url" option will show the event link
                            - example:
-                              gcalcli --cal 'Eric Davis'
+                              gcalcli --calendar 'Eric Davis'
                                       --title 'Analysis of Algorithms Final'
                                       --where UCI
                                       --when '12/14/2012 10:00'
                                       --duration 60
-                                      --descr 'It is going to be hard!'
+                                      --description 'It is going to be hard!'
                                       --reminder 30
                                       add
 
@@ -203,9 +218,9 @@ gcalcli [options] command [command args]
                            - case insensitive search terms to find and delete
                              events, just like the 'search' command
                            - deleting is interactive
-                             use the --iama-expert option to auto delete
+                             use the --iamaexpert option to auto delete
                              THINK YOU'RE AN EXPERT? USE AT YOUR OWN RISK!!!
-                           - use the --detail options to show event details
+                           - use the --details options to show event details
 
   edit <text>              edit event(s)
                            - case insensitive search terms to find and edit
@@ -213,7 +228,7 @@ gcalcli [options] command [command args]
                            - editing is interactive
 
   import [-v] [file]       import an ics/vcal file to a calendar
-                           - a single --cal must specified
+                           - a single --calendar must specified
                            - if a file is not specified then the data is read
                              from standard input
                            - if -v is given then each event in the file is
@@ -249,61 +264,18 @@ proxy-password or proxy_password
 
 Note that these environment variables must be lowercase.
 
-#### Config File
+#### Flag File
 
-gcalcli is able to read default configuration information from a config file.
-This file is location, by default, at '~/.gcalclirc' and must be formatted as
-follows:
+gcalcli is able to read default configuration information from a flag file.
+This file is located, by default, at '~/.gcalclirc'.  The flag file takes one
+command line parameter per line.
 
-```
-[gcalcli]
-<config-option>: <value>
-<config-option>: <value>
-...
-```
+#### Configuration Folders
 
-The available config items are the same as those that can be specified on the
-command line.  Note that any value specified on the command line overrides the
-config file.
-
-```
-cal: <name>[#color], <name>[#color], ...
-24hr: <true|false>
-ignore-started: <true|false>
-width: <width>
-mon: <true|false>
-tsv: <true|false>
-locale: <locale>
-reminder: <minutes>
-detail-all: <true|false>
-detail-calendar: <true|false>
-detail-location: <true|false>
-detail-length: <true|false>
-detail-reminders: <true|false>
-detail-descr: <true|false>
-detail-descr-width: <width>
-detail-url: [long|short]
-cal-owner-color: <color>
-cal-writer-color: <color>
-cal-reader-color: <color>
-cal-freebusy-color: <color>
-date-color: <color>
-now-marker-color: <color>
-border-color: <color>
-```
-
-Note that you can specify a shell command and the output will be the value for
-the config variable. A shell command is determined if the first character is a
-backtick (i.e. '`') and the entire command must be wrapped with backticks. For
-example, we can specify the width dynamically for the 'calw' and 'calm'
-commands based on the terminal size:
-
-```
-width: `echo "(((`stty size | cut -d' ' -f2`) - 8) / 7)" | bc`
-```
-
-Note that the command is executed in a sub-shell which has access to the full
-environment, except for LINES and COLUMNS hence this example.
+gcalcli is able to store all its necessary information in a specific folder.
+Each folder will contain 2 files: oauth and cache.  An optional 3rd file,
+gcalclirc, can be present for specific flags that you only want to apply when
+using this configuration folder.
 
 #### Importing VCS/VCAL/ICS Files from Exchange (or other)
 
@@ -320,7 +292,7 @@ CONFIG=~/.gcalclirc
 
 $TERMINAL -e bash -c "echo 'Importing invite...' ; \
                       gcalcli --detail-url=short \
-                              --cal='Eric Davis' \
+                              --calendar='Eric Davis' \
                               import -v \"$1\" ; \
                       read -p 'press enter to exit: '"
 ```
@@ -354,7 +326,7 @@ in via X:
 
 if [ -x /usr/bin/gcalcli ]; then 
   while true; do
-    /usr/bin/gcalcli --cal="davis" remind
+    /usr/bin/gcalcli --calendar="davis" remind
     sleep 300
   done &
 fi
@@ -407,7 +379,7 @@ that will dump you agenda to a text file:
 Then add the following line:
 
 ```
-*/5 * * * * gcalcli --nc --ignore-started agenda "`date`" > /tmp/gcalcli_agenda.txt
+*/5 * * * * gcalcli --nocolor --nostarted agenda "`date`" > /tmp/gcalcli_agenda.txt
 ```
 
 Next create a simple shell script that will extract the first agenda line.
