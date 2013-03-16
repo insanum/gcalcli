@@ -1893,7 +1893,8 @@ gflags.DEFINE_bool("military", False, "Use 24 hour display")
 # Single --detail that allows you to specify what parts you want
 gflags.DEFINE_multistring("details", [], "Which parts to display, can be: "
                           "'all', 'calendar', 'location', 'length', "
-                          "'reminders', 'descr', 'longurl', 'shorturl'")
+                          "'reminders', 'description', 'longurl', 'shorturl', "
+                          "'url'")
 # old style flags for backwards compatibility
 gflags.DEFINE_bool("detail_all", False, "Display all details")
 gflags.DEFINE_bool("detail_calendar", False, "Display calendar name")
@@ -1939,7 +1940,7 @@ gflags.DEFINE_bool("verbose", False, "Be verbose on imports", short_name="v")
 gflags.RegisterValidator("details",
                         lambda value: all(x in ["all", "calendar",
                            "location", "length", "reminders", "descr",
-                           "longurl", "shorturl"] for x in value))
+                           "longurl", "shorturl", "url"] for x in value))
 gflags.RegisterValidator("color_owner",
                          lambda value: GetColor(value) != None)
 gflags.RegisterValidator("color_writer",
@@ -2060,7 +2061,7 @@ def BowChickaWowWow():
             FLAGS['detail_reminders'].value = True
         if 'description' in FLAGS.details:
             FLAGS['detail_description'].value = True
-        if 'longurl' in FLAGS.details:
+        if 'longurl' in FLAGS.details or 'url' in FLAGS.details:
             FLAGS['detail_url'].value = 'long'
         elif 'shorturl' in FLAGS.details:
             FLAGS['detail_url'].value = 'short'
