@@ -1905,7 +1905,7 @@ gflags.DEFINE_integer("detail_description_width", 80, "Set description width")
 gflags.DEFINE_enum("detail_url", None, ["long", "short"], "Set URL output")
 
 gflags.DEFINE_bool("tsv", False, "Use Tab Seperated Value output")
-gflags.DEFINE_bool("ignore_started", False, "Ignore events that have started")
+gflags.DEFINE_bool("started", True, "Show events that have started")
 gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
 gflags.DEFINE_bool("monday", False, "Start the week on Monday")
 gflags.DEFINE_bool("color", True, "Enable/Disable all color output")
@@ -2075,7 +2075,7 @@ def BowChickaWowWow():
                    detailDescr=FLAGS.detail_description,
                    detailDescrWidth=FLAGS.detail_description_width,
                    detailUrl=FLAGS.detail_url,
-                   ignoreStarted=FLAGS.ignore_started,
+                   ignoreStarted=not FLAGS.started,
                    calWidth=FLAGS.width,
                    calMonday=FLAGS.monday,
                    calOwnerColor=GetColor(FLAGS.color_owner),
