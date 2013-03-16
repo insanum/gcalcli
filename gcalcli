@@ -750,6 +750,8 @@ class gcalcli:
     def _NextCut(self, string, curPrintLen):
         idx = 0
         printLen = 0
+        if not isinstance(string, unicode):
+            string = unicode(string, locale.getpreferredencoding() or "UTF-8")
         for tmpChar in string:
             if (curPrintLen + printLen) >= self.calWidth:
                 return (printLen, idx, True)
