@@ -286,15 +286,12 @@ class ART_UTE(ART): fancy = '\033(0\x77\033(B' ; plain = '+'
 
 
 def PrintErrMsg(msg):
-    if CLR.useColor:
-        sys.stdout.write(str(CLR_BRRED()))
-        sys.stdout.write(msg)
-        sys.stdout.write(str(CLR_NRM()))
-    else:
-        sys.stdout.write(msg)
-
+    PrintMsg(CLR_BRRED(), msg)
 
 def PrintMsg(color, msg):
+    if isinstance(msg, unicode):
+        msg = msg.encode(locale.getpreferredencoding() or "UTF-8", "ignore")
+
     if CLR.useColor:
         sys.stdout.write(str(color))
         sys.stdout.write(msg)
@@ -302,13 +299,9 @@ def PrintMsg(color, msg):
     else:
         sys.stdout.write(msg)
 
-
 def DebugPrint(msg):
     return
-    sys.stdout.write(str(CLR_YLW()))
-    sys.stdout.write(msg)
-    sys.stdout.write(str(CLR_NRM()))
-
+    PrintMsg(CLR_YLW(), msg)
 
 def dprint(obj):
     try:
@@ -741,6 +734,12 @@ class gcalcli:
 
 
     def _PrintLen(self, string):
+        # We need to treat everything as unicode for this to actually give
+        # us the info we want.  Date string were coming in as `str` type
+        # so we convert them to unicode and then check their size. Fixes
+        # the output issues we were seeing around non-US locale strings
+        if not isinstance(string, unicode):
+            string = unicode(string, locale.getpreferredencoding() or "UTF-8")
         printLen = 0
         for tmpChar in string:
             printLen += self.UNIWIDTH[east_asian_width(tmpChar)]
@@ -837,8 +836,6 @@ class gcalcli:
 
         empty       = self.calWidth * ' '
 
-        dayFormat = '%-' + str(self.calWidth) + '.' + str(self.calWidth) + 's'
-
         # Get the localized day names... January 1, 2001 was a Monday
         dayNames = [ date(2001, 1, i+1).strftime('%A') for i in range(7) ]
         dayNames = dayNames[6:] + dayNames[:6]
@@ -847,11 +844,12 @@ class gcalcli:
         for i in xrange(7):
             if self.calMonday:
                 if i == 6:
-                    dayName = dayFormat % (dayNames[0])
+                    dayName = dayNames[0]
                 else:
-                    dayName = dayFormat % (dayNames[i+1])
+                    dayName = dayNames[i+1]
             else:
-                dayName = dayFormat % (dayNames[i])
+                dayName = dayNames[i]
+            dayName += ' ' * (self.calWidth - self._PrintLen(dayName))
             dayHeader += str(self.dateColor) + dayName + str(CLR_NRM())
             dayHeader += str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
 
@@ -863,14 +861,14 @@ class gcalcli:
             PrintMsg(CLR_NRM(), "\n" + topMonthDivider + "\n")
 
             m = startDateTime.strftime('%B %Y')
-            mw = str((self.calWidth * 7) + 6)
-            mwf = '%-' + mw + '.' + mw + 's'
+            mw = (self.calWidth * 7) + 6
+            m += ' ' * (mw - self._PrintLen(m))
             PrintMsg(CLR_NRM(),
                      str(self.borderColor) +
                      str(ART_VRT()) +
                      str(CLR_NRM()) +
                      str(self.dateColor) +
-                     mwf % (m) +
+                     m +
                      str(CLR_NRM()) +
                      str(self.borderColor) +
                      str(ART_VRT()) +
@@ -917,16 +915,18 @@ class gcalcli:
                                     timedelta(days=j)).strftime("%b"):
                         d = ''
                 tmpDateColor = self.dateColor
-                tmpTodayMarker = ''
+
                 if self.now.strftime("%d%b%Y") == \
                    (startWeekDateTime + timedelta(days=j)).strftime("%d%b%Y"):
                     tmpDateColor = self.nowMarkerColor
-                    tmpTodayMarker = " **"
+                    d += " **"
+
+                d += ' ' * (self.calWidth - self._PrintLen(d))
                 line += str(tmpDateColor) + \
-                            dayFormat % (d + tmpTodayMarker) + \
+                        d + \
                         str(CLR_NRM()) + \
                         str(self.borderColor) + \
-                            str(ART_VRT()) + \
+                        str(ART_VRT()) + \
                         str(CLR_NRM())
             PrintMsg(CLR_NRM(), line + "\n")
 
