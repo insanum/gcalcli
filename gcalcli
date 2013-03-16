@@ -1246,14 +1246,14 @@ class gcalcli:
                 val = raw_input()
                 if val.strip():
                     event['summary'] = \
-                        unicode(val.strip(), locale.getpreferredencoding())
+                        unicode(val.strip(), locale.getpreferredencoding() or "UTF-8")
 
             elif val.lower() == 'l':
                 PrintMsg(CLR_MAG(), "Location: ")
                 val = raw_input()
                 if val.strip():
                     event['location'] = \
-                        unicode(val.strip(), locale.getpreferredencoding())
+                        unicode(val.strip(), locale.getpreferredencoding() or "UTF-8")
 
             elif val.lower() == 'w':
                 PrintMsg(CLR_MAG(), "When: ")
@@ -1300,7 +1300,7 @@ class gcalcli:
                 val = raw_input()
                 if val.strip():
                     event['description'] = \
-                        unicode(val.strip(), locale.getpreferredencoding())
+                        unicode(val.strip(), locale.getpreferredencoding() or "UTF-8")
 
             else:
                 PrintErrMsg('Error: invalid input\n')
@@ -1591,15 +1591,15 @@ class gcalcli:
             return
 
         event = {}
-        event['summary'] = unicode(eTitle, locale.getpreferredencoding())
+        event['summary'] = unicode(eTitle, locale.getpreferredencoding() or "UTF-8")
         event['start']   = { 'dateTime' : eStart,
                              'timeZone' : self.cals[0]['timeZone'] }
         event['end']     = { 'dateTime' : eEnd,
                              'timeZone' : self.cals[0]['timeZone'] }
         if eWhere:
-            event['location'] = unicode(eWhere, locale.getpreferredencoding())
+            event['location'] = unicode(eWhere, locale.getpreferredencoding() or "UTF-8")
         if eDescr:
-            event['description'] = unicode(eDescr, locale.getpreferredencoding())
+            event['description'] = unicode(eDescr, locale.getpreferredencoding() or "UTF-8")
         if reminder:
             event['reminders'] = {'useDefault' : False,
                                   'overrides'  : [{'minutes' : reminder,
@@ -2112,7 +2112,7 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.TextQuery(unicode(args[1], locale.getpreferredencoding()))
+        gcal.TextQuery(unicode(args[1], locale.getpreferredencoding() or "UTF-8"))
 
         sys.stdout.write('\n')
 
@@ -2175,7 +2175,7 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.QuickAddEvent(unicode(args[1], locale.getpreferredencoding()),
+        gcal.QuickAddEvent(unicode(args[1], locale.getpreferredencoding() or "UTF-8"),
                            reminder=FLAGS.reminder)
 
     elif (args[0] == 'add'):
@@ -2209,7 +2209,7 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.DeleteEvents(unicode(args[1], locale.getpreferredencoding()),
+        gcal.DeleteEvents(unicode(args[1], locale.getpreferredencoding() or "UTF-8"),
                           FLAGS.iamaexpert)
 
         sys.stdout.write('\n')
@@ -2220,7 +2220,7 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.EditEvents(unicode(args[1], locale.getpreferredencoding()))
+        gcal.EditEvents(unicode(args[1], locale.getpreferredencoding() or "UTF-8"))
 
         sys.stdout.write('\n')
 
