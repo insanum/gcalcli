@@ -1,3 +1,7 @@
+v2.4.2
+ * Fix unicode encoding issues
+ * Stop trying to display multiple events on single line
+
 v2.4.1
  * Fixed tsv output
 
