@@ -1990,9 +1990,9 @@ def BowChickaWowWow():
             os.makedirs(os.path.expanduser(FLAGS.configFolder))
         if os.path.exists(os.path.expanduser("%s/gcalcli" % FLAGS.configFolder)):
             if not FLAGS.includeRc:
-                tmpArgv = argv + ["--flagfile=~%s/gcalclirc" % FLAGS.configFolder, ]
+                tmpArgv = argv + ["--flagfile=%s/gcalclirc" % FLAGS.configFolder, ]
             else:
-                tmpArgv += ["--flagfile=~%s/gcalclirc" % FLAGS.configFolder, ]
+                tmpArgv += ["--flagfile=%s/gcalclirc" % FLAGS.configFolder, ]
 
         args = FLAGS(tmpArgv)
 
