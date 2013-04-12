@@ -157,6 +157,8 @@ Usage:
                               'notify-send -u critical -a gcalcli %%s'
 '''
 
+__API_CLIENT_ID__ = '232867676714.apps.googleusercontent.com'
+__API_CLIENT_SECRET__ = '3tZSxItw6_VnZMezQwC8lUqy'
 
 # These are standard libraries and should never fail
 import sys, os, re, gflags, shlex, time
@@ -422,7 +424,9 @@ class gcalcli:
                  tsv=False,
                  refreshCache=False,
                  useCache=True,
-                 configFolder=None):
+                 configFolder=None,
+                 client_id=__API_CLIENT_ID__,
+                 client_secret=__API_CLIENT_SECRET__):
 
         self.military      = military
         self.ignoreStarted = ignoreStarted
@@ -450,6 +454,9 @@ class gcalcli:
 
         self.configFolder     = configFolder
 
+        self.client_id        = client_id
+        self.client_secret    = client_secret
+
         self._GetCached()
 
         for cal in self.allCals:
@@ -474,8 +481,8 @@ class gcalcli:
             if credentials is None or credentials.invalid == True:
                 credentials = run(
                     OAuth2WebServerFlow(
-                        client_id='232867676714.apps.googleusercontent.com',
-                        client_secret='3tZSxItw6_VnZMezQwC8lUqy',
+                        client_id=self.client_id,
+                        client_secret=self.client_secret,
                         scope=['https://www.googleapis.com/auth/calendar',
                                'https://www.googleapis.com/auth/urlshortener'],
                         user_agent=__program__+'/'+__version__),
@@ -1893,6 +1900,9 @@ gflags.DEFINE_bool("help", None, "Show this help")
 gflags.DEFINE_bool("helpshort", None, "Show command help only")
 gflags.DEFINE_bool("version", False, "Show the version and exit")
 
+gflags.DEFINE_string("client_id", __API_CLIENT_ID__, "API client_id")
+gflags.DEFINE_string("client_secret", __API_CLIENT_SECRET__, "API client_secret")
+
 gflags.DEFINE_string("configFolder", None, "Optional directory to load/store all configuration information")
 gflags.DEFINE_bool("includeRc", False, "Whether to include ~/.gcalclirc when using configFolder")
 gflags.DEFINE_multistring("calendar", [], "Which calendars to use")
@@ -2097,7 +2107,9 @@ def BowChickaWowWow():
                    tsv=FLAGS.tsv,
                    refreshCache=FLAGS.refresh,
                    useCache=FLAGS.cache,
-                   configFolder=FLAGS.configFolder
+                   configFolder=FLAGS.configFolder,
+                   client_id=FLAGS.client_id,
+                   client_secret=FLAGS.client_secret
                    )
 
     if args[0] == 'list':
