@@ -69,7 +69,6 @@
 __program__         = 'gcalcli'
 __version__         = 'v3.1'
 __author__          = 'Eric Davis, Brian Hartvigsen'
-__gcalcli_api_key__ = 'AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc'
 __doc__             = '''
 Usage:
 
@@ -492,8 +491,7 @@ class gcalcli:
             self.calService = \
                  build(serviceName='calendar',
                        version='v3',
-                       http=self._GoogleAuth(),
-                       developerKey='AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc')
+                       http=self._GoogleAuth())
 
         return self.calService
 
@@ -504,8 +502,7 @@ class gcalcli:
             self.urlService = \
                  build(serviceName='urlshortener',
                        version='v1',
-                       http=self._GoogleAuth(),
-                       developerKey='AIzaSyA6qJCdEnUiOX7Y79Ro5eA2toInxwWCikc')
+                       http=self._GoogleAuth())
 
         return self.urlService
 
