@@ -1340,6 +1340,65 @@ class gcalcli:
             if work:
                 work(event)
 
+    def _PrintEventshCalendar(self, defaultDateTime, startDateTime, eventList):
+
+        if (len(eventList) == 0):
+            PrintMsg(CLR_YLW(), "\nNo Events Found...\n")
+            return
+
+        timeFormat = '%l:%M'
+        isoTimeFormat = '%Y-%M-%dT%H:%M'
+        dayFormat = '%A %d, %H:%M' # 10 chars for day
+        indent = '          ' # 10 spaces
+        detailsIndent = '                   '    # 19 spaces
+        day = ''
+
+        for event in eventList:
+            tmpDayStr  = event['s'].strftime('%F')
+            tmpDayStp  = event['e'].strftime('%F')
+            tmpTimeStr = event['s'].strftime("%H:%M")
+            tmpTimeStp = event['e'].strftime("%H:%M")
+            tmpISOTimeStr = event['e'].strftime(isoTimeFormat)
+            tmpWhere = ''
+            if 'description' in event and event['description'].strip():
+                tmpContent = event['description'].strip()
+
+            if 'location' in event and event['location'].strip():
+                tmpLocStr = "Lugar: %s\n" % (event['location']) 
+            else: 
+                tmpLocStr = "Lugar: %s\n" % ""
+
+            #try:
+            #   lines=event.content.text.splitlines() 
+            #except:
+            #   lines="hola\nadios\noeoeoe".splitlines() 
+            descr=event['description']
+
+            tmpDescStr="" 
+            i=0
+            if len(descr.split("\n"))>1:
+                for line in descr.split("\n"):
+                     if i>0:
+                         tmpDescStr=tmpDescStr+line+'\n'
+                     else:
+                         url=line
+                     i = i + 1
+
+            if (tmpDayStr != day): day = prefix = tmpDayStr 
+
+
+            xstr = "\n<div id='hcalendar-%s' class='vevent'><abbr title='%s'  class='dtstart'>%s</abbr> <a href='%s' class='url'><span class='summary'>%s</span>\n<span class='location'>%s</span></a>\n<span class='description'>%s</span>\n</div>\n\n" % ( 
+			tmpISOTimeStr,
+			    tmpISOTimeStr,
+				tmpDayStr,
+				url,
+                self._ValidTitle(event).strip(),
+				tmpLocStr,
+				tmpDescStr
+            )
+            #xstr2 = "%s\n" % xstr.replace('\n', '''\\n''')
+            sys.stdout.write(xstr.encode('iso-8859-1','ignore'))
+
 
     def _GetAllEvents(self, cal, events, end):
 
@@ -1509,6 +1568,32 @@ class gcalcli:
         else:
             self._IterateEvents(start, eventList, yearDate=False)
 
+    def hCalendarQuery(self, startText='', endText=''):
+
+        # convert now to midnight this morning and use for default
+        today = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if (startText == ''):
+            start = today
+        else:
+            try:
+                start = parse(startText, default=today)
+            except:
+                PrintErrMsg('\nError: failed to parse start time\n')
+                return
+
+        if (endText == ''):
+            end = (start + timedelta(days=self.agendaLength))
+        else:
+            try:
+                end = parse(endText, default=today)
+            except:
+                PrintErrMsg('\nError: failed to parse end time\n')
+                return
+
+        eventList = self._SearchForCalEvents(start, end, None)
+
+        self._PrintEventshCalendar(today, start, eventList)
 
     def CalQuery(self, cmd, startText='', count=1):
 
@@ -2041,8 +2126,8 @@ def BowChickaWowWow():
         sys.exit(1)
 
     # No sense instaniating gcalcli for nothing
-    if not args[0] in ['list', 'search', 'agenda', 'calw', 'calm', 'quick',
-        'add', 'delete', 'edit', 'remind', 'import', 'help']:
+    if not args[0] in ['list', 'search', 'agenda', 'hCalendar', 'calw', 'calm', 
+	    'quick', 'add', 'delete', 'edit', 'remind', 'import', 'help']:
         PrintErrMsg('Error: %s is an invalid command' % args[0])
         sys.exit(1)
 
@@ -2138,6 +2223,17 @@ def BowChickaWowWow():
 
         if not FLAGS.tsv:
             sys.stdout.write('\n')
+
+    elif (args[0] == 'hCalendar'):
+        if (len(args) == 3):   # start and end
+            gcal.hCalendarQuery(startText=args[1], endText=args[2])
+        elif (len(args) == 2): # start
+            gcal.hCalendarQuery(startText=args[1])
+        elif (len(args) == 1): # defaults
+            gcal.hCalendarQuery()
+        else:
+            PrintErrMsg('\nError: invalid agenda arguments\n')
+            Usage()
 
     elif args[0] == 'calw':
         if not FLAGS.width:
