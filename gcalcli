@@ -1118,6 +1118,11 @@ class gcalcli:
             xstr = "%s  Link: %s\n" % (detailsIndent, hLink)
             PrintMsg(CLR_NRM(), xstr)
 
+        if self.detailUrl and 'hangoutLink' in event:
+            hLink = self._ShortenURL(event['hangoutLink'])
+            xstr = "%s  Hangout Link: %s\n" % (detailsIndent, hLink)
+            PrintMsg(CLR_NRM(), xstr)
+
         if self.detailLocation and \
            'location' in event and \
            event['location'].strip():
