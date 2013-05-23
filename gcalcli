@@ -1027,6 +1027,10 @@ class gcalcli:
                 tmpLink = self._ShortenURL(event['htmlLink'])
             else:
                 tmpLink = ""
+            if 'hangoutLink' in event:
+                hangoutLink = self._ShortenURL(event['hangoutLink'])
+            else:
+                hangoutLink = ""
             tmpDayStr  = event['s'].strftime('%F')
             tmpDayStp  = event['e'].strftime('%F')
             tmpTimeStr = event['s'].strftime("%H:%M")
@@ -1037,12 +1041,13 @@ class gcalcli:
             tmpContent = ''
             if 'description' in event and event['description'].strip():
                 tmpContent = event['description'].strip()
-            xstr = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
+            xstr = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
                 tmpDayStr,
                 tmpTimeStr,
                 tmpDayStp,
                 tmpTimeStp,
                 tmpLink,
+                hangoutLink,
                 self._ValidTitle(event).strip(),
                 tmpWhere,
                 tmpContent
