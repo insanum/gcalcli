@@ -240,7 +240,9 @@ class CLR_CYN(CLR):   color = "\033[0;36m"
 class CLR_BRCYN(CLR): color = "\033[36;1m"
 class CLR_WHT(CLR):   color = "\033[0;37m"
 class CLR_BRWHT(CLR): color = "\033[37;1m"
-
+class CLR_CUSTOM(CLR):
+    def __init__(self, value = ""):
+        self.color = value 
 
 def SetConkyColors():
     # XXX these colors should be configurable
@@ -262,7 +264,6 @@ def SetConkyColors():
     CLR_BRCYN.color = "${color cyan}"
     CLR_WHT.color   = "${color white}"
     CLR_BRWHT.color = "${color white}"
-
 
 class ART:
 
@@ -1875,12 +1876,12 @@ def GetColor(value):
     if value in colors:
         return colors[value]
     else:
-        return None
+        return CLR_CUSTOM(value) if CLR.conky else None
 
 def GetCalColors(calNames):
     calColors = {}
     for calName in calNames:
-        calNameParts = calName.split("#")
+        calNameParts = calName.split("##")
         calNameSimple = calNameParts[0]
         calColor = calColors.get(calNameSimple)
         if len(calNameParts) > 0:
@@ -2056,7 +2057,7 @@ def BowChickaWowWow():
     calColors = GetCalColors(FLAGS.calendar)
     calNamesFiltered = []
     for calName in FLAGS.calendar:
-        calNameSimple = calName.split("#")[0]
+        calNameSimple = calName.split("##")[0]
         calNamesFiltered.append(calNameSimple)
         calNameColors.append(calColors[calNameSimple])
     calNames = calNamesFiltered
