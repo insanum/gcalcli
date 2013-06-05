@@ -219,51 +219,51 @@ class CLR:
 
     useColor = True
     conky    = False
+    
+    def __init__(self, value = None):
+            self.color = value if value else self.color
 
     def __str__(self):
         return self.color if self.useColor else ""
 
-class CLR_NRM(CLR):   color = "\033[0m"
-class CLR_BLK(CLR):   color = "\033[0;30m"
-class CLR_BRBLK(CLR): color = "\033[30;1m"
-class CLR_RED(CLR):   color = "\033[0;31m"
-class CLR_BRRED(CLR): color = "\033[31;1m"
-class CLR_GRN(CLR):   color = "\033[0;32m"
-class CLR_BRGRN(CLR): color = "\033[32;1m"
-class CLR_YLW(CLR):   color = "\033[0;33m"
-class CLR_BRYLW(CLR): color = "\033[33;1m"
-class CLR_BLU(CLR):   color = "\033[0;34m"
-class CLR_BRBLU(CLR): color = "\033[34;1m"
-class CLR_MAG(CLR):   color = "\033[0;35m"
-class CLR_BRMAG(CLR): color = "\033[35;1m"
-class CLR_CYN(CLR):   color = "\033[0;36m"
-class CLR_BRCYN(CLR): color = "\033[36;1m"
-class CLR_WHT(CLR):   color = "\033[0;37m"
-class CLR_BRWHT(CLR): color = "\033[37;1m"
-class CLR_CUSTOM(CLR):
-    def __init__(self, value = ""):
-        self.color = value 
+class CLR_NRM(CLR):     color = "\033[0m"
+class CLR_BLK(CLR):     color = "\033[0;30m"
+class CLR_BRBLK(CLR):   color = "\033[30;1m"
+class CLR_RED(CLR):     color = "\033[0;31m"
+class CLR_BRRED(CLR):   color = "\033[31;1m"
+class CLR_GRN(CLR):     color = "\033[0;32m"
+class CLR_BRGRN(CLR):   color = "\033[32;1m"
+class CLR_YLW(CLR):     color = "\033[0;33m"
+class CLR_BRYLW(CLR):   color = "\033[33;1m"
+class CLR_BLU(CLR):     color = "\033[0;34m"
+class CLR_BRBLU(CLR):   color = "\033[34;1m"
+class CLR_MAG(CLR):     color = "\033[0;35m"
+class CLR_BRMAG(CLR):   color = "\033[35;1m"
+class CLR_CYN(CLR):     color = "\033[0;36m"
+class CLR_BRCYN(CLR):   color = "\033[36;1m"
+class CLR_WHT(CLR):     color = "\033[0;37m"
+class CLR_BRWHT(CLR):   color = "\033[37;1m"
+class CLR_CUSTOM(CLR):  color = ""
 
 def SetConkyColors():
-    # XXX these colors should be configurable
     CLR.conky       = True
     CLR_NRM.color   = ""
-    CLR_BLK.color   = "${color black}"
-    CLR_BRBLK.color = "${color black}"
-    CLR_RED.color   = "${color red}"
-    CLR_BRRED.color = "${color red}"
-    CLR_GRN.color   = "${color green}"
-    CLR_BRGRN.color = "${color green}"
-    CLR_YLW.color   = "${color yellow}"
-    CLR_BRYLW.color = "${color yellow}"
-    CLR_BLU.color   = "${color blue}"
-    CLR_BRBLU.color = "${color blue}"
-    CLR_MAG.color   = "${color magenta}"
-    CLR_BRMAG.color = "${color magenta}"
-    CLR_CYN.color   = "${color cyan}"
-    CLR_BRCYN.color = "${color cyan}"
-    CLR_WHT.color   = "${color white}"
-    CLR_BRWHT.color = "${color white}"
+    CLR_BLK.color   = "${color " + FLAGS.conky_color0 + "}"
+    CLR_BRBLK.color = "${color " + FLAGS.conky_color8 + "}"
+    CLR_RED.color   = "${color " + FLAGS.conky_color1 + "}"
+    CLR_BRRED.color = "${color " + FLAGS.conky_color9 + "}"
+    CLR_GRN.color   = "${color " + FLAGS.conky_color2 + "}"
+    CLR_BRGRN.color = "${color " + FLAGS.conky_color10 + "}"
+    CLR_YLW.color   = "${color " + FLAGS.conky_color3 + "}"
+    CLR_BRYLW.color = "${color " + FLAGS.conky_color11 + "}"
+    CLR_BLU.color   = "${color " + FLAGS.conky_color4 + "}"
+    CLR_BRBLU.color = "${color " + FLAGS.conky_color12 + "}"
+    CLR_MAG.color   = "${color " + FLAGS.conky_color5 + "}"
+    CLR_BRMAG.color = "${color " + FLAGS.conky_color13 + "}"
+    CLR_CYN.color   = "${color " + FLAGS.conky_color6 + "}"
+    CLR_BRCYN.color = "${color " + FLAGS.conky_color14 + "}"
+    CLR_WHT.color   = "${color " + FLAGS.conky_color7 + "}"
+    CLR_BRWHT.color = "${color " + FLAGS.conky_color15 + "}"
 
 class ART:
 
@@ -1978,6 +1978,27 @@ gflags.DEFINE_string("conky_color_date", "yellow", "Color for the date in conky"
 gflags.DEFINE_string("conky_color_now_marker", "brightred", "Color for the now marker in conky")
 gflags.DEFINE_string("conky_color_border", "white", "Color of line borders in conky")
 
+
+
+gflags.DEFINE_string("conky_color0", "black", "Color used instead of black in conky")
+gflags.DEFINE_string("conky_color1", "red", "Color used instead of red in conky")
+gflags.DEFINE_string("conky_color2", "green", "Color used instead of green in conky")
+gflags.DEFINE_string("conky_color3", "yellow", "Color used instead of yellow in conky")
+gflags.DEFINE_string("conky_color4", "blue", "Color used instead of blue in conky")
+gflags.DEFINE_string("conky_color5", "magenta", "Color used instead of magenta in conky")
+gflags.DEFINE_string("conky_color6", "cyan", "Color used instead of cyan in conky")
+gflags.DEFINE_string("conky_color7", "white", "Color used instead of white in conky")
+gflags.DEFINE_string("conky_color8", "black", "Color used instead of bright black in conky")
+gflags.DEFINE_string("conky_color9", "red", "Color used instead of bright red in conky")
+gflags.DEFINE_string("conky_color10", "green", "Color used instead of bright green in conky")
+gflags.DEFINE_string("conky_color11", "yellow", "Color used instead of bright yellow in conky")
+gflags.DEFINE_string("conky_color12", "blue", "Color used instead of bright blue in conky")
+gflags.DEFINE_string("conky_color13", "magenta", "Color used instead of bright magenta in conky")
+gflags.DEFINE_string("conky_color14", "cyan", "Color used instead of bright cyan in conky")
+gflags.DEFINE_string("conky_color15", "white", "Color used instead of bright white in conky")
+
+
+
 gflags.DEFINE_string("locale", None, "System locale")
 
 gflags.DEFINE_integer("reminder", None, "Reminder minutes")
@@ -2030,7 +2051,38 @@ gflags.RegisterValidator("conky_color_now_marker",
 gflags.RegisterValidator("conky_color_border",
                          lambda value: ValidColor(value) != None)
 
-
+gflags.RegisterValidator("conky_color0",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color1",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color2",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color3",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color4",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color5",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color6",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color7",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color8",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color9",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color10",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color11",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color12",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color13",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color14",
+                         lambda value: GetColor(value) != None)
+gflags.RegisterValidator("conky_color15",
+                         lambda value: GetColor(value) != None)
 
 gflags.ADOPT_module_key_flags(gflags)
 
