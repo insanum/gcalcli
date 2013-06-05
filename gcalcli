@@ -163,6 +163,7 @@ __API_CLIENT_SECRET__ = '3tZSxItw6_VnZMezQwC8lUqy'
 # These are standard libraries and should never fail
 import sys, os, re, gflags, shlex, time
 import locale, textwrap, signal
+import string
 from Queue import Queue
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
@@ -1877,7 +1878,7 @@ def ValidColor(value):
         return True
     else:
         #Check if real Conky color
-        return True if ("${color " in value) else False
+        return True if ("${color " in value) or (len(value) == 7 and all([c in string.hexdigits for c in value[1:]])) else False
 
 
 def GetColor(value):
@@ -2037,52 +2038,52 @@ gflags.RegisterValidator("color_border",
 
 
 gflags.RegisterValidator("conky_color_owner",
-                         lambda value: ValidColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color_writer",
-                         lambda value: ValidColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color_reader",
-                         lambda value: ValidColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color_freebusy",
-                         lambda value: ValidColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color_date",
-                         lambda value: ValidColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color_now_marker",
-                         lambda value: ValidColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color_border",
-                         lambda value: ValidColor(value) != None)
+                         lambda value: ValidColor(value))
 
 gflags.RegisterValidator("conky_color0",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color1",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color2",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color3",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color4",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color5",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color6",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color7",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color8",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color9",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color10",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color11",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color12",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color13",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color14",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 gflags.RegisterValidator("conky_color15",
-                         lambda value: GetColor(value) != None)
+                         lambda value: ValidColor(value))
 
 gflags.ADOPT_module_key_flags(gflags)
 
