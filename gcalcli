@@ -1876,7 +1876,7 @@ def GetColor(value):
     if value in colors:
         return colors[value]
     else:
-        return CLR_CUSTOM(value) if CLR.conky else None
+        return CLR_CUSTOM(value) if FLAGS.conky else None
 
 def GetCalColors(calNames):
     calColors = {}
