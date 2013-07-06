@@ -1528,7 +1528,7 @@ class gcalcli:
                 if verbose:
                     print "attendees:"
                 for attendee in ve.attendee_list:
-                    if attendee.value.startswith("MAILTO:"):
+                    if attendee.value.upper().startswith("MAILTO:"):
                         email = attendee.value[7:]
                     else:
                         email = attendee.value
