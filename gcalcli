@@ -1687,7 +1687,7 @@ class gcalcli:
             os.execvp(cmd[0], cmd)
 
 
-    def ImportICS(self, verbose=False, reminder=None, icsFile=None):
+    def ImportICS(self, verbose=False, reminder=None, format=None, icsFile=None):
 
         def CreateEventFromVOBJ(ve):
 
@@ -1695,14 +1695,10 @@ class gcalcli:
 
             if hasattr(ve, 'summary'):
                 DebugPrint("SUMMARY: %s\n" % ve.summary.value)
-                if verbose:
-                    print "Event........%s" % ve.summary.value
                 event['summary'] = ve.summary.value
 
             if hasattr(ve, 'location'):
                 DebugPrint("LOCATION: %s\n" % ve.location.value)
-                if verbose:
-                    print "Location.....%s" % ve.location.value
                 event['location'] = ve.location.value
 
             if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
@@ -1711,22 +1707,12 @@ class gcalcli:
 
             DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
             DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
-            if verbose:
-                print "Start........%s" % ve.dtstart.value.isoformat(' ')
-                print "End..........%s" % ve.dtend.value.isoformat(' ')
-                print "Local Start..%s" % ve.dtstart.value.astimezone(tzlocal())
-                print "Local End....%s" % ve.dtend.value.astimezone(tzlocal())
 
             if hasattr(ve, 'rrule'):
-
                 DebugPrint("RRULE: %s\n" % ve.rrule.value)
-                if verbose:
-                    print "Recurrence...%s" % ve.rrule.value
-
                 event['recurrence'] = [ "RRULE:" + ve.rrule.value ]
 
             if hasattr(ve, 'dtstart') and hasattr(ve, 'dtend'):
-
                 start = ve.dtstart.value.isoformat()
                 end   = ve.dtend.value.isoformat()
 
@@ -1760,8 +1746,6 @@ class gcalcli:
             if hasattr(ve, 'description') and ve.description.value.strip():
                 descr = ve.description.value.strip()
                 DebugPrint("DESCRIPTION: %s\n" % descr)
-                if verbose:
-                    print "Description:\n%s" % descr
                 event['description'] = descr
 
             if hasattr(ve, 'organizer'):
@@ -1771,28 +1755,222 @@ class gcalcli:
                     email = ve.organizer.value[7:]
                 else:
                     email = ve.organizer.value
-                if verbose:
-                    print "organizer:\n %s" % email
                 event['organizer'] = { 'displayName' : ve.organizer.name,
                                        'email'       : email }
 
             if hasattr(ve, 'attendee_list'):
                 DebugPrint("ATTENDEE_LIST : %s\n" % ve.attendee_list)
-                if verbose:
-                    print "attendees:"
                 event['attendees'] = []
                 for attendee in ve.attendee_list:
                     if attendee.value.upper().startswith("MAILTO:"):
                         email = attendee.value[7:]
                     else:
                         email = attendee.value
-                    if verbose:
-                        print " %s" % email
 
                     event['attendees'].append({ 'displayName' : attendee.name,
                                                 'email'       : email })
 
             return event
+
+        def SetHeaders(format=None):
+            """ Create headers tuple of tuples.
+
+            Returns tuple of nested tuples.
+            Logic:
+            ('key', 'value') or
+            ('key', ('subkey', subvalue))
+
+            Output can be formated:
+            all upper case: ('summary#0', 'Summary:     ', '"{0}".upper()')
+            If key need to be formated main key must be named like:
+            key#option (where "option" can be anything or option name)
+
+            If you want hide some field:
+            ('key', None) or do not mention it at all.
+
+            There is special subkey: 'title'.
+            Title will be printed on separate line before rest of subfields.
+
+            Subkey is always in tuple, even if only one.
+
+            Order is preserved.
+            """
+            if format == "old":
+                headers = (
+                    ('summary', "Event........%s"),
+                    ('location', "Location.....%s"),
+                    ('start#0', (
+                        ('dateTime', "Start........%s", 'parse("{0}")'),
+                        ('timeZone', None)
+                    )),
+                    ('end#0', (
+                        ('dateTime', "End..........%s", 'parse("{0}")'),
+                        ('timeZone', None)
+                    )),
+                    ('start#1', (
+                        ('dateTime', "Local Start..%s",  'parse("{0}").astimezone(tzlocal())'),
+                    )),
+                    ('end#1', (
+                        ('dateTime', "Local End....%s", 'parse("{0}").astimezone(tzlocal())'),
+                    )),
+                    ('recurrence', "Recurrence...%s"),
+                    ('description', "Description:\n%s"),
+                    ('organizer', (
+                        ('title', "Organizer:"),
+                        ('displayName', None),
+                        ('email', " %s")
+                    )),
+                    ('attendees', (
+                        ('title', "Attendees:"),
+                        ('displayName', None),
+                        ('email', " %s")
+                    ))
+                )
+
+            elif format == "compact":
+                headers = (
+                    ('summary', "Event:       %s"),
+                    ('location', "Where:       %s"),
+                    ('description', "Notes:       %s"),
+                    ('start#compactdate', (
+                        ('dateTime', "Date:        %s  %s-%s",  'parse("{0}")'),
+                    )),
+                    ('end#compactdate', (
+                        ('dateTime', "From:        %s\nTo:          %s", 'parse("{0}")'),
+                    )),
+                    ('recurrence', "Recurrence...%s"),
+                    ('organizer', (
+                        ('title', "Organizer:"),
+                        ('displayName', None),
+                        ('email', " %s")
+                    )),
+                    ('attendees', (
+                        ('title', "Attendees:"),
+                        ('displayName', None),
+                        ('email', " %s")
+                    ))
+                )
+
+            elif format == "fancy":
+                prefix = '  '
+                headers = (
+                    ('title', ''),
+                    ('summary#1', "                 "+str(CLR_BRWHT())+"%s"+str(CLR_NRM()), '"{0}".upper()'),
+                    ('title', '  +-------------------------------------------+'),
+                    ('location', prefix+"Where:       %s"),
+                    ('description', prefix+"Notes:       %s"),
+                    ('start#compactdate', (
+                        ('dateTime', prefix+'Date:        '+str(CLR_GRN())+'%s'+str(CLR_NRM())+'  '+str(CLR_RED())+'%s-%s'+str(CLR_NRM()),  'parse("{0}")'),
+                    )),
+                    ('end#compactdate', (
+                        ('dateTime', prefix+"From:        %s\nTo:          %s", 'parse("{0}")'),
+                    )),
+                    ('recurrence', prefix+"Recurrence   %s"),
+                    ('organizer', (
+                        ('title', prefix+"Organizer:"),
+                        ('displayName', None),
+                        ('email', prefix+"\t%s")
+                    )),
+                    ('attendees', (
+                        ('title', prefix+"Attendees:"),
+                        ('displayName', None),
+                        ('email', prefix+"\t%s")
+                    )),
+                )
+            return headers
+
+        def PrintEvent(event=None, headers=None):
+            ''' Parse headers tuple and print output
+
+            Processing is devided into 2 parts:
+            * key is in event dictionary:
+                we determine if it is main key or tulpe of subkeys
+                format it, print it
+            * key is not in event dictionary
+                check if it is "key#option" format
+                eval formating
+                print it
+
+            You can add new parsing functions to # FUNCTION CALLS section.
+            '''
+            for item in headers:
+                key = item[0]
+                value = item[1]
+                if key == "title":
+                    print value
+                    continue
+                if key in event:
+                    if type(value) != tuple:
+                        #it is simple value, so format it
+                        print value % event[key]
+                    else:
+                        for subkey, subvalue in value:
+                            #if there is any 'title' in subtuple just print it
+                            if subkey == 'title':
+                                print subvalue
+                            elif subvalue is not None:
+                                #if more items, it is list, if one - dict
+                                if type(event[key]) is list:
+                                    for item in event[key]:
+                                        print subvalue % item[subkey]
+                                else:
+                                    print subvalue % event[key][subkey]
+                else:
+                    key = item[0]
+                    if "#" in key:
+                        key, option = key.split('#')
+                        value = item[1]
+                        if key in event:
+
+                            # FUNCTION CALLS
+                            if option == "compactdate":
+                                if key == "start":
+                                    start = (value[0], event[key]['dateTime'])
+                                elif key == "end":
+                                    end = (value[0], event[key]['dateTime'])
+                                    P_CompactDate(start,end)
+                                continue
+                            # FUNCTION CALLS END
+
+                            if type(value) != tuple:
+                                function = item[2]
+                                newval = eval(function.format(event[key]))
+                                print value % newval
+                            else:
+                                for subitem in value:
+                                    subkey = subitem[0]
+                                    subvalue = subitem[1]
+                                    #if there is any 'title' in subtuple just print it
+                                    if subkey == 'title':
+                                        print subvalue
+                                    elif subvalue is not None:
+                                        subfunction = subitem[2]
+                                        #if more items, it is list, if one - dict
+                                        if type(event[key]) is list:
+                                            for item in event[key]:
+                                                newsubval = eval(subfunction.format(item[subkey]))
+                                                print subvalue % newsubval
+                                        else:
+                                            newsubval = eval(subfunction.format(event[key][subkey]))
+                                            print subvalue % newsubval
+
+        def P_CompactDate(start, end):
+            ''' Helper function: Prints compact start/end date and time
+
+            Params are tuples: ((key,string,formatingfunc), value)
+            start 'string' is used as compact form
+            end 'string' is used as longer form
+            '''
+            starttime = eval(start[0][2].format(start[1]))
+            endtime = eval(end[0][2].format(end[1]))
+
+            if starttime.strftime("%d.%m.%Y") == endtime.strftime("%d.%m.%Y"):
+                print start[0][1] % (starttime.strftime("%A %d.%m.%Y"),
+                                     starttime.strftime("%H:%M"),
+                                     endtime.strftime("%H:%M"))
+            else:
+                print end[0][1] % (starttime.strftime("%A %d.%m.%Y %H:%M"),
+                                   endtime.strftime("%A %d.%m.%Y %H:%M"))
 
         try:
             import vobject
@@ -1834,6 +2012,9 @@ class gcalcli:
                                insert(calendarId = self.cals[0]['id'],
                                       body = event).execute()
                     continue
+                else:
+                    headers = SetHeaders(format)
+                    PrintEvent(event, headers)
 
                 #dprint(event)
                 PrintMsg(CLR_MAG(), "\n[S]kip [i]mport [q]uit: ")
@@ -1955,6 +2136,8 @@ gflags.DEFINE_bool("cache", True, "Execute command without using cache")
 
 gflags.DEFINE_bool("verbose", False, "Be verbose on imports", short_name="v")
 
+gflags.DEFINE_string("format", "old", "Choose verbose output format: old, compact, fancy")
+
 gflags.RegisterValidator("details",
                         lambda value: all(x in ["all", "calendar",
                            "location", "length", "reminders", "descr",
@@ -1973,6 +2156,7 @@ gflags.RegisterValidator("color_now_marker",
                          lambda value: GetColor(value) != None)
 gflags.RegisterValidator("color_border",
                          lambda value: GetColor(value) != None)
+gflags.RegisterValidator("format", lambda value: value in ["old", "compact", "fancy"])
 
 gflags.ADOPT_module_key_flags(gflags)
 
@@ -2246,9 +2430,9 @@ def BowChickaWowWow():
 
     elif args[0] == 'import':
         if len(args) == 1: # stdin
-            gcal.ImportICS(FLAGS.verbose, FLAGS.reminder)
+            gcal.ImportICS(FLAGS.verbose, FLAGS.reminder, FLAGS.format)
         elif len(args) == 2: # ics file
-            gcal.ImportICS(FLAGS.verbose, FLAGS.reminder, args[1])
+            gcal.ImportICS(FLAGS.verbose, FLAGS.reminder, FLAGS.format, args[1])
         else:
             PrintErrMsg('Error: invalid import arguments\n')
             sys.exit(1)
