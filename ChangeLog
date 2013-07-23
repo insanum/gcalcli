@@ -16,6 +16,8 @@ v3.1
     - terminal graphics now used for lines, use --nl option to turn them off
     - the --cals option to limit calendars by access role has been removed
     - the 'search' command now supports proper Google-like search terms
+    - the 'import' command now accepts a '-d' option that is used for printing
+        out the events found in an ics/vcal file and not importing them
   * Fixes
     - the 'quick', 'add', and 'import' commands now require a single --cal option
     - lots of code reduction and simplification based on new Google API Client

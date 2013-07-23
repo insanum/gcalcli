@@ -140,7 +140,7 @@ Usage:
                              events, just like the 'search' command
                            - editing is interactive
 
-  import [file]       import an ics/vcal file to a calendar
+  import [file]            import an ics/vcal file to a calendar
                            - a single --cal must specified
                            - if a file is not specified then the data is read
                              from standard input
@@ -148,6 +148,9 @@ Usage:
                              displayed and you're given the option to import
                              or skip it, by default everything is imported
                              quietly without any interaction
+                           - if -n is given then each event in the file is
+                             displayed and is not imported, a --cal does not
+                             need to be specified for this option
 
   remind <mins> <command>  execute command if event occurs within <mins>
                            minutes time ('%%s' in <command> is replaced with
@@ -1687,11 +1690,16 @@ class gcalcli:
             os.execvp(cmd[0], cmd)
 
 
-    def ImportICS(self, verbose=False, reminder=None, icsFile=None):
+    def ImportICS(self, verbose=False, dump=False, reminder=None, icsFile=None):
 
         def CreateEventFromVOBJ(ve):
 
             event = {}
+
+            if verbose:
+                print "+----------------+"
+                print "| Calendar Event |"
+                print "+----------------+"
 
             if hasattr(ve, 'summary'):
                 DebugPrint("SUMMARY: %s\n" % ve.summary.value)
@@ -1800,7 +1808,10 @@ class gcalcli:
             PrintErrMsg('Python vobject module not installed!\n')
             sys.exit(1)
 
-        if len(self.cals) != 1:
+        if dump:
+            verbose = True
+
+        if not dump and len(self.cals) != 1:
             PrintErrMsg("Must specify a single calendar\n")
             return
 
@@ -1829,10 +1840,15 @@ class gcalcli:
                 if not event:
                     continue
 
+                if dump:
+                    continue
+
                 if not verbose:
                     newEvent = self._CalService().events().\
                                insert(calendarId = self.cals[0]['id'],
                                       body = event).execute()
+                    hLink = self._ShortenURL(newEvent['htmlLink'])
+                    PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
                     continue
 
                 #dprint(event)
@@ -1954,6 +1970,7 @@ gflags.DEFINE_bool("refresh", False, "Delete and refresh cached data")
 gflags.DEFINE_bool("cache", True, "Execute command without using cache")
 
 gflags.DEFINE_bool("verbose", False, "Be verbose on imports", short_name="v")
+gflags.DEFINE_bool("dump", False, "Print events and don't import", short_name="d")
 
 gflags.RegisterValidator("details",
                         lambda value: all(x in ["all", "calendar",
@@ -2246,9 +2263,9 @@ def BowChickaWowWow():
 
     elif args[0] == 'import':
         if len(args) == 1: # stdin
-            gcal.ImportICS(FLAGS.verbose, FLAGS.reminder)
+            gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder)
         elif len(args) == 2: # ics file
-            gcal.ImportICS(FLAGS.verbose, FLAGS.reminder, args[1])
+            gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, args[1])
         else:
             PrintErrMsg('Error: invalid import arguments\n')
             sys.exit(1)

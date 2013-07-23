@@ -227,7 +227,7 @@ gcalcli [options] command [command args]
                              events, just like the 'search' command
                            - editing is interactive
 
-  import [-v] [file]       import an ics/vcal file to a calendar
+  import [-v|-d] [file]    import an ics/vcal file to a calendar
                            - a single --calendar must specified
                            - if a file is not specified then the data is read
                              from standard input
@@ -235,6 +235,9 @@ gcalcli [options] command [command args]
                              displayed and you're given the option to import
                              or skip it, by default everything is imported
                              quietly without any interaction
+                           - if -d is given then each event in the file is
+                             displayed and not imported, a --calendar does
+                             not need to be specified for this option
 
   remind <mins> <command>  execute command if event occurs within <mins>
                            minutes time ('%s' in <command> is replaced with
