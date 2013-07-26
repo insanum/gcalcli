@@ -168,6 +168,7 @@ import sys, os, re, gflags, shlex, time
 import locale, textwrap, signal
 from Queue import Queue
 from datetime import datetime, timedelta, date
+from datetime import time as dt_time
 from unicodedata import east_asian_width
 
 # Required 3rd partie libraries
@@ -1720,10 +1721,14 @@ class gcalcli:
             DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
             DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
             if verbose:
-                print "Start........%s" % ve.dtstart.value.isoformat(' ')
-                print "End..........%s" % ve.dtend.value.isoformat(' ')
-                print "Local Start..%s" % ve.dtstart.value.astimezone(tzlocal())
-                print "Local End....%s" % ve.dtend.value.astimezone(tzlocal())
+                print "Start........%s" % ve.dtstart.value.isoformat()
+                print "End..........%s" % ve.dtend.value.isoformat()
+
+                if hasattr(ve.dtstart.value, 'astimezone'): 
+                    print "Local Start..%s" % ve.dtstart.value.astimezone(tzlocal())
+
+                if hasattr(ve.dtend.value, 'astimezone'): 
+                    print "Local End....%s" % ve.dtend.value.astimezone(tzlocal())
 
             if hasattr(ve, 'rrule'):
 
@@ -1734,9 +1739,6 @@ class gcalcli:
                 event['recurrence'] = [ "RRULE:" + ve.rrule.value ]
 
             if hasattr(ve, 'dtstart') and hasattr(ve, 'dtend'):
-
-                start = ve.dtstart.value.isoformat()
-                end   = ve.dtend.value.isoformat()
 
                 # XXX
                 # Timezone madness! Note that we're using the timezone for the
@@ -1753,12 +1755,18 @@ class gcalcli:
                 # print dir(ve.dtstart.value.tzinfo)
                 # print vars(ve.dtstart.value.tzinfo)
 
-                event['start'] = { 'dateTime' : start,
-                                   'timeZone' : self.cals[0]['timeZone'] }
-                                   #'timeZone' : ve.dtstart.value.tzinfo._tzid }
-                event['end']   = { 'dateTime' : end,
-                                   'timeZone' : self.cals[0]['timeZone'] }
-                                   #'timeZone' : ve.dtend.value.tzinfo._tzid }
+                if hasattr(ve.dtstart.value, 'astimezone') and hasattr(ve.dtend.value, 'astimezone'):
+                    event['start'] = { 'dateTime' : ve.dtstart.value.isoformat(),
+                                       'timeZone' : self.cals[0]['timeZone'] }
+                                       #'timeZone' : ve.dtstart.value.tzinfo._tzid }
+                    event['end']   = { 'dateTime' : ve.dtend.value.isoformat(),
+                                       'timeZone' : self.cals[0]['timeZone'] }
+                                       #'timeZone' : ve.dtend.value.tzinfo._tzid }
+                else:
+                    # All day events, denoted as datetime.date objects, need only the 'date' field
+                    # to be inserted into the Google Calendar API v3
+                    event['start'] = { 'date' : ve.dtstart.value.isoformat() }
+                    event['end']   = { 'date' : ve.dtend.value.isoformat() } 
 
                 if reminder:
                     event['reminders'] = {'useDefault' : False,
@@ -1847,6 +1855,7 @@ class gcalcli:
                     newEvent = self._CalService().events().\
                                insert(calendarId = self.cals[0]['id'],
                                       body = event).execute()
+
                     hLink = self._ShortenURL(newEvent['htmlLink'])
                     PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
                     continue
