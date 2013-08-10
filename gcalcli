@@ -1953,8 +1953,7 @@ gflags.DEFINE_bool("started", True, "Show events that have started")
 gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
 gflags.DEFINE_bool("monday", False, "Start the week on Monday")
 gflags.DEFINE_bool("color", True, "Enable/Disable all color output")
-gflags.DEFINE_bool("lineart", True, "Enable/Disable line art")
-gflags.DEFINE_bool("unicodelineart", False, "Enable/Disable unicode line art")
+gflags.DEFINE_enum("lineart", "plain", ["plain", "fancy", "unicode"], "Sets the type of lineart to use")
 gflags.DEFINE_bool("conky", False, "Use Conky color codes")
 
 gflags.DEFINE_string("color_owner", "cyan", "Color for owned calendars")
@@ -2046,11 +2045,15 @@ def BowChickaWowWow():
     if not FLAGS.color:
         CLR.useColor = False
 
-    if not FLAGS.lineart:
-        ART.useArt = False
-
-    if FLAGS.unicodelineart:
+    if FLAGS.lineart == "unicode":
+        ART.useArt = True
         ART.useUnicode = True
+    elif FLAGS.lineart == "fancy":
+        ART.useArt = True
+        ART.useUnicode = False
+    else:
+        ART.useArt = False
+        ART.useUnicode = False
 
     if FLAGS.conky:
         SetConkyColors()
