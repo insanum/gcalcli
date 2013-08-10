@@ -1011,8 +1011,8 @@ class gcalcli:
                     printLen, cut = self._GetCutIndex(weekEventStrings[j])
                     padding = ' ' * (self.calWidth - printLen)
 
-                    line += (weekColorStrings[j] +
-                             weekEventStrings[j][:cut] +
+                    line += (weekColorStrings[j].encode(locale.getpreferredencoding() or "UTF-8", "ignore") +
+                             weekEventStrings[j][:cut].encode(locale.getpreferredencoding() or "UTF-8", "ignore") +
                              padding +
                              str(CLR_NRM()))
                     weekEventStrings[j] = weekEventStrings[j][cut:]
