@@ -180,7 +180,7 @@ try:
     from oauth2client.file import Storage
     from oauth2client.client import OAuth2WebServerFlow
     from oauth2client.tools import run
-except ImportError, e:
+except ImportError as e:
     print "ERROR: Missing module - %s" % e.args[0]
     sys.exit(1)
 
