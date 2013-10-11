@@ -1,0 +1,29 @@
+[gcalcli]
+user: YOUR_OAUTH2_ACCOUNT@gmail.com
+pw: YOUR_PASSWORD
+
+cals: all
+#cal: Sport[#blue],Work[#green],Personal[#yellow],Public[#orange],Bdays[#pink],Tasks[#red],Weather[#cyan]
+
+#24hr: true
+#ignore-started: true
+#width: 40
+#mon: true
+#tsv: <true|false>
+#locale: <locale>
+#reminder: <minutes>
+#detail-all: <true|false>
+#detail-calendar: <true|false>
+#detail-location: <true|false>
+#detail-length: <true|false>
+#detail-reminders: <true|false>
+#detail-descr: <true|false>
+#detail-descr-width: <width>
+#detail-url: [long|short]
+#cal-owner-color: <color>
+#cal-writer-color: <color>
+#cal-reader-color: <color>
+#cal-freebusy-color: <color>
+#date-color: <color>
+#now-marker-color: <color>
+#border-color: white
