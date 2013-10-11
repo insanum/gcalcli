@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # ** The MIT License **
 #
@@ -360,6 +360,74 @@ def GetTimeFromStr(eWhen, eDuration=0):
     sTimeStop = eTimeStop.isoformat()
 
     return sTimeStart, sTimeStop
+
+
+def PrintVobjEvent(ve):
+
+    if hasattr(ve, 'summary'):
+        print "Event........%s" % ve.summary.value
+
+    if hasattr(ve, 'location'):
+        print "Location.....%s" % ve.location.value
+
+    if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
+        PrintErrMsg("Error: event does not have a dtstart and dtend!\n")
+        return None
+
+    print "Start........%s" % ve.dtstart.value.isoformat(' ')
+    print "End..........%s" % ve.dtend.value.isoformat(' ')
+    print "Local Start..%s" % ve.dtstart.value.astimezone(tzlocal())
+    print "Local End....%s" % ve.dtend.value.astimezone(tzlocal())
+
+    if hasattr(ve, 'rrule'):
+        print "Recurrence...%s" % ve.rrule.value
+
+    if hasattr(ve, 'description') and ve.description.value.strip():
+        descr = ve.description.value.strip()
+        print "Description:\n%s" % descr
+
+    if hasattr(ve, 'organizer'):
+        if ve.organizer.value.startswith("MAILTO:"):
+            email = ve.organizer.value[7:]
+        else:
+            email = ve.organizer.value
+        print "Organizer:\n %s" % email
+
+    if hasattr(ve, 'attendee_list'):
+        print "Attendees:"
+        for attendee in ve.attendee_list:
+            if attendee.value.startswith("MAILTO:"):
+                email = attendee.value[7:]
+            else:
+                email = attendee.value
+            print " %s" % email
+
+
+def DumpICS(icsFile):
+
+    try:
+        import vobject
+    except:
+        PrintErrMsg('Python vobject module not installed!\n')
+        sys.exit(1)
+
+    try:
+        f = file(icsFile)
+    except Exception, e:
+        PrintErrMsg("Error: " + str(e) + "!\n")
+        sys.exit(1)
+
+    while True:
+
+        try:
+            v = vobject.readComponents(f).next()
+        except StopIteration:
+            break
+
+        for ve in v.vevent_list:
+            PrintVobjEvent(ve)
+
+    sys.exit(0)
 
 
 class gcalcli:
@@ -1891,6 +1959,7 @@ class gcalcli:
                     email = ve.organizer.value[7:]
                 else:
                     email = ve.organizer.value
+
                 event['organizer'] = { 'displayName' : ve.organizer.name,
                                        'email'       : email }
 
@@ -1905,6 +1974,8 @@ class gcalcli:
 
                     event['attendees'].append({ 'displayName' : attendee.name,
                                                 'email'       : email })
+            if verbose:
+                PrintVobjEvent(ve);
 
             return event
 
@@ -2379,6 +2450,15 @@ def BowChickaWowWow():
     if args[0] == 'help':
         Usage()
         sys.exit(0)
+
+    if args[0] == 'import':
+        if len(args) >= 2 and args[1] == "-d":
+            if len(args) == 3: # ics file
+                DumpICS(args[2])
+                sys.exit(0)
+            else:
+                PrintErrMsg('Error: invalid import arguments\n')
+                sys.exit(1)
 
     calNames = []
     calNameColors = []
