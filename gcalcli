@@ -2058,7 +2058,7 @@ def BowChickaWowWow():
         PrintErrMsg('Error: no command\n')
         sys.exit(1)
 
-    # No sense instaniating gcalcli for nothing
+    # No sense instantiating gcalcli for nothing
     if not args[0] in ['list', 'search', 'agenda', 'calw', 'calm', 'quick',
         'add', 'delete', 'edit', 'remind', 'import', 'help']:
         PrintErrMsg('Error: %s is an invalid command' % args[0])
