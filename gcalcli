@@ -571,8 +571,9 @@ class gcalcli:
                            cmp(order[x['accessRole']],
                                order[y['accessRole']]))
 
+        # Assume visibility is off if not present, but if hidden is missing assume it's visible.
+        self.allCals = [x for x in self.allCals if x.get('selected', False) and not x.get('hidden', False)]
         for cal in self.allCals:
-
             events = self._CalService().events().\
                      list(calendarId = cal['id'],
                           singleEvents = False).execute()
@@ -1480,6 +1481,30 @@ class gcalcli:
         self._IterateEvents(self.now, eventList, yearDate=True)
 
 
+    def CurrentAndNextQuery(self):
+        start = self.now
+        end = (start + timedelta(days=2))
+        eventList = self._SearchForCalEvents(start, end, None)
+        for event in eventList:
+          # Skip whole-day events.
+          if 'dateTime' not in event.get('start', {}):
+            continue
+          # This is an event happening now.
+          if event['e'] > self.now and event['s'] < self.now:
+            left = event['e'] - self.now
+            mins = left.seconds / 60
+            event['s'] = datetime(1979,10,27,0,0,0,0)
+            event['e'] = datetime(1979,10,27,0,0,0,0)
+            self._PrintEvent(event, '%dm' % mins)
+            continue
+          # This is an event happening next. Print it and stop.
+          if event['s'] > self.now:
+            until = event['s'] - self.now
+            mins = until.seconds / 60
+            self._PrintEvent(event, '+%sm' % mins)
+            break
+
+
     def AgendaQuery(self, startText='', endText=''):
         if startText == '':
             if self.ignoreStarted:
@@ -2067,7 +2092,7 @@ def BowChickaWowWow():
 
     # No sense instantiating gcalcli for nothing
     if not args[0] in ['list', 'search', 'agenda', 'calw', 'calm', 'quick',
-        'add', 'delete', 'edit', 'remind', 'import', 'help']:
+        'add', 'delete', 'edit', 'remind', 'import', 'help', 'next']:
         PrintErrMsg('Error: %s is an invalid command' % args[0])
         sys.exit(1)
 
@@ -2163,6 +2188,9 @@ def BowChickaWowWow():
 
         if not FLAGS.tsv:
             sys.stdout.write('\n')
+
+    elif args[0] == 'next':
+        gcal.CurrentAndNextQuery()
 
     elif args[0] == 'calw':
         if not FLAGS.width:
