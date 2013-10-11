@@ -2003,7 +2003,7 @@ def BowChickaWowWow():
             tmpArgv = [argv[0], "--flagfile=~/.gcalclirc"] + argv[1:]
         else:
             tmpArgv = argv
-        args = FLAGS(tmpArgv)
+        args = FLAGS(tmpArgv[1:])
     except gflags.FlagsError, e:
         PrintErrMsg(str(e))
         Usage(True)
@@ -2020,8 +2020,6 @@ def BowChickaWowWow():
 
         FLAGS.Reset()
         args = FLAGS(tmpArgv)
-
-    argv = tmpArgv
 
     if FLAGS.version:
         Version()
