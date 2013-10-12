@@ -474,6 +474,8 @@ class gcalcli:
 
     @staticmethod
     def _LocalizeDateTime(dt):
+        if not hasattr(dt, 'tzinfo'):
+            return dt
         if dt.tzinfo == None:
             return dt.replace(tzinfo=tzlocal())
         else:
@@ -1718,9 +1720,9 @@ class gcalcli:
                 DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
             if verbose:
                 if ve.dtstart.value:
-                    print "Start........%s" % ve.dtstart.value.isoformat(' ')
+                    print "Start........%s" % ve.dtstart.value.isoformat()
                 if ve.dtend.value:
-                    print "End..........%s" % ve.dtend.value.isoformat(' ')
+                    print "End..........%s" % ve.dtend.value.isoformat()
                 if ve.dtstart.value:
                     print "Local Start..%s" % self._LocalizeDateTime(ve.dtstart.value)
                 if ve.dtend.value:
@@ -1751,9 +1753,12 @@ class gcalcli:
                 # print vars(ve.dtstart.value.tzinfo)
 
                 start = ve.dtstart.value.isoformat()
-                event['start'] = { 'dateTime' : start,
-                                   'timeZone' : self.cals[0]['timeZone'] }
-                                   #'timeZone' : ve.dtstart.value.tzinfo._tzid }
+                if isinstance(ve.dtstart.value, date):
+                    event['start'] = { 'date': start }
+                else:
+                    event['start'] = { 'dateTime' : start,
+                                       'timeZone' : self.cals[0]['timeZone'] }
+                                       #'timeZone' : ve.dtstart.value.tzinfo._tzid }
                 if reminder:
                     event['reminders'] = {'useDefault' : False,
                                           'overrides'  : [{'minutes' : reminder,
@@ -1763,9 +1768,12 @@ class gcalcli:
                 # around apparently...  If there is no end, use the start date
                 if hasattr(ve, 'dtend') and ve.dtend.value:
                     end   = ve.dtend.value.isoformat()
-                    event['end']   = { 'dateTime' : end,
-                                       'timeZone' : self.cals[0]['timeZone'] }
-                                       #'timeZone' : ve.dtend.value.tzinfo._tzid }
+                    if isinstance(ve.dtend.value, date):
+                        event['end'] = { 'date': end }
+                    else:
+                        event['end']   = { 'dateTime' : end,
+                                           'timeZone' : self.cals[0]['timeZone'] }
+                                           #'timeZone' : ve.dtend.value.tzinfo._tzid }
                 else:
                     event['end'] = event['start']
 
