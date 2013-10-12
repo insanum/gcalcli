@@ -472,6 +472,13 @@ class gcalcli:
                 self.cals.append(cal)
                 cal['colorSpec'] = None
 
+    @staticmethod
+    def _LocalizeDateTime(dt):
+        if dt.tzinfo == None:
+            return dt.replace(tzinfo=tzlocal())
+        else:
+            return dt.astimezone(tzlocal())
+
 
     def _GoogleAuth(self):
         if not self.authHttp:
@@ -593,10 +600,7 @@ class gcalcli:
                         # all day events
                         event['s'] = parse(event['start']['date'])
 
-                    if event['s'].tzinfo == None:
-                        event['s'] = event['s'].replace(tzinfo=tzlocal())
-                    else:
-                        event['s'] = event['s'].astimezone(tzlocal())
+                    event['s'] = self._LocalizeDateTime(event['s'])
 
                     if 'dateTime' in event['end']:
                         event['e'] = parse(event['end']['dateTime'])
@@ -604,10 +608,7 @@ class gcalcli:
                         # all day events
                         event['e'] = parse(event['end']['date'])
 
-                    if event['e'].tzinfo == None:
-                        event['e'] = event['e'].replace(tzinfo=tzlocal())
-                    else:
-                        event['e'] = event['e'].astimezone(tzlocal())
+                    event['e'] = self._LocalizeDateTime(event['e'])
 
                     # http://en.wikipedia.org/wiki/Year_2038_problem
                     # Catch the year 2038 problem here as the python dateutil
@@ -1364,20 +1365,14 @@ class gcalcli:
                 else:
                     event['s'] = parse(event['start']['date']) # all date events
 
-                if event['s'].tzinfo == None:
-                    event['s'] = event['s'].replace(tzinfo=tzlocal())
-                else:
-                    event['s'] = event['s'].astimezone(tzlocal())
+                event['s'] = self._LocalizeDateTime(event['s'])
 
                 if 'dateTime' in event['end']:
                     event['e'] = parse(event['end']['dateTime'])
                 else:
                     event['e'] = parse(event['end']['date']) # all date events
 
-                if event['e'].tzinfo == None:
-                    event['e'] = event['e'].replace(tzinfo=tzlocal())
-                else:
-                    event['e'] = event['e'].astimezone(tzlocal())
+                event['e'] = self._LocalizeDateTime(event['e'])
 
                 # For all-day events, Google seems to assume that the event time
                 # is based in the UTC instead of the local timezone.  Here we
@@ -1717,13 +1712,19 @@ class gcalcli:
                 PrintErrMsg("Error: event does not have a dtstart and dtend!\n")
                 return None
 
-            DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
-            DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
+            if ve.dtstart.value:
+                DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
+            if ve.dtend.value:
+                DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
             if verbose:
-                print "Start........%s" % ve.dtstart.value.isoformat(' ')
-                print "End..........%s" % ve.dtend.value.isoformat(' ')
-                print "Local Start..%s" % ve.dtstart.value.astimezone(tzlocal())
-                print "Local End....%s" % ve.dtend.value.astimezone(tzlocal())
+                if ve.dtstart.value:
+                    print "Start........%s" % ve.dtstart.value.isoformat(' ')
+                if ve.dtend.value:
+                    print "End..........%s" % ve.dtend.value.isoformat(' ')
+                if ve.dtstart.value:
+                    print "Local Start..%s" % self._LocalizeDateTime(ve.dtstart.value)
+                if ve.dtend.value:
+                    print "Local End....%s" % self._LocalizeDateTime(ve.dtend.value)
 
             if hasattr(ve, 'rrule'):
 
@@ -1733,11 +1734,7 @@ class gcalcli:
 
                 event['recurrence'] = [ "RRULE:" + ve.rrule.value ]
 
-            if hasattr(ve, 'dtstart') and hasattr(ve, 'dtend'):
-
-                start = ve.dtstart.value.isoformat()
-                end   = ve.dtend.value.isoformat()
-
+            if hasattr(ve, 'dtstart') and ve.dtstart.value:
                 # XXX
                 # Timezone madness! Note that we're using the timezone for the
                 # calendar being added to. This is OK if the event is in the
@@ -1753,17 +1750,24 @@ class gcalcli:
                 # print dir(ve.dtstart.value.tzinfo)
                 # print vars(ve.dtstart.value.tzinfo)
 
+                start = ve.dtstart.value.isoformat()
                 event['start'] = { 'dateTime' : start,
                                    'timeZone' : self.cals[0]['timeZone'] }
                                    #'timeZone' : ve.dtstart.value.tzinfo._tzid }
-                event['end']   = { 'dateTime' : end,
-                                   'timeZone' : self.cals[0]['timeZone'] }
-                                   #'timeZone' : ve.dtend.value.tzinfo._tzid }
-
                 if reminder:
                     event['reminders'] = {'useDefault' : False,
                                           'overrides'  : [{'minutes' : reminder,
                                                            'method'  : 'popup'}]}
+
+                # Can only have an end if we have a start, but not the other way
+                # around apparently...  If there is no end, use the start date
+                if hasattr(ve, 'dtend') and ve.dtend.value:
+                    end   = ve.dtend.value.isoformat()
+                    event['end']   = { 'dateTime' : end,
+                                       'timeZone' : self.cals[0]['timeZone'] }
+                                       #'timeZone' : ve.dtend.value.tzinfo._tzid }
+                else:
+                    event['end'] = event['start']
 
             if hasattr(ve, 'description') and ve.description.value.strip():
                 descr = ve.description.value.strip()
