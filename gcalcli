@@ -1059,7 +1059,7 @@ class gcalcli:
                 tmpContent
             )
             xstr2 = "%s\n" % xstr.replace('\n', '''\\n''')
-            sys.stdout.write(xstr2.encode('utf8'))
+            sys.stdout.write(xstr2)
 
 
     def _PrintEvent(self, event, prefix):
