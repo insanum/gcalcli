@@ -162,7 +162,7 @@ __API_CLIENT_SECRET__ = '3tZSxItw6_VnZMezQwC8lUqy'
 
 # These are standard libraries and should never fail
 import sys, os, re, gflags, shlex, time
-import locale, textwrap, signal
+import locale, textwrap, signal, calendar
 from Queue import Queue
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
@@ -699,7 +699,13 @@ class gcalcli:
                     tmpTimeStr = ''
                 else:
                     if not nowMarkerPrinted:
-                        if self.now <= event['s']:
+                        if self.now.day < event['s'].day:
+                          nowMarkerPrinted = True
+                          weekEventStrings[dayNum-1] += \
+                                ("\n" +
+                                 str(self.nowMarkerColor) +
+                                 (self.calWidth * '-'))
+                        elif self.now <= event['s']:
                             # add a line marker before next event
                             nowMarkerPrinted = True
                             weekEventStrings[dayNum] += \
