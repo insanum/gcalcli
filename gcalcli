@@ -162,7 +162,7 @@ __API_CLIENT_SECRET__ = '3tZSxItw6_VnZMezQwC8lUqy'
 
 # These are standard libraries and should never fail
 import sys, os, re, gflags, shlex, time
-import locale, textwrap, signal, calendar
+import locale, textwrap, signal
 from Queue import Queue
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
