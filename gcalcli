@@ -462,15 +462,14 @@ class gcalcli:
 
         self._GetCached()
 
-        for cal in self.allCals:
-            if len(calNames):
+        if len(calNames):
+            for cal in self.allCals:
                 for i in xrange(len(calNames)):
                     if re.search(calNames[i].lower(), cal['summary'].lower()):
                         self.cals.append(cal)
                         cal['colorSpec'] = calNameColors[i]
-            else:
-                self.cals.append(cal)
-                cal['colorSpec'] = None
+        else:
+            self.cals = self.allCals
 
     @staticmethod
     def _LocalizeDateTime(dt):
@@ -541,7 +540,6 @@ class gcalcli:
 
         self.cache     = {}
         self.allCals   = []
-        self.allEvents = []
 
         if self.useCache:
             # note that we need to use pickle for cache data since we stuff
@@ -550,7 +548,6 @@ class gcalcli:
                 with open(cacheFile, 'rb') as _cache_:
                     self.cache     = pickle.load(_cache_)
                     self.allCals   = self.cache['allCals']
-                    self.allEvents = self.cache['allEvents']
                 # XXX assuming data is valid, need some verification check here
                 return
             except IOError:
@@ -579,64 +576,8 @@ class gcalcli:
                            cmp(order[x['accessRole']],
                                order[y['accessRole']]))
 
-        for cal in self.allCals:
-
-            events = self._CalService().events().\
-                     list(calendarId = cal['id'],
-                          singleEvents = False).execute()
-
-            while True:
-                if 'items' not in events:
-                    break
-
-                for event in events['items']:
-
-                    event['gcalcli_cal'] = cal
-
-                    if 'status' in event and event['status'] == 'cancelled':
-                        continue
-
-                    if 'dateTime' in event['start']:
-                        event['s'] = parse(event['start']['dateTime'])
-                    else:
-                        # all day events
-                        event['s'] = parse(event['start']['date'])
-
-                    event['s'] = self._LocalizeDateTime(event['s'])
-
-                    if 'dateTime' in event['end']:
-                        event['e'] = parse(event['end']['dateTime'])
-                    else:
-                        # all day events
-                        event['e'] = parse(event['end']['date'])
-
-                    event['e'] = self._LocalizeDateTime(event['e'])
-
-                    # http://en.wikipedia.org/wiki/Year_2038_problem
-                    # Catch the year 2038 problem here as the python dateutil
-                    # module can choke throwing a ValueError exception. If
-                    # either the start or end time for an event has a year
-                    # '>= 2038' dump it.
-                    if event['s'].year >= 2038 or event['e'].year >= 2038:
-                        continue
-
-                    self.allEvents.append(event)
-
-                pageToken = events.get('nextPageToken')
-                if pageToken:
-                    events = self._CalService().events().\
-                             list(calendarId = cal['id'],
-                                  singleEvents = False,
-                                  pageToken = pageToken).execute()
-                else:
-                    break
-
-        # sort all events across all calendars together
-        self.allEvents.sort(lambda x, y: cmp(x['s'], y['s']))
-
         if self.useCache:
             self.cache['allCals']   = self.allCals
-            self.cache['allEvents'] = self.allEvents
             with open(cacheFile, 'wb') as _cache_:
                 pickle.dump(self.cache, _cache_)
 
