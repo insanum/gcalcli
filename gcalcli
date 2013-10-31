@@ -164,7 +164,7 @@ __API_CLIENT_ID__ = '232867676714.apps.googleusercontent.com'
 __API_CLIENT_SECRET__ = '3tZSxItw6_VnZMezQwC8lUqy'
 
 # These are standard libraries and should never fail
-import sys, os, re, gflags, shlex, time
+import sys, os, re, shlex, time
 import locale, textwrap, signal
 from Queue import Queue
 from datetime import datetime, timedelta, date
@@ -175,6 +175,7 @@ try:
     from dateutil.tz import *
     from dateutil.parser import *
     from dateutil.rrule import *
+    import gflags
     import httplib2
     from apiclient.discovery import build
     from oauth2client.file import Storage
