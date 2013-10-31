@@ -463,14 +463,14 @@ class gcalcli:
 
         self._GetCached()
 
-        if len(calNames):
-            for cal in self.allCals:
+        for cal in self.allCals:
+            if len(calNames):
                 for i in xrange(len(calNames)):
                     if re.search(calNames[i].lower(), cal['summary'].lower()):
                         self.cals.append(cal)
                         cal['colorSpec'] = calNameColors[i]
-        else:
-            self.cals = self.allCals
+            else:
+                self.cals = self.allCals
 
     @staticmethod
     def _LocalizeDateTime(dt):
