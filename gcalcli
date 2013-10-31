@@ -1774,12 +1774,13 @@ class gcalcli:
                 # print vars(ve.dtstart.value.tzinfo)
 
                 start = ve.dtstart.value.isoformat()
-                if isinstance(ve.dtstart.value, date):
-                    event['start'] = { 'date': start }
-                else:
+                if isinstance(ve.dtstart.value, datetime):
                     event['start'] = { 'dateTime' : start,
                                        'timeZone' : self.cals[0]['timeZone'] }
                                        #'timeZone' : ve.dtstart.value.tzinfo._tzid }
+                else:
+                    event['start'] = { 'date': start }
+
                 if reminder:
                     event['reminders'] = {'useDefault' : False,
                                           'overrides'  : [{'minutes' : reminder,
@@ -1789,12 +1790,13 @@ class gcalcli:
                 # around apparently...  If there is no end, use the start date
                 if hasattr(ve, 'dtend') and ve.dtend.value:
                     end   = ve.dtend.value.isoformat()
-                    if isinstance(ve.dtend.value, date):
-                        event['end'] = { 'date': end }
-                    else:
+                    if isinstance(ve.dtend.value, datetime):
                         event['end']   = { 'dateTime' : end,
                                            'timeZone' : self.cals[0]['timeZone'] }
                                            #'timeZone' : ve.dtend.value.tzinfo._tzid }
+                    else:
+                        event['end'] = { 'date': end }
+
                 else:
                     event['end'] = event['start']
 
