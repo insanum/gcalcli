@@ -164,7 +164,7 @@ __API_CLIENT_ID__ = '232867676714.apps.googleusercontent.com'
 __API_CLIENT_SECRET__ = '3tZSxItw6_VnZMezQwC8lUqy'
 
 # These are standard libraries and should never fail
-import sys, os, re, shlex, time
+import sys, os, re, shlex, time, calendar
 import locale, textwrap, signal
 from Queue import Queue
 from datetime import datetime, timedelta, date
@@ -340,6 +340,10 @@ class DateTimeParser:
 
         return eTimeStart
 
+def DaysSinceEpoch(dt):
+    # Because I hate magic numbers
+    __DAYS_IN_SECONDS__ = 24 * 60 * 60
+    return calendar.timegm(dt.timetuple()) / __DAYS_IN_SECONDS__
 
 def GetTimeFromStr(eWhen, eDuration=0):
     dtp = DateTimeParser()
@@ -647,7 +651,7 @@ class gcalcli:
                     tmpTimeStr = ''
                 else:
                     if not nowMarkerPrinted:
-                        if self.now.day < event['s'].day:
+                        if DaysSinceEpoch(self.now) < DaysSinceEpoch(event['s']):
                           nowMarkerPrinted = True
                           weekEventStrings[dayNum-1] += \
                                 ("\n" +
