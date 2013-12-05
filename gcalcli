@@ -1063,7 +1063,7 @@ class gcalcli:
             PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
                      ('', self._ValidTitle(event).strip()))
         else:
-            fmt = '  ' + timeFormat + '  %s\n'
+            fmt = ' ' + timeFormat + '\n%s\n'
 #            if 'summary' not in event:
 #                dprint(event)
             PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
@@ -1290,7 +1290,7 @@ class gcalcli:
             return
 
         # 10 chars for day and length must match 'indent' in _PrintEvent
-        dayFormat = '\n%F' if yearDate else '\n%a %b %d'
+        dayFormat = '\n%F' if yearDate else '\n%Y-%m-%d'
         day = ''
 
         for event in eventList:
