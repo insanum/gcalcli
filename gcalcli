@@ -148,7 +148,7 @@ Usage:
                              displayed and you're given the option to import
                              or skip it, by default everything is imported
                              quietly without any interaction
-                           - if -n is given then each event in the file is
+                           - if -d is given then each event in the file is
                              displayed and is not imported, a --cal does not
                              need to be specified for this option
 
