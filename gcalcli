@@ -499,8 +499,7 @@ class gcalcli:
                     OAuth2WebServerFlow(
                         client_id=self.client_id,
                         client_secret=self.client_secret,
-                        scope=['https://www.googleapis.com/auth/calendar',
-                               'https://www.googleapis.com/auth/urlshortener'],
+                        scope='https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/urlshortener',
                         user_agent=__program__+'/'+__version__),
                     storage)
 
