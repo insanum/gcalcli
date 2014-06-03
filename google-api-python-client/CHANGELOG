@@ -1,0 +1,143 @@
+v1.2
+  Version 1.2
+
+  The use of the gflags library is now deprecated, and is no longer a
+    dependency. If you are still using the oauth2client.tools.run() function
+    then include gflags as a dependency of your application or switch to
+    oauth2client.tools.run_flow.
+  Samples have been updated to use the new apiclient.sample_tools, and no
+    longer use gflags.
+  Added support for the experimental Object Change Notification, as found in
+    the Cloud Storage API.
+  The oauth2client App Engine decorators are now threadsafe.
+
+  - Use the following redirects feature of httplib2 where it returns the
+    ultimate URL after a series of redirects to avoid multiple hops for every
+    resumable media upload request.
+  - Updated AdSense Management API samples to V1.3
+  - Add option to automatically retry requests.
+  - Ability to list registered keys in multistore_file.
+  - User-agent must contain (gzip).
+  - The 'method' parameter for httplib2 is not positional. This would cause
+    spurious warnings in the logging.
+  - Making OAuth2Decorator more extensible. Fixes Issue 256.
+  - Update AdExchange Buyer API examples to version v1.2.
+
+
+v1.1
+  Version 1.1
+
+  Add PEM support to SignedJWTAssertionCredentials (used to only support
+  PKCS12 formatted keys). Note that if you use PEM formatted keys you can use
+  PyCrypto 2.6 or later instead of OpenSSL.
+
+  Allow deserialized discovery docs to be passed to build_from_document().
+
+  - Make ResumableUploadError derive from HttpError.
+  - Many changes to move all the closures in apiclient.discovery into real
+  -  classes and objects.
+  - Make from_json behavior inheritable.
+  - Expose the full token response in OAuth2Client and OAuth2Decorator.
+  - Handle reasons that are None.
+  - Added support for NDB based storing of oauth2client objects.
+  - Update grant_type for AssertionCredentials.
+  - Adding a .revoke() to Credentials. Closes issue 98.
+  - Modify oauth2client.multistore_file to store and retrieve credentials
+    using an arbitrary key.
+  - Don't accept 403 challenges by default for auth challenges.
+  - Set httplib2.RETRIES to 1.
+  - Consolidate handling of scopes.
+  - Upgrade to httplib2 version 0.8.
+  - Allow setting the response_type in OAuth2WebServerFlow.
+  - Ensure that dataWrapper feature is checked before using the 'data' value.
+  - HMAC verification does not use a constant time algorithm.
+
+v1.0
+ Version 1.0
+
+  - Changes to the code for running tests and building releases.
+
+v1.0c3
+ Version 1.0 Release Candidate 3
+
+  - In samples and oauth2 decorator, escape untrusted content before displaying it.
+  - Do not allow credentials files to be symlinks.
+  - Add XSRF protection to oauth2decorator callback 'state'.
+  - Handle uploading chunked media by stream.
+  - Handle passing streams directly to httplib2.
+  - Add support for Google Compute Engine service accounts.
+  - Flows no longer need to be saved between uses.
+  - Change GET to POST if URI is too long. Fixes issue #96.
+  - Add a keyring based Storage.
+  - More robust picking up JSON error responses.
+  - Make batch errors align with normal errors.
+  - Add a Google Compute sample.
+  - Token refresh to work with 'old' GData API
+  - Loading of client_secrets JSON file backed by a cache.
+  - Switch to new discovery path parameters.
+  - Add support for additionalProperties when printing schema'd objects.
+  - Fix media upload parameter names. Reviewed in http://codereview.appspot.com/6374062/
+  - oauth2client support for URL-encoded format of exchange token response (e.g.  Facebook)
+  - Build cleaner and easier to read docs for dynamic surfaces.
+
+v1.0c2
+ Version 1.0 Release Candidate 2
+
+  - Parameter values of None should be treated as missing. Fixes issue #144.
+  - Distribute the samples separately from the library source. Fixes issue #155.
+  - Move all remaining samples over to client_secrets.json. Fixes issue #156.
+  - Make locked_file.py understand win32file primitives for better awesomeness.
+
+v1.0c1
+ Version 1.0 Release Candidate 1
+
+ - Documentation for the library has switched to epydoc:
+     http://google-api-python-client.googlecode.com/hg/docs/epy/index.html
+ - Many improvements for media support:
+   * Added media download support, including resumable downloads.
+   * Better handling of streams that report their size as 0.
+   * Update Media Upload to include io.Base and also fix some bugs.
+ - OAuth bug fixes and improvements.
+   * Remove OAuth 1.0 support.
+   * Added credentials_from_code and credentials_from_clientsecrets_and_code.
+   * Make oauth2client support Windows-friendly locking.
+   * Fix bug in StorageByKeyName.
+   * Fix None handling in Django fields. Reviewed in http://codereview.appspot.com/6298084/. Fixes issue #128.
+ - Add epydoc generated docs. Reviewed in http://codereview.appspot.com/6305043/
+ - Move to PEP386 compliant version numbers.
+ - New and updated samples
+   * Ad Exchange Buyer API v1 code samples.
+   * Automatically generate Samples wiki page from README files.
+   * Update Google Prediction samples.
+   * Add a Tasks sample that demonstrates Service accounts.
+   * new analytics api samples. Reviewed here: http://codereview.appspot.com/5494058/
+ - Convert all inline samples to the Farm API for consistency.
+
+v1.0beta8
+ - Updated meda upload support.
+ - Many fixes for batch requests.
+ - Better handling for requests that don't require a body.
+ - Fix issues with Google App Engine Python 2.7 runtime.
+ - Better support for proxies.
+ - All Storages now have a .delete() method.
+ - Important changes which might break your code:
+    * apiclient.anyjson has moved to oauth2client.anyjson.
+    * Some calls, for example, taskqueue().lease() used to require a parameter
+      named body. In this new release only methods that really need to send a body
+      require a body parameter, and so you may get errors about an unknown
+      'body' parameter in your call. The solution is to remove the unneeded
+      body={} parameter.
+
+v1.0beta7
+ - Support for batch requests.  http://code.google.com/p/google-api-python-client/wiki/Batch
+ - Support for media upload.  http://code.google.com/p/google-api-python-client/wiki/MediaUpload
+ - Better handling for APIs that return something other than JSON.
+ - Major cleanup and consolidation of the samples.
+ - Bug fixes and other enhancements:
+   72  Defect  Appengine OAuth2Decorator: Convert redirect address to string
+   22  Defect  Better error handling for unknown service name or version
+   48  Defect  StorageByKeyName().get() has side effects
+   50  Defect  Need sample client code for Admin Audit API
+   28  Defect  better comments for app engine sample   Nov 9
+   63  Enhancement Let OAuth2Decorator take a list of scope
+
