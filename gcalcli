@@ -170,6 +170,8 @@ from Queue import Queue
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
 
+sys.path.append("google-api-python-client")
+
 # Required 3rd partie libraries
 try:
     from dateutil.tz import *
