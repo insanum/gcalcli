@@ -1765,6 +1765,7 @@ class gcalcli:
                 if verbose:
                     print "attendees:"
                 event['attendees'] = []
+                event['description'] = event['description'] + u'partecipanti: ';
                 for attendee in ve.attendee_list:
                     if attendee.value.upper().startswith("MAILTO:"):
                         email = attendee.value[7:]
@@ -1775,6 +1776,8 @@ class gcalcli:
 
                     event['attendees'].append({ 'displayName' : attendee.name,
                                                 'email'       : email })
+
+                    event['description'] = event['description'] + email + u', ';
 
             return event
 
