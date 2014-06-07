@@ -1704,7 +1704,7 @@ class gcalcli:
         self._GraphEvents(cmd, start, count, eventList)
 
 
-    def QuickAddEvent(self, eventText, reminder=None):
+    def QuickAddEvent(self, eventText, reminder=None, description=None):
 
         if eventText == '':
             return
@@ -1727,6 +1727,15 @@ class gcalcli:
                        patch(calendarId = self.cals[0]['id'],
                              eventId = newEvent['id'],
                              body = rem).execute()
+
+        if description:
+            desc = {}
+            desc['description'] = unicode(description, locale.getpreferredencoding() or "UTF-8")
+
+            newEvent = self._CalService().events().\
+                       patch(calendarId = self.cals[0]['id'],
+                             eventId = newEvent['id'],
+                             body = desc).execute()
 
         if self.detailUrl:
             hLink = self._ShortenURL(newEvent['htmlLink'])
@@ -2580,7 +2589,7 @@ def BowChickaWowWow():
 
         # allow unicode strings for input
         gcal.QuickAddEvent(unicode(args[1], locale.getlocale()[1] or "UTF-8"),
-                           reminder=FLAGS.reminder)
+                           reminder=FLAGS.reminder, description=FLAGS.description)
 
     elif (args[0] == 'add'):
         if FLAGS.title == None and FLAGS.prompt:
