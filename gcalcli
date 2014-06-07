@@ -723,13 +723,13 @@ class gcalcli:
                     tmpTimeStr = ''
                 else:
                     if not nowMarkerPrinted:
-                        if DaysSinceEpoch(self.now) < DaysSinceEpoch(event['s']):
+                        if self.now.day < event['s'].day:
                           nowMarkerPrinted = True
                           weekEventStrings[dayNum-1] += \
                                 ("\n" +
                                  str(self.nowMarkerColor) +
                                  (self.calWidth * '-'))
-                        elif self.now <= event['s']:
+                        elif DaysSinceEpoch(self.now) < DaysSinceEpoch(event['s']):
                             # add a line marker before next event
                             nowMarkerPrinted = True
                             weekEventStrings[dayNum] += \
