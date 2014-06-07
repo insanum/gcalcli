@@ -1952,10 +1952,10 @@ class gcalcli:
 
                     event['attendees'].append({ 'displayName' : attendee.name,
                                                 'email'       : email })
+                    event['description'] = event['description'] + email + u', ';
+
             if verbose:
                 PrintVobjEvent(ve);
-
-                    event['description'] = event['description'] + email + u', ';
 
             return event
 
