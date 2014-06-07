@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+#coding=UTF-8
 
 # ** The MIT License **
 #
@@ -276,23 +277,31 @@ def SetConkyColors():
 class ART:
 
     useArt = True
+    useUnicode= False
     fancy  = ''
     plain  = ''
 
     def __str__(self):
-        return self.fancy if self.useArt else self.plain
+        if self.useArt:
+            if self.useUnicode:
+                return self.unicode_fancy
+            else:
+                return self.fancy
+        else:
+            return self.plain
 
-class ART_HRZ(ART): fancy = '\033(0\x71\033(B' ; plain = '-'
-class ART_VRT(ART): fancy = '\033(0\x78\033(B' ; plain = '|'
-class ART_LRC(ART): fancy = '\033(0\x6A\033(B' ; plain = '+'
-class ART_URC(ART): fancy = '\033(0\x6B\033(B' ; plain = '+'
-class ART_ULC(ART): fancy = '\033(0\x6C\033(B' ; plain = '+'
-class ART_LLC(ART): fancy = '\033(0\x6D\033(B' ; plain = '+'
-class ART_CRS(ART): fancy = '\033(0\x6E\033(B' ; plain = '+'
-class ART_LTE(ART): fancy = '\033(0\x74\033(B' ; plain = '+'
-class ART_RTE(ART): fancy = '\033(0\x75\033(B' ; plain = '+'
-class ART_BTE(ART): fancy = '\033(0\x76\033(B' ; plain = '+'
-class ART_UTE(ART): fancy = '\033(0\x77\033(B' ; plain = '+'
+# ─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ 
+class ART_HRZ(ART): fancy = '\033(0\x71\033(B' ; plain = '-' ; unicode_fancy = '─'
+class ART_VRT(ART): fancy = '\033(0\x78\033(B' ; plain = '|' ; unicode_fancy = '│'
+class ART_LRC(ART): fancy = '\033(0\x6A\033(B' ; plain = '+' ; unicode_fancy = '┘'
+class ART_URC(ART): fancy = '\033(0\x6B\033(B' ; plain = '+' ; unicode_fancy = '┐'
+class ART_ULC(ART): fancy = '\033(0\x6C\033(B' ; plain = '+' ; unicode_fancy = '┌'
+class ART_LLC(ART): fancy = '\033(0\x6D\033(B' ; plain = '+' ; unicode_fancy = '└'
+class ART_CRS(ART): fancy = '\033(0\x6E\033(B' ; plain = '+' ; unicode_fancy = '┼'
+class ART_LTE(ART): fancy = '\033(0\x74\033(B' ; plain = '+' ; unicode_fancy = '├'
+class ART_RTE(ART): fancy = '\033(0\x75\033(B' ; plain = '+' ; unicode_fancy = '┤'
+class ART_BTE(ART): fancy = '\033(0\x76\033(B' ; plain = '+' ; unicode_fancy = '┴'
+class ART_UTE(ART): fancy = '\033(0\x77\033(B' ; plain = '+' ; unicode_fancy = '┬'
 
 
 def PrintErrMsg(msg):
@@ -1029,8 +1038,8 @@ class gcalcli:
                     printLen, cut = self._GetCutIndex(weekEventStrings[j])
                     padding = ' ' * (self.calWidth - printLen)
 
-                    line += (weekColorStrings[j] +
-                             weekEventStrings[j][:cut] +
+                    line += (weekColorStrings[j].encode(locale.getpreferredencoding() or "UTF-8", "ignore") +
+                             weekEventStrings[j][:cut].encode(locale.getpreferredencoding() or "UTF-8", "ignore") +
                              padding +
                              str(CLR_NRM()))
                     weekEventStrings[j] = weekEventStrings[j][cut:]
@@ -2305,7 +2314,7 @@ gflags.DEFINE_bool("started", True, "Show events that have started")
 gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
 gflags.DEFINE_bool("monday", False, "Start the week on Monday")
 gflags.DEFINE_bool("color", True, "Enable/Disable all color output")
-gflags.DEFINE_bool("lineart", True, "Enable/Disable line art")
+gflags.DEFINE_enum("lineart", "plain", ["plain", "fancy", "unicode"], "Sets the type of lineart to use")
 gflags.DEFINE_bool("conky", False, "Use Conky color codes")
 
 gflags.DEFINE_string("color_owner", "cyan", "Color for owned calendars")
@@ -2399,8 +2408,15 @@ def BowChickaWowWow():
     if not FLAGS.color:
         CLR.useColor = False
 
-    if not FLAGS.lineart:
+    if FLAGS.lineart == "unicode":
+        ART.useArt = True
+        ART.useUnicode = True
+    elif FLAGS.lineart == "fancy":
+        ART.useArt = True
+        ART.useUnicode = False
+    else:
         ART.useArt = False
+        ART.useUnicode = False
 
     if FLAGS.conky:
         SetConkyColors()
