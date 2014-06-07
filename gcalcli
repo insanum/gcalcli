@@ -148,7 +148,7 @@ Usage:
                              displayed and you're given the option to import
                              or skip it, by default everything is imported
                              quietly without any interaction
-                           - if -n is given then each event in the file is
+                           - if -d is given then each event in the file is
                              displayed and is not imported, a --cal does not
                              need to be specified for this option
 
@@ -164,7 +164,7 @@ __API_CLIENT_ID__ = '232867676714.apps.googleusercontent.com'
 __API_CLIENT_SECRET__ = '3tZSxItw6_VnZMezQwC8lUqy'
 
 # These are standard libraries and should never fail
-import sys, os, re, gflags, shlex, time
+import sys, os, re, shlex, time, calendar
 import locale, textwrap, signal
 from Queue import Queue
 from datetime import datetime, timedelta, date
@@ -176,12 +176,13 @@ try:
     from dateutil.tz import *
     from dateutil.parser import *
     from dateutil.rrule import *
+    import gflags
     import httplib2
     from apiclient.discovery import build
     from oauth2client.file import Storage
     from oauth2client.client import OAuth2WebServerFlow
     from oauth2client.tools import run
-except ImportError, e:
+except ImportError as e:
     print "ERROR: Missing module - %s" % e.args[0]
     sys.exit(1)
 
@@ -340,6 +341,10 @@ class DateTimeParser:
 
         return eTimeStart
 
+def DaysSinceEpoch(dt):
+    # Because I hate magic numbers
+    __DAYS_IN_SECONDS__ = 24 * 60 * 60
+    return calendar.timegm(dt.timetuple()) / __DAYS_IN_SECONDS__
 
 def GetTimeFromStr(eWhen, eDuration=0):
     dtp = DateTimeParser()
@@ -538,8 +543,16 @@ class gcalcli:
                         self.cals.append(cal)
                         cal['colorSpec'] = calNameColors[i]
             else:
-                self.cals.append(cal)
-                cal['colorSpec'] = None
+                self.cals = self.allCals
+
+    @staticmethod
+    def _LocalizeDateTime(dt):
+        if not hasattr(dt, 'tzinfo'):
+            return dt
+        if dt.tzinfo == None:
+            return dt.replace(tzinfo=tzlocal())
+        else:
+            return dt.astimezone(tzlocal())
 
 
     def _GoogleAuth(self):
@@ -601,7 +614,6 @@ class gcalcli:
 
         self.cache     = {}
         self.allCals   = []
-        self.allEvents = []
 
         if self.useCache:
             # note that we need to use pickle for cache data since we stuff
@@ -610,7 +622,6 @@ class gcalcli:
                 with open(cacheFile, 'rb') as _cache_:
                     self.cache     = pickle.load(_cache_)
                     self.allCals   = self.cache['allCals']
-                    self.allEvents = self.cache['allEvents']
                 # XXX assuming data is valid, need some verification check here
                 return
             except IOError:
@@ -639,71 +650,8 @@ class gcalcli:
                            cmp(order[x['accessRole']],
                                order[y['accessRole']]))
 
-        # Assume visibility is off if not present, but if hidden is missing assume it's visible.
-        self.allCals = [x for x in self.allCals if x.get('selected', False) and not x.get('hidden', False)]
-        for cal in self.allCals:
-            events = self._CalService().events().\
-                     list(calendarId = cal['id'],
-                          singleEvents = False).execute()
-
-            while True:
-                if 'items' not in events:
-                    break
-
-                for event in events['items']:
-
-                    event['gcalcli_cal'] = cal
-
-                    if 'status' in event and event['status'] == 'cancelled':
-                        continue
-
-                    if 'dateTime' in event['start']:
-                        event['s'] = parse(event['start']['dateTime'])
-                    else:
-                        # all day events
-                        event['s'] = parse(event['start']['date'])
-
-                    if event['s'].tzinfo == None:
-                        event['s'] = event['s'].replace(tzinfo=tzlocal())
-                    else:
-                        event['s'] = event['s'].astimezone(tzlocal())
-
-                    if 'dateTime' in event['end']:
-                        event['e'] = parse(event['end']['dateTime'])
-                    else:
-                        # all day events
-                        event['e'] = parse(event['end']['date'])
-
-                    if event['e'].tzinfo == None:
-                        event['e'] = event['e'].replace(tzinfo=tzlocal())
-                    else:
-                        event['e'] = event['e'].astimezone(tzlocal())
-
-                    # http://en.wikipedia.org/wiki/Year_2038_problem
-                    # Catch the year 2038 problem here as the python dateutil
-                    # module can choke throwing a ValueError exception. If
-                    # either the start or end time for an event has a year
-                    # '>= 2038' dump it.
-                    if event['s'].year >= 2038 or event['e'].year >= 2038:
-                        continue
-
-                    self.allEvents.append(event)
-
-                pageToken = events.get('nextPageToken')
-                if pageToken:
-                    events = self._CalService().events().\
-                             list(calendarId = cal['id'],
-                                  singleEvents = False,
-                                  pageToken = pageToken).execute()
-                else:
-                    break
-
-        # sort all events across all calendars together
-        self.allEvents.sort(lambda x, y: cmp(x['s'], y['s']))
-
         if self.useCache:
             self.cache['allCals']   = self.allCals
-            self.cache['allEvents'] = self.allEvents
             with open(cacheFile, 'wb') as _cache_:
                 pickle.dump(self.cache, _cache_)
 
@@ -772,7 +720,13 @@ class gcalcli:
                     tmpTimeStr = ''
                 else:
                     if not nowMarkerPrinted:
-                        if self.now <= event['s']:
+                        if DaysSinceEpoch(self.now) < DaysSinceEpoch(event['s']):
+                          nowMarkerPrinted = True
+                          weekEventStrings[dayNum-1] += \
+                                ("\n" +
+                                 str(self.nowMarkerColor) +
+                                 (self.calWidth * '-'))
+                        elif self.now <= event['s']:
                             # add a line marker before next event
                             nowMarkerPrinted = True
                             weekEventStrings[dayNum] += \
@@ -1504,20 +1458,14 @@ class gcalcli:
                 else:
                     event['s'] = parse(event['start']['date']) # all date events
 
-                if event['s'].tzinfo == None:
-                    event['s'] = event['s'].replace(tzinfo=tzlocal())
-                else:
-                    event['s'] = event['s'].astimezone(tzlocal())
+                event['s'] = self._LocalizeDateTime(event['s'])
 
                 if 'dateTime' in event['end']:
                     event['e'] = parse(event['end']['dateTime'])
                 else:
                     event['e'] = parse(event['end']['date']) # all date events
 
-                if event['e'].tzinfo == None:
-                    event['e'] = event['e'].replace(tzinfo=tzlocal())
-                else:
-                    event['e'] = event['e'].astimezone(tzlocal())
+                event['e'] = self._LocalizeDateTime(event['e'])
 
                 # For all-day events, Google seems to assume that the event time
                 # is based in the UTC instead of the local timezone.  Here we
@@ -1903,17 +1851,25 @@ class gcalcli:
                 PrintErrMsg("Error: event does not have a dtstart and dtend!\n")
                 return None
 
-            DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
-            DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
+            if ve.dtstart.value:
+                DebugPrint("DTSTART: %s\n" % ve.dtstart.value.isoformat())
+            if ve.dtend.value:
+                DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
+            if verbose:
+                if ve.dtstart.value:
+                    print "Start........%s" % ve.dtstart.value.isoformat()
+                if ve.dtend.value:
+                    print "End..........%s" % ve.dtend.value.isoformat()
+                if ve.dtstart.value:
+                    print "Local Start..%s" % self._LocalizeDateTime(ve.dtstart.value)
+                if ve.dtend.value:
+                    print "Local End....%s" % self._LocalizeDateTime(ve.dtend.value)
 
             if hasattr(ve, 'rrule'):
                 DebugPrint("RRULE: %s\n" % ve.rrule.value)
                 event['recurrence'] = [ "RRULE:" + ve.rrule.value ]
 
-            if hasattr(ve, 'dtstart') and hasattr(ve, 'dtend'):
-                start = ve.dtstart.value.isoformat()
-                end   = ve.dtend.value.isoformat()
-
+            if hasattr(ve, 'dtstart') and ve.dtstart.value:
                 # XXX
                 # Timezone madness! Note that we're using the timezone for the
                 # calendar being added to. This is OK if the event is in the
@@ -1929,23 +1885,32 @@ class gcalcli:
                 # print dir(ve.dtstart.value.tzinfo)
                 # print vars(ve.dtstart.value.tzinfo)
 
-                if hasattr(ve.dtstart.value, 'astimezone') and hasattr(ve.dtend.value, 'astimezone'):
-                    event['start'] = { 'dateTime' : ve.dtstart.value.isoformat(),
+                start = ve.dtstart.value.isoformat()
+                if isinstance(ve.dtstart.value, datetime):
+                    event['start'] = { 'dateTime' : start,
                                        'timeZone' : self.cals[0]['timeZone'] }
                                        #'timeZone' : ve.dtstart.value.tzinfo._tzid }
-                    event['end']   = { 'dateTime' : ve.dtend.value.isoformat(),
-                                       'timeZone' : self.cals[0]['timeZone'] }
-                                       #'timeZone' : ve.dtend.value.tzinfo._tzid }
                 else:
-                    # All day events, denoted as datetime.date objects, need only the 'date' field
-                    # to be inserted into the Google Calendar API v3
-                    event['start'] = { 'date' : ve.dtstart.value.isoformat() }
-                    event['end']   = { 'date' : ve.dtend.value.isoformat() } 
+                    event['start'] = { 'date': start }
 
                 if reminder:
                     event['reminders'] = {'useDefault' : False,
                                           'overrides'  : [{'minutes' : reminder,
                                                            'method'  : 'popup'}]}
+
+                # Can only have an end if we have a start, but not the other way
+                # around apparently...  If there is no end, use the start date
+                if hasattr(ve, 'dtend') and ve.dtend.value:
+                    end   = ve.dtend.value.isoformat()
+                    if isinstance(ve.dtend.value, datetime):
+                        event['end']   = { 'dateTime' : end,
+                                           'timeZone' : self.cals[0]['timeZone'] }
+                                           #'timeZone' : ve.dtend.value.tzinfo._tzid }
+                    else:
+                        event['end'] = { 'date': end }
+
+                else:
+                    event['end'] = event['start']
 
             if hasattr(ve, 'description') and ve.description.value.strip():
                 descr = ve.description.value.strip()
