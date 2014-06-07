@@ -1943,7 +1943,7 @@ class gcalcli:
             if hasattr(ve, 'attendee_list'):
                 DebugPrint("ATTENDEE_LIST : %s\n" % ve.attendee_list)
                 event['attendees'] = []
-                event['description'] = event['description'] + u'partecipanti: '
+                event['description'] = event['description'] + u'attendees: '
                 for attendee in ve.attendee_list:
                     if attendee.value.upper().startswith("MAILTO:"):
                         email = attendee.value[7:]
