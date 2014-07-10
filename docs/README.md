@@ -80,7 +80,7 @@ gcalcli [options] command [command args]
   --[no]includerc          Whether the ~/.gcalclirc should be used in addition
                            to the one in the config folder
 
-  --calendar <name>[#color]
+  --calendar <name>[##color]
                            'calendar' to work with (default is all calendars)
                            - you can specify a calendar by name or by substring
                              which can match multiple calendars
@@ -88,7 +88,7 @@ gcalcli [options] command [command args]
                              command line for the query commands
                            - an optional color override can be specified per
                              calendar using the ending hashtag:
-                               --cal "Eric Davis"#green --cal foo#red
+                               --cal "Eric Davis"##green --cal foo##red
 
   --[no]military           show all dates in 24 hour format (default = False)
 
