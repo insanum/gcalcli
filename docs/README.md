@@ -84,11 +84,11 @@ gcalcli [options] command [command args]
                            'calendar' to work with (default is all calendars)
                            - you can specify a calendar by name or by substring
                              which can match multiple calendars
-                           - you can use multiple '--cal' arguments on the
+                           - you can use multiple '--calendar' arguments on the
                              command line for the query commands
                            - an optional color override can be specified per
                              calendar using the ending hashtag:
-                               --cal "Eric Davis"#green --cal foo#red
+                               --calendar "Eric Davis"#green --calendar foo#red
 
   --[no]military           show all dates in 24 hour format (default = False)
 
