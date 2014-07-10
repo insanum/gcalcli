@@ -328,7 +328,7 @@ in via X:
 
 [[ -x /usr/bin/dunst ]] && /usr/bin/dunst -config ~/.dunstrc &
 
-if [ -x /usr/bin/gcalcli ]; then 
+if [ -x /usr/bin/gcalcli ]; then
   while true; do
     /usr/bin/gcalcli --calendar="davis" remind
     sleep 300
@@ -402,4 +402,3 @@ is!):
 backtick 1 60 60 screen_agenda
 hardstatus "[ %1` ]"
 ```
-
