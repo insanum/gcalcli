@@ -2,3 +2,6 @@
 *.swp
 cookies.txt
 *.ical
+build/
+dist/
+gcalcli.egg-info

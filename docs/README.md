@@ -84,11 +84,11 @@ gcalcli [options] command [command args]
                            'calendar' to work with (default is all calendars)
                            - you can specify a calendar by name or by substring
                              which can match multiple calendars
-                           - you can use multiple '--cal' arguments on the
+                           - you can use multiple '--calendar' arguments on the
                              command line for the query commands
                            - an optional color override can be specified per
                              calendar using the ending hashtag:
-                               --cal "Eric Davis"#green --cal foo#red
+                               --calendar "Eric Davis"#green --calendar foo#red
 
   --[no]military           show all dates in 24 hour format (default = False)
 
@@ -328,7 +328,7 @@ in via X:
 
 [[ -x /usr/bin/dunst ]] && /usr/bin/dunst -config ~/.dunstrc &
 
-if [ -x /usr/bin/gcalcli ]; then 
+if [ -x /usr/bin/gcalcli ]; then
   while true; do
     /usr/bin/gcalcli --calendar="davis" remind
     sleep 300
@@ -402,4 +402,3 @@ is!):
 backtick 1 60 60 screen_agenda
 hardstatus "[ %1` ]"
 ```
-
