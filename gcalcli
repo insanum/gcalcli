@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2
 
 # ** The MIT License **
 #
@@ -182,7 +182,7 @@ try:
     from oauth2client.client import OAuth2WebServerFlow
     from oauth2client.tools import run
 except ImportError as e:
-    print "ERROR: Missing module - %s" % e.args[0]
+    print "ERROR Missing module"
     sys.exit(1)
 
 # cPickle is a standard library, but in case someone did something really
