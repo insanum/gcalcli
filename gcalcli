@@ -2374,6 +2374,9 @@ def BowChickaWowWow():
             # Since we may be told to use a specific config folder, we need to
             # store generated argv in temp variable
             tmpArgv = [argv[0], "--flagfile=~/.gcalclirc"] + argv[1:]
+        #Add global config option
+        elif os.path.exists(os.path.expanduser('/etc/gcalcli/gcalclirc')):
+            tmpArgv = [argv[0], "--flagfile=/etc/gcalcli/gcalclirc"] + argv[1:]
         else:
             tmpArgv = argv
         args = FLAGS(tmpArgv[1:])
