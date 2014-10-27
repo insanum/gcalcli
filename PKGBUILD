@@ -2,7 +2,7 @@
 # Contributor: Gabriel Fornaeus <gf@hax0r.se>
 
 pkgname=gcalcli-archlinux-git
-pkgver=20140816.2
+pkgver=20140816.3
 pkgrel=1
 pkgdesc="Allows you to access you Google Calendar from a command line, git version, updated specifically for Arch"
 arch=('i686' 'x86_64')
