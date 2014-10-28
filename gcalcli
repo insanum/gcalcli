@@ -2047,6 +2047,7 @@ def BowChickaWowWow():
 
     calNames = []
     calNameColors = []
+    FLAGS.calendar = [c.strip('"\'') for c in FLAGS.calendar]
     calColors = GetCalColors(FLAGS.calendar)
     calNamesFiltered = []
     for calName in FLAGS.calendar:
