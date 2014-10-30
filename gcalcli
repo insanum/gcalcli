@@ -1011,7 +1011,7 @@ class gcalcli:
                 tmpContent
             )
             xstr2 = "%s\n" % xstr.replace('\n', '''\\n''')
-            sys.stdout.write(xstr2)
+            sys.stdout.write(xstr2.encode(locale.getpreferredencoding() or "UTF-8", "ignore"))
 
 
     def _PrintEvent(self, event, prefix):
@@ -2255,4 +2255,3 @@ signal.signal(signal.SIGINT, SIGINT_handler)
 
 if __name__ == '__main__':
     BowChickaWowWow()
-
