@@ -12,7 +12,6 @@ setup(name='gcalcli',
       scripts=['gcalcli'],
       install_requires = [
         'dateutils',
-        'gdata',
         'python-gflags',
         'httplib2',
         'google-api-python-client',
