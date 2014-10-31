@@ -10,7 +10,20 @@ annoying ICS/vCal invites from Microsoft Exchange and/or other sources.
 Additionally, gcalcli can be used as a reminder service and execute any
 application you want when an event is coming up.
 
+Installation
+------------
+
 Check your OS distribution for packages.
+
+### Install from source
+
+```sh
+git clone https://github.com/insanum/gcalcli.git
+cd gcalcli
+python setup.py install
+# BELOW IS OPTIONAL BUT ENABLES SOME ADDITIONAL FUNCTIONALITY
+pip install vobject parsedatetime
+```
 
 Requirements
 ------------
