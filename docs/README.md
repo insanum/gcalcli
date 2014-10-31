@@ -289,6 +289,15 @@ gcalcli is able to read default configuration information from a flag file.
 This file is located, by default, at '~/.gcalclirc'.  The flag file takes one
 command line parameter per line.
 
+E.g., to specify two default calendars in 24-hour format, the file would
+contain:
+
+```
+--military
+--calendar=Main
+--calendar=Secondary
+```
+
 #### Configuration Folders
 
 gcalcli is able to store all its necessary information in a specific folder (use
