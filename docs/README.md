@@ -10,6 +10,8 @@ annoying ICS/vCal invites from Microsoft Exchange and/or other sources.
 Additionally, gcalcli can be used as a reminder service and execute any
 application you want when an event is coming up.
 
+gcalcli uses the [Google Calendar API version 3](https://developers.google.com/google-apps/calendar/).
+
 Installation
 ------------
 
