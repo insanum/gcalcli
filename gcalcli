@@ -386,6 +386,7 @@ class gcalcli:
 
     detailCalendar   = False
     detailLocation   = False
+    detailAttendees  = False
     detailLength     = False
     detailReminders  = False
     detailDescr      = False
@@ -411,6 +412,7 @@ class gcalcli:
                  military=False,
                  detailCalendar=False,
                  detailLocation=False,
+                 detailAttendees=False,
                  detailLength=False,
                  detailReminders=False,
                  detailDescr=False,
@@ -443,6 +445,7 @@ class gcalcli:
 
         self.detailCalendar   = detailCalendar
         self.detailLocation   = detailLocation
+        self.detailAttendees  = detailAttendees
         self.detailLength     = detailLength
         self.detailReminders  = detailReminders
         self.detailDescr      = detailDescr
@@ -1091,6 +1094,27 @@ class gcalcli:
                 event['location'].strip()
             )
             PrintMsg(CLR_NRM(), xstr)
+
+        if self.detailAttendees and 'attendees' in event:
+            xstr = "%s  Attendees:\n" % (detailsIndent)
+            PrintMsg(CLR_NRM(), xstr)
+
+            if not event['organizer'].has_key('self'):
+                xstr = "%s    %s: <%s>\n" % (
+                detailsIndent,
+                event['organizer']['displayName'].strip(),
+                event['organizer']['email'].strip()
+                )
+                PrintMsg(CLR_NRM(), xstr)
+
+            for attendee in event['attendees']:
+                if not attendee.has_key('self'):
+                    xstr = "%s    %s: <%s>\n" % (
+                    detailsIndent,
+                    attendee['displayName'].strip(),
+                    attendee['email'].strip()
+                    )
+                    PrintMsg(CLR_NRM(), xstr)
 
         if self.detailLength:
             diffDateTime = (event['e'] - event['s'])
@@ -1904,13 +1928,14 @@ gflags.DEFINE_bool("military", False, "Use 24 hour display")
 
 # Single --detail that allows you to specify what parts you want
 gflags.DEFINE_multistring("details", [], "Which parts to display, can be: "
-                          "'all', 'calendar', 'location', 'length', "
+                          "'all', 'calendar', 'location', 'attendees', 'length', "
                           "'reminders', 'description', 'longurl', 'shorturl', "
                           "'url'")
 # old style flags for backwards compatibility
 gflags.DEFINE_bool("detail_all", False, "Display all details")
 gflags.DEFINE_bool("detail_calendar", False, "Display calendar name")
 gflags.DEFINE_bool("detail_location", False, "Display event location")
+gflags.DEFINE_bool("detail_attendees", False, "Display event attendees")
 gflags.DEFINE_bool("detail_length", False, "Display length of event")
 gflags.DEFINE_bool("detail_reminders", False, "Display reminders")
 gflags.DEFINE_bool("detail_description", False, "Display description")
@@ -1952,7 +1977,7 @@ gflags.DEFINE_bool("dump", False, "Print events and don't import", short_name="d
 
 gflags.RegisterValidator("details",
                         lambda value: all(x in ["all", "calendar",
-                           "location", "length", "reminders", "descr",
+                           "location", "attendees", "length", "reminders", "descr",
                            "longurl", "shorturl", "url"] for x in value))
 gflags.RegisterValidator("color_owner",
                          lambda value: GetColor(value) != None)
@@ -2060,6 +2085,7 @@ def BowChickaWowWow():
     if 'all' in FLAGS.details or FLAGS.detail_all:
         if not FLAGS['detail_calendar'].present: FLAGS['detail_calendar'].value = True
         if not FLAGS['detail_location'].present: FLAGS['detail_location'].value = True
+        if not FLAGS['detail_attendees'].present: FLAGS['detail_attendees'].value = True
         if not FLAGS['detail_length'].present: FLAGS['detail_length'].value = True
         if not FLAGS['detail_reminders'].present: FLAGS['detail_reminders'].value = True
         if not FLAGS['detail_description'].present: FLAGS['detail_description'].value = True
@@ -2069,6 +2095,8 @@ def BowChickaWowWow():
             FLAGS['detail_calendar'].value = True
         if 'location' in FLAGS.details:
             FLAGS['detail_location'].value = True
+        if 'attendees' in FLAGS.details:
+            FLAGS['detail_attendees'].value = True
         if 'length' in FLAGS.details:
             FLAGS['detail_length'].value = True
         if 'reminders' in FLAGS.details:
@@ -2085,6 +2113,7 @@ def BowChickaWowWow():
                    military=FLAGS.military,
                    detailCalendar=FLAGS.detail_calendar,
                    detailLocation=FLAGS.detail_location,
+                   detailAttendees=FLAGS.detail_attendees,
                    detailLength=FLAGS.detail_length,
                    detailReminders=FLAGS.detail_reminders,
                    detailDescr=FLAGS.detail_description,
