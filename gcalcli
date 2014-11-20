@@ -1099,20 +1099,20 @@ class gcalcli:
             xstr = "%s  Attendees:\n" % (detailsIndent)
             PrintMsg(CLR_NRM(), xstr)
 
-            if not event['organizer'].has_key('self'):
+            if 'self' not in event['organizer']:
                 xstr = "%s    %s: <%s>\n" % (
-                detailsIndent,
-                event['organizer']['displayName'].strip(),
-                event['organizer']['email'].strip()
+                    detailsIndent,
+                    event['organizer'].get('displayName', 'Not Provided').strip(),
+                    event['organizer']['email'].strip()
                 )
                 PrintMsg(CLR_NRM(), xstr)
 
             for attendee in event['attendees']:
-                if not attendee.has_key('self'):
+                if 'self' not in attendee:
                     xstr = "%s    %s: <%s>\n" % (
-                    detailsIndent,
-                    attendee['displayName'].strip(),
-                    attendee['email'].strip()
+                        detailsIndent,
+                        attendee.get('displayName', 'Not Provided').strip(),
+                        attendee['email'].strip()
                     )
                     PrintMsg(CLR_NRM(), xstr)
 
