@@ -621,6 +621,27 @@ class gcalcli:
             return "(No title)"
 
 
+    def _ParseReminder(self, rem):
+        matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
+        if not matchObj:
+            PrintErrMsg('Invalid reminder: ' + rem + '\n')
+            sys.exit(1)
+        n = int(matchObj.group(1))
+        t = matchObj.group(2)
+        m = matchObj.group(3)
+        if   t == 'w':
+           n = n * 7 * 24 * 60
+        elif t == 'd':
+           n = n * 24 * 60
+        elif t == 'h':
+           n = n * 60
+
+        if not m:
+           m = 'popup'
+
+        return n, m
+
+
     def _GetWeekEventStrings(self, cmd, curMonth,
                              startDateTime, endDateTime, eventList):
 
@@ -1259,13 +1280,24 @@ class gcalcli:
                           'timeZone' : event['gcalcli_cal']['timeZone'] }
 
             elif val.lower() == 'r':
-                PrintMsg(CLR_MAG(), "Reminder (mins): ")
-                val = raw_input()
-                if val.strip().isdigit():
-                    event['reminders'] = \
-                        {'useDefault' : False,
-                         'overrides'  : [{'minutes' : int(val.strip()),
-                                          'method'  : 'popup'}]}
+                rem = []
+                while 1:
+                    PrintMsg(CLR_MAG(), "Enter a valid reminder or '.' to end: ")
+                    r = raw_input()
+                    if r == '.':
+                        break
+                    rem.append(r)
+
+                if rem  or  not FLAGS.default_reminders:
+                    event['reminders'] = {'useDefault' : False,
+                                          'overrides'  : []}
+                    for r in rem:
+                        n, m = self._ParseReminder(r)
+                        event['reminders']['overrides'].append({'minutes' : n,
+                                                                'method'  : m})
+                else:
+                    event['reminders'] = {'useDefault' : True,
+                                          'overrides'  : []}
 
             elif val.lower() == 'd':
                 PrintMsg(CLR_MAG(), "Description: ")
@@ -1534,11 +1566,14 @@ class gcalcli:
                    quickAdd(calendarId = self.cals[0]['id'],
                             text = eventText).execute()
 
-        if reminder:
+        if reminder  or  not FLAGS.default_reminders:
             rem = {}
             rem['reminders'] = {'useDefault' : False,
-                                'overrides'  : [{'minutes' : reminder,
-                                                 'method'  : 'popup'}]}
+                                'overrides'  : []}
+            for r in reminder:
+                n, m = self._ParseReminder(r)
+                rem['reminders']['overrides'].append({'minutes' : n,
+                                                      'method'  : m})
 
             newEvent = self._CalService().events().\
                        patch(calendarId = self.cals[0]['id'],
@@ -1566,10 +1601,14 @@ class gcalcli:
             event['location'] = unicode(eWhere, locale.getpreferredencoding() or "UTF-8")
         if eDescr:
             event['description'] = unicode(eDescr, locale.getpreferredencoding() or "UTF-8")
-        if reminder:
+
+        if reminder  or  not FLAGS.default_reminders:
             event['reminders'] = {'useDefault' : False,
-                                  'overrides'  : [{'minutes' : reminder,
-                                                   'method'  : 'popup'}]}
+                                  'overrides'  : []}
+            for r in reminder:
+                n, m = self._ParseReminder(r)
+                event['reminders']['overrides'].append({'minutes' : n,
+                                                        'method'  : m})
 
         newEvent = self._CalService().events().\
                    insert(calendarId = self.cals[0]['id'],
@@ -1722,10 +1761,13 @@ class gcalcli:
                 else:
                     event['start'] = { 'date': start }
 
-                if reminder:
+                if reminder  or  not FLAGS.default_reminders:
                     event['reminders'] = {'useDefault' : False,
-                                          'overrides'  : [{'minutes' : reminder,
-                                                           'method'  : 'popup'}]}
+                                          'overrides'  : []}
+                    for r in reminder:
+                        n, m = self._ParseReminder(r)
+                        event['reminders']['overrides'].append({'minutes' : n,
+                                                                'method'  : m})
 
                 # Can only have an end if we have a start, but not the other way
                 # around apparently...  If there is no end, use the start date
@@ -1933,13 +1975,14 @@ gflags.DEFINE_string("color_border", "white", "Color of line borders")
 
 gflags.DEFINE_string("locale", None, "System locale")
 
-gflags.DEFINE_integer("reminder", None, "Reminder minutes")
+gflags.DEFINE_multistring("reminder", [], "Reminders in the form 'TIME METH' or 'TIME'.  TIME is a number which may be followed by an optional 'w', 'd', 'h', or 'm' (meaning weeks, days, hours, minutes) and default to minutes.  METH is a string 'popup', 'email', or 'sms' and defaults to popup.")
 gflags.DEFINE_string("title", None, "Event title")
 gflags.DEFINE_string("where", None, "Event location")
 gflags.DEFINE_string("when", None, "Event time")
 gflags.DEFINE_integer("duration", None, "Event duration")
 gflags.DEFINE_string("description", None, "Event description")
 gflags.DEFINE_bool("prompt", True, "Prompt for missing data when adding events")
+gflags.DEFINE_bool("default_reminders", True, "If no --reminder is given, use the defaults.  If this is false, do not create any reminders.")
 
 gflags.DEFINE_bool("iamaexpert", False, "Probably not")
 gflags.DEFINE_bool("refresh", False, "Delete and refresh cached data")
@@ -2197,9 +2240,14 @@ def BowChickaWowWow():
         if FLAGS.description == None and FLAGS.prompt:
             PrintMsg(CLR_MAG(), "Description: ")
             FLAGS.description = raw_input()
-        if FLAGS.reminder == None and FLAGS.prompt:
-            PrintMsg(CLR_MAG(), "Reminder (mins): ")
-            FLAGS.reminder = raw_input()
+        if not FLAGS.reminder and FLAGS.prompt:
+            while 1:
+                PrintMsg(CLR_MAG(), "Enter a valid reminder or '.' to end: ")
+                r = raw_input()
+                if r == '.':
+                    break
+                n, m = gcal._ParseReminder(str(r))
+                FLAGS.reminder.append(str(n) + ' ' + m)
 
         # calculate "when" time:
         eStart, eEnd = GetTimeFromStr(FLAGS.when, FLAGS.duration)
