@@ -22,6 +22,7 @@ v3.1
     - the 'quick', 'add', and 'import' commands now require a single --cal option
     - lots of code reduction and simplification based on new Google API Client
     - tsv output
+    - nostarted was semi-broken and should now be all better
 
 v2.4.2
   * Fix unicode encoding issues
@@ -104,4 +105,3 @@ v1.2
 
 v1.1
   - initial release
-
