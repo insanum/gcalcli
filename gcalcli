@@ -170,7 +170,7 @@ from Queue import Queue
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
 
-# Required 3rd partie libraries
+# Required 3rd party libraries
 try:
     from dateutil.tz import *
     from dateutil.parser import *
