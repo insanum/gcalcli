@@ -467,7 +467,7 @@ class gcalcli:
         for cal in self.allCals:
             if len(calNames):
                 for i in xrange(len(calNames)):
-                    if re.search(calNames[i].lower(), cal['summary'].lower()):
+                    if re.search(calNames[i], cal['summary'], flags=re.I):
                         self.cals.append(cal)
                         cal['colorSpec'] = calNameColors[i]
             else:
@@ -2053,7 +2053,7 @@ def BowChickaWowWow():
     calNamesFiltered = []
     for calName in FLAGS.calendar:
         calNameSimple = calName.split("#")[0]
-        calNamesFiltered.append(calNameSimple)
+        calNamesFiltered.append(unicode(calNameSimple, locale.getpreferredencoding() or "UTF-8"))
         calNameColors.append(calColors[calNameSimple])
     calNames = calNamesFiltered
 
