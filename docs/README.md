@@ -390,6 +390,9 @@ To also get a graphical calendar that shows the next three weeks add:
 ${execpi 300 gcalcli --conky calw 3}
 ```
 
+You may need to increase the `text_buffer_size` in your conkyrc file.  Users
+have reported that the default of 256 bytes is too small for busy calendars.
+
 #### Agenda Integration With tmux
 
 Put your next event in the left of your 'tmux' status line.  Add the following
