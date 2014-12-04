@@ -12,21 +12,6 @@ application you want when an event is coming up.
 
 gcalcli uses the [Google Calendar API version 3](https://developers.google.com/google-apps/calendar/).
 
-Installation
-------------
-
-Check your OS distribution for packages.
-
-### Install from source
-
-```sh
-git clone https://github.com/insanum/gcalcli.git
-cd gcalcli
-python setup.py install
-# BELOW IS OPTIONAL BUT ENABLES SOME ADDITIONAL FUNCTIONALITY
-pip install vobject parsedatetime
-```
-
 Requirements
 ------------
 
@@ -37,13 +22,37 @@ Requirements
 * A love for the command line!
 
 ### Optional packages
-* [vobject](http://vobject.skyhouseconsulting.com) Python module
 
-    Used for ics/vcal importing.
+* [vobject](http://vobject.skyhouseconsulting.com) Python module  
+  Used for ics/vcal importing.
+* [parsedatetime](http://github.com/bear/parsedatetime) Python module  
+  Used for fuzzy dates/times like "now", "today", "eod tomorrow", etc.
 
-* [parsedatetime](http://github.com/bear/parsedatetime) Python module
 
-    Used for fuzzy dates/times like "now", "today", "eod tomorrow", etc.
+Installation
+------------
+
+Check your OS distribution for packages.
+
+### Install from PyPI
+
+```sh
+pip install gcalcli
+```
+
+### Install from source
+
+```sh
+git clone https://github.com/insanum/gcalcli.git
+cd gcalcli
+python setup.py install
+```
+
+### Install optional packages
+
+```sh
+pip install vobject parsedatetime
+```
 
 Features
 --------
@@ -70,9 +79,13 @@ Screenshots
 -----------
 
 ![gcalcli 5](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_5.png)
+
 ![gcalcli 1](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_1.png)
+
 ![gcalcli 2](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_2.png)
+
 ![gcalcli 3](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_3.png)
+
 ![gcalcli 4](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_4.png)
 
 HowTo
