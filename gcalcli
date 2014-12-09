@@ -394,8 +394,6 @@ def ParseReminder(rem):
 class gcalcli:
 
     cache         = {}
-    refreshCache  = False
-    useCache      = True
     allCals       = []
     allEvents     = []
     cals          = []
@@ -404,29 +402,8 @@ class gcalcli:
     authHttp      = None
     calService    = None
     urlService    = None
-    military      = False
-    ignoreStarted = False
-    calWidth      = 10
-    calMonday     = False
     command       = 'notify-send -u critical -a gcalcli %s'
-    tsv           = False
     dateParser    = DateTimeParser()
-
-    detailCalendar   = False
-    detailLocation   = False
-    detailLength     = False
-    detailReminders  = False
-    detailDescr      = False
-    detailDescrWidth = 80
-    detailUrl        = None
-
-    calOwnerColor    = CLR_CYN()
-    calWriterColor   = CLR_GRN()
-    calReaderColor   = CLR_MAG()
-    calFreeBusyColor = CLR_NRM()
-    dateColor        = CLR_YLW()
-    nowMarkerColor   = CLR_BRRED()
-    borderColor      = CLR_WHT()
 
     ACCESS_OWNER    = 'owner'
     ACCESS_WRITER   = 'writer'
