@@ -1965,9 +1965,9 @@ gflags.DEFINE_string("client_secret", __API_CLIENT_SECRET__, "API client_secret"
 gflags.DEFINE_string("configFolder", None, "Optional directory to load/store all configuration information")
 gflags.DEFINE_bool("includeRc", False, "Whether to include ~/.gcalclirc when using configFolder")
 gflags.DEFINE_multistring("calendar", [], "Which calendars to use")
-gflags.DEFINE_string("defaultCalendar", None, "Optional default calendar to"
-                                              "use if no --calendar options "
-                                              "are given")
+gflags.DEFINE_multistring("defaultCalendar", [], "Optional default calendar to"
+                                                 "use if no --calendar "
+                                                 "options are given")
 gflags.DEFINE_bool("military", False, "Use 24 hour display")
 
 # Single --detail that allows you to specify what parts you want
@@ -2118,8 +2118,8 @@ def BowChickaWowWow():
         Usage()
         sys.exit(0)
 
-    if len(FLAGS.calendar) == 0 and FLAGS.defaultCalendar:
-        FLAGS.calendar.append(FLAGS.defaultCalendar)
+    if len(FLAGS.calendar) == 0:
+        FLAGS.calendar = FLAGS.defaultCalendar
 
     calNames = []
     calNameColors = []
