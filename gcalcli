@@ -212,9 +212,12 @@ except:
 locale.setlocale(locale.LC_ALL, "")
 
 def stringToUnicode(string):
-    return unicode(string, locale.getlocale()[1] or
+    if string:
+        return unicode(string, locale.getlocale()[1] or
                    locale.getpreferredencoding(False) or
                    "UTF-8")
+    else:
+        return None
 
 def stringFromUnicode(string):
     return string.encode(locale.getlocale()[1] or
