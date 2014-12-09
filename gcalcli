@@ -192,13 +192,6 @@ try:
 except ImportError:
     import pickle
 
-# simplejson is the upstream version of the json standard library.  Use it if
-# it's available, otherwise, just use the standard library
-try:
-    from simplejson import json
-except ImportError:
-    import json
-
 # If they have parsedatetime, we'll use it for fuzzy datetime comparison.  If
 # not, we just return a fake failure every time and use only dateutil.
 try:
