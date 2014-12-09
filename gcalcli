@@ -362,6 +362,26 @@ def GetTimeFromStr(eWhen, eDuration=0):
 
     return sTimeStart, sTimeStop
 
+def ParseReminder(rem):
+    matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
+    if not matchObj:
+        PrintErrMsg('Invalid reminder: ' + rem + '\n')
+        sys.exit(1)
+    n = int(matchObj.group(1))
+    t = matchObj.group(2)
+    m = matchObj.group(3)
+    if t == 'w':
+        n = n * 7 * 24 * 60
+    elif t == 'd':
+        n = n * 24 * 60
+    elif t == 'h':
+        n = n * 60
+
+    if not m:
+        m = 'popup'
+
+    return n, m
+
 
 class gcalcli:
 
@@ -616,27 +636,6 @@ class gcalcli:
             return event['summary']
         else:
             return "(No title)"
-
-
-    def _ParseReminder(self, rem):
-        matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
-        if not matchObj:
-            PrintErrMsg('Invalid reminder: ' + rem + '\n')
-            sys.exit(1)
-        n = int(matchObj.group(1))
-        t = matchObj.group(2)
-        m = matchObj.group(3)
-        if   t == 'w':
-           n = n * 7 * 24 * 60
-        elif t == 'd':
-           n = n * 24 * 60
-        elif t == 'h':
-           n = n * 60
-
-        if not m:
-           m = 'popup'
-
-        return n, m
 
 
     def _GetWeekEventStrings(self, cmd, curMonth,
@@ -1289,7 +1288,7 @@ class gcalcli:
                     event['reminders'] = {'useDefault' : False,
                                           'overrides'  : []}
                     for r in rem:
-                        n, m = self._ParseReminder(r)
+                        n, m = ParseReminder(r)
                         event['reminders']['overrides'].append({'minutes' : n,
                                                                 'method'  : m})
                 else:
@@ -1573,7 +1572,7 @@ class gcalcli:
             rem['reminders'] = {'useDefault' : False,
                                 'overrides'  : []}
             for r in reminder:
-                n, m = self._ParseReminder(r)
+                n, m = ParseReminder(r)
                 rem['reminders']['overrides'].append({'minutes' : n,
                                                       'method'  : m})
 
@@ -1608,7 +1607,7 @@ class gcalcli:
             event['reminders'] = {'useDefault' : False,
                                   'overrides'  : []}
             for r in reminder:
-                n, m = self._ParseReminder(r)
+                n, m = ParseReminder(r)
                 event['reminders']['overrides'].append({'minutes' : n,
                                                         'method'  : m})
 
@@ -1767,7 +1766,7 @@ class gcalcli:
                     event['reminders'] = {'useDefault' : False,
                                           'overrides'  : []}
                     for r in reminder:
-                        n, m = self._ParseReminder(r)
+                        n, m = ParseReminder(r)
                         event['reminders']['overrides'].append({'minutes' : n,
                                                                 'method'  : m})
 
@@ -1997,6 +1996,8 @@ gflags.RegisterValidator("details",
                         lambda value: all(x in ["all", "calendar",
                            "location", "length", "reminders", "descr",
                            "longurl", "shorturl", "url"] for x in value))
+gflags.RegisterValidator("reminder",
+                         lambda value: all(ParseReminder(x) for x in value))
 gflags.RegisterValidator("color_owner",
                          lambda value: GetColor(value) != None)
 gflags.RegisterValidator("color_writer",
@@ -2248,7 +2249,7 @@ def BowChickaWowWow():
                 r = raw_input()
                 if r == '.':
                     break
-                n, m = gcal._ParseReminder(str(r))
+                n, m = ParseReminder(str(r))
                 FLAGS.reminder.append(str(n) + ' ' + m)
 
         # calculate "when" time:
