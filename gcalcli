@@ -1974,7 +1974,8 @@ gflags.ADOPT_module_key_flags(gflags)
 def BowChickaWowWow():
     try:
         argv = sys.argv
-        if os.path.exists(os.path.expanduser('~/.gcalclirc')):
+        exclude_rc = any('noincludeRc' in arg for arg in sys.argv)
+        if not exclude_rc and os.path.exists(os.path.expanduser('~/.gcalclirc')):
             # We want .gcalclirc to be sourced before any other --flagfile params
             # Since we may be told to use a specific config folder, we need to
             # store generated argv in temp variable
