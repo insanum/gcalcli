@@ -1284,7 +1284,7 @@ class gcalcli:
                         break
                     rem.append(r)
 
-                if rem  or  not FLAGS.default_reminders:
+                if rem or not FLAGS.default_reminders:
                     event['reminders'] = {'useDefault' : False,
                                           'overrides'  : []}
                     for r in rem:
@@ -1567,7 +1567,7 @@ class gcalcli:
                    quickAdd(calendarId = self.cals[0]['id'],
                             text = eventText).execute()
 
-        if reminder  or  not FLAGS.default_reminders:
+        if reminder or not FLAGS.default_reminders:
             rem = {}
             rem['reminders'] = {'useDefault' : False,
                                 'overrides'  : []}
