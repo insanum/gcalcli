@@ -1027,37 +1027,32 @@ class gcalcli:
 
     def _tsv(self, startDateTime, eventList):
         for event in eventList:
-            if 'htmlLink' in event:
-                tmpLink = self._ShortenURL(event['htmlLink'])
-            else:
-                tmpLink = ""
-            if 'hangoutLink' in event:
-                hangoutLink = self._ShortenURL(event['hangoutLink'])
-            else:
-                hangoutLink = ""
-            tmpDayStr  = event['s'].strftime('%F')
-            tmpDayStp  = event['e'].strftime('%F')
-            tmpTimeStr = event['s'].strftime("%H:%M")
-            tmpTimeStp = event['e'].strftime("%H:%M")
-            tmpWhere = ''
-            if 'location' in event and event['location'].strip():
-                tmpWhere = event['location'].strip()
-            tmpContent = ''
-            if 'description' in event and event['description'].strip():
-                tmpContent = event['description'].strip()
-            xstr = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (
-                tmpDayStr,
-                tmpTimeStr,
-                tmpDayStp,
-                tmpTimeStp,
-                tmpLink,
-                hangoutLink,
-                self._ValidTitle(event).strip(),
-                tmpWhere,
-                tmpContent
-            )
-            xstr2 = "%s\n" % xstr.replace('\n', '''\\n''')
-            sys.stdout.write(stringFromUnicode(xstr2))
+            output = "%s\t%s\t%s\t%s" % (event['s'].strftime('%F'),
+                                         event['s'].strftime('%H:%M'),
+                                         event['e'].strftime('%F'),
+                                         event['e'].strftime('%H:%M'))
+
+            if self.detailUrl:
+                output += "\t%s" % (self._ShortenURL(event['htmlLink'])
+                                    if 'htmlLink' in event else '')
+                output += "\t%s" % (self._ShortenURL(event['hangoutLink'])
+                                    if 'hangoutLink' in event else '')
+
+            output += "\t%s" % self._ValidTitle(event).strip()
+
+            if self.detailLocation:
+                output += "\t%s" % (event['location'].strip()
+                                    if 'location' in event else '')
+
+            if self.detailDescr:
+                output += "\t%s" % (event['description'].strip()
+                                    if 'description' in event else '')
+
+            if self.detailCalendar:
+                output += "\t%s" % event['gcalcli_cal']['summary'].strip()
+
+            output = "%s\n" % output.replace('\n', '''\\n''')
+            sys.stdout.write(stringFromUnicode(output))
 
 
     def _PrintEvent(self, event, prefix):
