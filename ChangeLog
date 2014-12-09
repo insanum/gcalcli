@@ -1,3 +1,10 @@
+v3.2
+  * Add enhanced reminder functionality (393993b / cc2c4cc)
+  * Unicode cleanup (debe5bf)
+  * Add --defaultCalendar option (cf9cdf5)
+  * Respect --detail options for TSV output (013d5dc)
+  * Speed up tsv output by only shortening links on demand (--detail_url short)
+
 v3.1
   * Enhancements
     - Ported to use the Google API Client library and Google Calendar v3 spec
