@@ -209,6 +209,18 @@ except:
             def parse(self, string):
                 return ([], 0)
 
+locale.setlocale(locale.LC_ALL, "")
+
+def stringToUnicode(string):
+    return unicode(string, locale.getlocale()[1] or
+                   locale.getpreferredencoding(False) or
+                   "UTF-8")
+
+def stringFromUnicode(string):
+    return string.encode(locale.getlocale()[1] or
+                         locale.getpreferredencoding(False) or
+                         "UTF-8", "replace")
+
 def Version():
     sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
     sys.exit(1)
@@ -295,7 +307,7 @@ def PrintErrMsg(msg):
 
 def PrintMsg(color, msg):
     if isinstance(msg, unicode):
-        msg = msg.encode(locale.getpreferredencoding() or "UTF-8", "ignore")
+        msg = stringFromUnicode(msg)
 
     if CLR.useColor:
         sys.stdout.write(str(color))
@@ -718,7 +730,7 @@ class gcalcli:
         # so we convert them to unicode and then check their size. Fixes
         # the output issues we were seeing around non-US locale strings
         if not isinstance(string, unicode):
-            string = unicode(string, locale.getpreferredencoding() or "UTF-8")
+            string = stringToUnicode(string)
         printLen = 0
         for tmpChar in string:
             printLen += self.UNIWIDTH[east_asian_width(tmpChar)]
@@ -730,7 +742,7 @@ class gcalcli:
         idx = 0
         printLen = 0
         if not isinstance(string, unicode):
-            string = unicode(string, locale.getpreferredencoding() or "UTF-8")
+            string = stringToUnicode(string)
         for tmpChar in string:
             if (curPrintLen + printLen) >= self.calWidth:
                 return (printLen, idx, True)
@@ -926,8 +938,7 @@ class gcalcli:
             # convert the strings to unicode for various string ops
             # XXX event strings are already in unicode for Calendar v3 APIs
             #for j in xrange(7):
-            #    weekEventStrings[j] = unicode(weekEventStrings[j],
-            #                                  locale.getpreferredencoding())
+            #    weekEventStrings[j] = stringToUnicode(weekEventStrings[j])
 
             # get date range objects for the next week
             startWeekDateTime = endWeekDateTime
@@ -1028,7 +1039,7 @@ class gcalcli:
                 tmpContent
             )
             xstr2 = "%s\n" % xstr.replace('\n', '''\\n''')
-            sys.stdout.write(xstr2.encode(locale.getpreferredencoding() or "UTF-8", "ignore"))
+            sys.stdout.write(stringFromUnicode(xstr2))
 
 
     def _PrintEvent(self, event, prefix):
@@ -1235,14 +1246,14 @@ class gcalcli:
                 val = raw_input()
                 if val.strip():
                     event['summary'] = \
-                        unicode(val.strip(), locale.getpreferredencoding() or "UTF-8")
+                        stringToUnicode(val.strip())
 
             elif val.lower() == 'l':
                 PrintMsg(CLR_MAG(), "Location: ")
                 val = raw_input()
                 if val.strip():
                     event['location'] = \
-                        unicode(val.strip(), locale.getpreferredencoding() or "UTF-8")
+                        stringToUnicode(val.strip())
 
             elif val.lower() == 'w':
                 PrintMsg(CLR_MAG(), "When: ")
@@ -1300,7 +1311,7 @@ class gcalcli:
                 val = raw_input()
                 if val.strip():
                     event['description'] = \
-                        unicode(val.strip(), locale.getpreferredencoding() or "UTF-8")
+                        stringToUnicode(val.strip())
 
             else:
                 PrintErrMsg('Error: invalid input\n')
@@ -1593,15 +1604,15 @@ class gcalcli:
             return
 
         event = {}
-        event['summary'] = unicode(eTitle, locale.getpreferredencoding() or "UTF-8")
+        event['summary'] = stringToUnicode(eTitle)
         event['start']   = { 'dateTime' : eStart,
                              'timeZone' : self.cals[0]['timeZone'] }
         event['end']     = { 'dateTime' : eEnd,
                              'timeZone' : self.cals[0]['timeZone'] }
         if eWhere:
-            event['location'] = unicode(eWhere, locale.getpreferredencoding() or "UTF-8")
+            event['location'] = stringToUnicode(eWhere)
         if eDescr:
-            event['description'] = unicode(eDescr, locale.getpreferredencoding() or "UTF-8")
+            event['description'] = stringToUnicode(eDescr)
 
         if reminder  or  not FLAGS.default_reminders:
             event['reminders'] = {'useDefault' : False,
@@ -2097,7 +2108,7 @@ def BowChickaWowWow():
     calNamesFiltered = []
     for calName in FLAGS.calendar:
         calNameSimple = calName.split("#")[0]
-        calNamesFiltered.append(unicode(calNameSimple, locale.getpreferredencoding() or "UTF-8"))
+        calNamesFiltered.append(stringToUnicode(calNameSimple))
         calNameColors.append(calColors[calNameSimple])
     calNames = calNamesFiltered
 
@@ -2161,7 +2172,7 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.TextQuery(unicode(args[1], locale.getpreferredencoding() or "UTF-8"))
+        gcal.TextQuery(stringToUnicode(args[1]))
 
         sys.stdout.write('\n')
 
@@ -2224,7 +2235,7 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.QuickAddEvent(unicode(args[1], locale.getpreferredencoding() or "UTF-8"),
+        gcal.QuickAddEvent(stringToUnicode(args[1]),
                            reminder=FLAGS.reminder)
 
     elif (args[0] == 'add'):
@@ -2263,7 +2274,7 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.DeleteEvents(unicode(args[1], locale.getpreferredencoding() or "UTF-8"),
+        gcal.DeleteEvents(stringToUnicode(args[1]),
                           FLAGS.iamaexpert)
 
         sys.stdout.write('\n')
@@ -2274,7 +2285,7 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.EditEvents(unicode(args[1], locale.getpreferredencoding() or "UTF-8"))
+        gcal.EditEvents(stringToUnicode(args[1]))
 
         sys.stdout.write('\n')
 
