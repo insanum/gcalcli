@@ -496,14 +496,32 @@ class gcalcli:
 
         self._GetCached()
 
-        for cal in self.allCals:
-            if len(calNames):
-                for i in xrange(len(calNames)):
-                    if re.search(calNames[i], cal['summary'], flags=re.I):
-                        self.cals.append(cal)
+        if len(calNames):
+            # Changing the order of this and the `cal in self.allCals` loop
+            # is necessary for the matching to actually be sane (ie match
+            # supplied name to cached vs matching cache against supplied names)
+            for i in xrange(len(calNames)):
+                matches = []
+                for cal in self.allCals:
+                    # For exact match, we should match only 1 entry and accept
+                    # the first entry.  Should honor access role order since
+                    # it happens after _GetCached()
+                    if calNames[i] == cal['summary']:
+                        # This makes sure that if we have any regex matches
+                        # that we toss them out in favor of the specific match
+                        matches = [cal]
                         cal['colorSpec'] = calNameColors[i]
-            else:
-                self.cals = self.allCals
+                        break
+                    # Otherwise, if the calendar matches as a regex, append
+                    # it to the list of potential matches
+                    elif re.search(calNames[i], cal['summary'], flags=re.I):
+                        matches.append(cal)
+                        cal['colorSpec'] = calNameColors[i]
+                # Add relevant matches to the list of calendars we want to
+                # operate against
+                self.cals += matches
+        else:
+            self.cals = self.allCals
 
     @staticmethod
     def _LocalizeDateTime(dt):
