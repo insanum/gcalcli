@@ -926,11 +926,6 @@ class gcalcli:
                                                          endWeekDateTime,
                                                          eventList)
 
-            # convert the strings to unicode for various string ops
-            # XXX event strings are already in unicode for Calendar v3 APIs
-            #for j in xrange(7):
-            #    weekEventStrings[j] = stringToUnicode(weekEventStrings[j])
-
             # get date range objects for the next week
             startWeekDateTime = endWeekDateTime
             endWeekDateTime = (endWeekDateTime + timedelta(days=7))
@@ -1078,8 +1073,6 @@ class gcalcli:
                      ('', self._ValidTitle(event).strip()))
         else:
             fmt = '  ' + timeFormat + '  %s\n'
-#            if 'summary' not in event:
-#                dprint(event)
             PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
                      (tmpTimeStr, self._ValidTitle(event).strip()))
 
@@ -1409,14 +1402,8 @@ class gcalcli:
                         q = searchText if searchText else None,
                         singleEvents = True)
 
-            #th = threading.Thread(target=worker, args=(cal, work))
-            #threads.append(th)
-            #th.start()
             events = work.execute()
             queue.put((cal, events))
-
-        #for th in threads:
-        #    th.join()
 
         while not queue.empty():
             cal, events = queue.get()
@@ -1755,7 +1742,6 @@ class gcalcli:
                 if isinstance(ve.dtstart.value, datetime):
                     event['start'] = { 'dateTime' : start,
                                        'timeZone' : self.cals[0]['timeZone'] }
-                                       #'timeZone' : ve.dtstart.value.tzinfo._tzid }
                 else:
                     event['start'] = { 'date': start }
 
@@ -1774,7 +1760,6 @@ class gcalcli:
                     if isinstance(ve.dtend.value, datetime):
                         event['end']   = { 'dateTime' : end,
                                            'timeZone' : self.cals[0]['timeZone'] }
-                                           #'timeZone' : ve.dtend.value.tzinfo._tzid }
                     else:
                         event['end'] = { 'date': end }
 
@@ -1847,8 +1832,6 @@ class gcalcli:
             except StopIteration:
                 break
 
-            #v.prettyPrint()
-
             for ve in v.vevent_list:
 
                 event = CreateEventFromVOBJ(ve)
@@ -1867,7 +1850,6 @@ class gcalcli:
                     PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
                     continue
 
-                #dprint(event)
                 PrintMsg(CLR_MAG(), "\n[S]kip [i]mport [q]uit: ")
                 val = raw_input()
                 if not val or val.lower() == 's':
