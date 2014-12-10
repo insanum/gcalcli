@@ -4,6 +4,7 @@ v3.2
   * Add --defaultCalendar option (cf9cdf5)
   * Respect --detail options for TSV output (013d5dc)
   * Speed up tsv output by only shortening links on demand (--detail_url short)
+  * PEP8 cleanup FTW! (adea810)
 
 v3.1
   * Enhancements
