@@ -174,7 +174,6 @@ from unicodedata import east_asian_width
 try:
     from dateutil.tz import *
     from dateutil.parser import *
-    from dateutil.rrule import *
     import gflags
     import httplib2
     from apiclient.discovery import build
