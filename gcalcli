@@ -210,7 +210,7 @@ def stringToUnicode(string):
                    locale.getpreferredencoding(False) or
                    "UTF-8")
     else:
-        return None
+        return u''
 
 def stringFromUnicode(string):
     return string.encode(locale.getlocale()[1] or
