@@ -183,6 +183,7 @@ try:
     import gflags
     import httplib2
     from apiclient.discovery import build
+    from apiclient.errors import HttpError
     from oauth2client.file import Storage
     from oauth2client.client import OAuth2WebServerFlow
     from oauth2client.tools import run
@@ -518,6 +519,7 @@ class gcalcli:
     cals = []
     now = datetime.now(tzlocal())
     agendaLength = 5
+    maxRetries = 5
     authHttp = None
     calService = None
     urlService = None
@@ -628,6 +630,25 @@ class gcalcli:
         else:
             return dt.astimezone(tzlocal())
 
+    def _RetryWithBackoff(self, method):
+        for n in range(0, self.maxRetries):
+            try:
+                return method.execute()
+            except HttpError, e:
+                print e, e.content, e.resp if hasattr(e, 'resp') else \
+                    None
+                import json
+                import random
+                error = json.loads(e.content)
+                if error.get('code') == '403' and \
+                        error.get('errors')[0].get('reason') \
+                        in ['rateLimitExceeded', 'userRateLimitExceeded']:
+                    time.sleep((2 ** n) + random.random())
+                else:
+                    raise
+
+        return None
+
     def _GoogleAuth(self):
         if not self.authHttp:
             if self.configFolder:
@@ -699,15 +720,16 @@ class gcalcli:
                 pass
                 # fall through
 
-        calList = self._CalService().calendarList().list().execute()
+        calList = self._RetryWithBackoff(
+            self._CalService().calendarList().list())
 
         while True:
             for cal in calList['items']:
                 self.allCals.append(cal)
             pageToken = calList.get('nextPageToken')
             if pageToken:
-                calList = self._CalService().calendarList().\
-                    list(pageToken=pageToken).execute()
+                calList = self._RetryWithBackoff(
+                    self._CalService().calendarList().list(pageToken=pageToken))
             else:
                 break
 
@@ -731,8 +753,8 @@ class gcalcli:
             return url
         # Note that when authenticated to a google account different shortUrls
         # can be returned for the same longUrl. See: http://goo.gl/Ya0A9
-        shortUrl = self._UrlService().url().insert(body={'longUrl': url}).\
-            execute()
+        shortUrl = self._RetryWithBackoff(
+            self._UrlService().url().insert(body={'longUrl': url}))
         return shortUrl['id']
 
     def _CalendarColor(self, cal):
@@ -1304,9 +1326,10 @@ class gcalcli:
     def _DeleteEvent(self, event):
 
         if self.iamaExpert:
-            self._CalService().events().\
+            self._RetryWithBackoff(
+                self._CalService().events().
                 delete(calendarId=event['gcalcli_cal']['id'],
-                       eventId=event['id']).execute()
+                       eventId=event['id']))
             PrintMsg(CLR_RED(), "Deleted!\n")
             return
 
@@ -1317,9 +1340,10 @@ class gcalcli:
             return
 
         elif val.lower() == 'y':
-            self._CalService().events().\
+            self._RetryWithBackoff(
+                self._CalService().events().
                 delete(calendarId=event['gcalcli_cal']['id'],
-                       eventId=event['id']).execute()
+                       eventId=event['id']))
             PrintMsg(CLR_RED(), "Deleted!\n")
 
         elif val.lower() == 'q':
@@ -1354,10 +1378,11 @@ class gcalcli:
                     if k in event:
                         modEvent[k] = event[k]
 
-                self._CalService().events().\
+                self._RetryWithBackoff(
+                    self._CalService().events().
                     patch(calendarId=event['gcalcli_cal']['id'],
                           eventId=event['id'],
-                          body=modEvent).execute()
+                          body=modEvent))
                 PrintMsg(CLR_RED(), "Saved!\n")
                 return
 
@@ -1540,9 +1565,9 @@ class gcalcli:
 
             pageToken = events.get('nextPageToken')
             if pageToken:
-                events = self._CalService().events().\
-                    list(calendarId=cal['id'],
-                         pageToken=pageToken).execute()
+                events = self._RetryWithBackoff(
+                    self._CalService().events().
+                    list(calendarId=cal['id'], pageToken=pageToken))
             else:
                 break
 
@@ -1551,14 +1576,14 @@ class gcalcli:
     def _SearchForCalEvents(self, start, end, searchText):
 
         eventList = []
-
         for cal in self.cals:
-            events = self._CalService().events().\
+            work = self._CalService().events().\
                 list(calendarId=cal['id'],
                      timeMin=start.isoformat() if start else None,
                      timeMax=end.isoformat() if end else None,
                      q=searchText if searchText else None,
-                     singleEvents=True).execute()
+                     singleEvents=True)
+            events = self._RetryWithBackoff(work)
             eventList.extend(self._GetAllEvents(cal, events, end))
 
         eventList.sort(lambda x, y: cmp(x['s'], y['s']))
@@ -1698,9 +1723,9 @@ class gcalcli:
             PrintErrMsg("Must specify a single calendar\n")
             return
 
-        newEvent = self._CalService().events().\
-            quickAdd(calendarId=self.cals[0]['id'],
-                     text=eventText).execute()
+        newEvent = self._RetryWithBackoff(
+            self._CalService().events().quickAdd(calendarId=self.cals[0]['id'],
+                                                 text=eventText))
 
         if reminder or not FLAGS.default_reminders:
             rem = {}
@@ -1711,10 +1736,11 @@ class gcalcli:
                 rem['reminders']['overrides'].append({'minutes': n,
                                                       'method': m})
 
-            newEvent = self._CalService().events().\
+            newEvent = self._RetryWithBackoff(
+                self._CalService().events().
                 patch(calendarId=self.cals[0]['id'],
                       eventId=newEvent['id'],
-                      body=rem).execute()
+                      body=rem))
 
         if self.detailUrl:
             hLink = self._ShortenURL(newEvent['htmlLink'])
@@ -1752,9 +1778,9 @@ class gcalcli:
                 event['reminders']['overrides'].append({'minutes': n,
                                                         'method': m})
 
-        newEvent = self._CalService().events().\
-            insert(calendarId=self.cals[0]['id'],
-                   body=event).execute()
+        newEvent = self._RetryWithBackoff(
+            self._CalService().events().
+            insert(calendarId=self.cals[0]['id'], body=event))
 
         if self.detailUrl:
             hLink = self._ShortenURL(newEvent['htmlLink'])
@@ -2010,9 +2036,10 @@ class gcalcli:
                     continue
 
                 if not verbose:
-                    newEvent = self._CalService().events().\
+                    newEvent = self._RetryWithBackoff(
+                        self._CalService().events().
                         insert(calendarId=self.cals[0]['id'],
-                               body=event).execute()
+                               body=event))
                     hLink = self._ShortenURL(newEvent['htmlLink'])
                     PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
                     continue
@@ -2022,9 +2049,10 @@ class gcalcli:
                 if not val or val.lower() == 's':
                     continue
                 if val.lower() == 'i':
-                    newEvent = self._CalService().events().\
+                    newEvent = self._RetryWithBackoff(
+                        self._CalService().events().
                         insert(calendarId=self.cals[0]['id'],
-                               body=event).execute()
+                               body=event))
                     hLink = self._ShortenURL(newEvent['htmlLink'])
                     PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
                 elif val.lower() == 'q':
