@@ -1487,26 +1487,13 @@ class gcalcli:
 
         eventList = []
 
-        queue = Queue()
-
-        def worker(cal, work):
-            events = work.execute()
-            queue.put((cal, events))
-
         for cal in self.cals:
-
-            work = self._CalService().events().\
+            events = self._CalService().events().\
                 list(calendarId=cal['id'],
                      timeMin=start.isoformat() if start else None,
                      timeMax=end.isoformat() if end else None,
                      q=searchText if searchText else None,
-                     singleEvents=True)
-
-            events = work.execute()
-            queue.put((cal, events))
-
-        while not queue.empty():
-            cal, events = queue.get()
+                     singleEvents=True).execute()
             eventList.extend(self._GetAllEvents(cal, events, end))
 
         eventList.sort(lambda x, y: cmp(x['s'], y['s']))
