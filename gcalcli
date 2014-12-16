@@ -772,35 +772,46 @@ class gcalcli:
                 forceEventColorAsMarker = False
 
                 if event['s'].hour == 0 and event['s'].minute == 0 and \
-                   event['e'].hour == 0 and event['e'].minute == 0:
-                    tmpTimeStr = ''
+                        event['e'].hour == 0 and event['e'].minute == 0:
+                    allDay = True
                 else:
-                    if not nowMarkerPrinted:
-                        if (DaysSinceEpoch(self.now) <
-                                DaysSinceEpoch(event['s'])):
-                            nowMarkerPrinted = True
-                            weekEventStrings[dayNum-1] += \
-                                ("\n" +
-                                 str(self.nowMarkerColor) +
-                                 (self.calWidth * '-'))
-                        elif self.now <= event['s']:
-                            # add a line marker before next event
-                            nowMarkerPrinted = True
-                            weekEventStrings[dayNum] += \
-                                ("\n" +
-                                 str(self.nowMarkerColor) +
-                                 (self.calWidth * '-'))
-                        elif self.now >= event['s'] and self.now <= event['e']:
-                            # line marker is during the event (recolor event)
-                            nowMarkerPrinted = True
-                            forceEventColorAsMarker = True
+                    allDay = False
 
-                    if self.military:
-                        tmpTimeStr = event['s'].strftime("%H:%M")
-                    else:
-                        tmpTimeStr = \
-                            event['s'].strftime("%I:%M").lstrip('0') + \
-                            event['s'].strftime('%p').lower()
+                if not nowMarkerPrinted:
+                    if (DaysSinceEpoch(self.now) <
+                            DaysSinceEpoch(event['s'])):
+                        nowMarkerPrinted = True
+                        weekEventStrings[dayNum-1] += \
+                            ("\n" +
+                             str(self.nowMarkerColor) +
+                             (self.calWidth * '-'))
+                    elif self.now <= event['s']:
+                        # add a line marker before next event
+                        nowMarkerPrinted = True
+                        weekEventStrings[dayNum] += \
+                            ("\n" +
+                             str(self.nowMarkerColor) +
+                             (self.calWidth * '-'))
+                    # We don't want to recolor all day events, but ignoring
+                    # them leads to issues where the "now" marker misprints
+                    # into the wrong day.  This resolves the issue by skipping
+                    # all day events for specific coloring but not for previous
+                    # or next events
+                    elif self.now >= event['s'] and \
+                            self.now <= event['e'] and \
+                            not allDay:
+                        # line marker is during the event (recolor event)
+                        nowMarkerPrinted = True
+                        forceEventColorAsMarker = True
+
+                if allDay:
+                    tmpTimeStr = ''
+                elif self.military:
+                    tmpTimeStr = event['s'].strftime("%H:%M")
+                else:
+                    tmpTimeStr = \
+                        event['s'].strftime("%I:%M").lstrip('0') + \
+                        event['s'].strftime('%p').lower()
 
                 if forceEventColorAsMarker:
                     eventColor = self.nowMarkerColor
