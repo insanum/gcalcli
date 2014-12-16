@@ -2083,7 +2083,7 @@ gflags.DEFINE_bool("dump", False, "Print events and don't import",
 gflags.RegisterValidator("details",
                          lambda value: all(x in ["all", "calendar",
                                                  "location", "length",
-                                                 "reminders", "descr",
+                                                 "reminders", "description",
                                                  "longurl", "shorturl", "url"]
                                            for x in value))
 gflags.RegisterValidator("reminder",
