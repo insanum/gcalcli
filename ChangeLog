@@ -5,6 +5,9 @@ v3.2
   * Respect --detail options for TSV output (013d5dc)
   * Speed up tsv output by only shortening links on demand (--detail_url short)
   * PEP8 cleanup FTW! (adea810)
+  * Fix validator for --details not liking 'description' (a4ad28c)
+  * Fix "now marker" showing on wrong days at times (7479e21)
+  * Added support for displaying attendees (56ade18 / metcalfc)
 
 v3.1
   * Enhancements
