@@ -173,7 +173,6 @@ import calendar
 import locale
 import textwrap
 import signal
-from Queue import Queue
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
 
