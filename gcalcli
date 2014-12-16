@@ -1278,6 +1278,20 @@ class gcalcli:
 
             self._PrintEvent(event, event['s'].strftime('\n%F'))
 
+    def _dedup(self, sequence):
+        #  preserve order
+        seen = {}
+        result = []
+        for item in sequence:
+            marker = self._eventId(item)
+            if marker in seen: continue
+            seen[marker] = 1
+            result.append(item)
+        return result
+
+    def _eventId(self, event):
+        # dedup on event summary and start time
+        return event['summary'] + event['start']['dateTime']
 
     def _IterateEvents(self, startDateTime, eventList,
                        yearDate=False, work=None):
@@ -1289,6 +1303,8 @@ class gcalcli:
         # 10 chars for day and length must match 'indent' in _PrintEvent
         dayFormat = '\n%F' if yearDate else '\n%a %b %d'
         day = ''
+
+        eventList = self._dedup(eventList)
 
         for event in eventList:
 
