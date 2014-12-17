@@ -11,7 +11,7 @@ except:
     long_description = ''
 
 setup(name='gcalcli',
-      version='3.2-dev',
+      version='3.2',
       maintainer='Eric Davis, Brian Hartvigsen',
       maintainer_email='edavis@insanum.com, brian.andrew@brianandjenny.com',
       description='Google Calendar Command Line Interface',
