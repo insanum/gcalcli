@@ -94,101 +94,7 @@ HowTo
 #### Usage
 
 ```
-gcalcli [options] command [command args]
-
- Options:
-
-  --help                   this usage text
-
-  --version                version information
-
-  --configFolder <folder>  Folder where specific configuration information is
-                           stored.  This includes a gcalclirc flags file, oauth
-                           credentials, and specific cache.
-  --[no]includerc          Whether the ~/.gcalclirc should be used in addition
-                           to the one in the config folder
-
-  --calendar <name>[#color]
-                           'calendar' to work with (default is all calendars)
-                           - you can specify a calendar by name or by substring
-                             which can match multiple calendars
-                           - you can use multiple '--calendar' arguments on the
-                             command line for the query commands
-                           - an optional color override can be specified per
-                             calendar using the ending hashtag:
-                               --calendar "Eric Davis"#green --calendar foo#red
-
-  --[no]military           show all dates in 24 hour format (default = False)
-
-  --details [all, calendar, location, length, reminders, description, url, longurl, shorturl]
-                           This has the same effect as the individual switches
-                           - you can specify this multiple times, to get just
-                             the combination of details you want.
-
-  --[no]detail_all           show event details in the 'agenda' output
-  --[no]detail_location      - the description width defaults to 80 characters
-  --[no]detail_length        - if 'short' is specified for the url then the
-  --[no]detail_reminders       event link is shortened using http://goo.gl
-  --[no]detail_description   - the --detail-url can be used for both the 'quick'
-  --detail_url [short,         and 'add' commands as well
-                long]
-  --detail_description_width
-
-  --[no]started           Show already started events (default = True)
-                           - when used with the 'agenda' command, ignore events
-                             that have already started and are in-progress with
-                             respect to the specified [start] time
-                           - when used with the 'search' command, ignore events
-                             that have already occurred and only show future
-                             events
-
-  --width                  the number of characters to use for each column in
-                           the 'calw' and 'calm' command outputs (default is 10)
-
-  --[no]monday             week begins with Monday for 'calw' and 'calm' command
-                           outputs (default is False meaning Sunday)
-
-  --[no]colors             Use colors (defalt = True)
-
-  --[no]lineart            Use line graphics (default = True)
-
-  --[no]conky              use conky color escapes sequences instead of ansi
-                           terminal color escape sequences (requires using
-                           the 'execpi' command in conkyrc) (default = False)
-
-  --color_owner            specify the colors used for the calendars and dates
-  --color_writer           each of these argument requires a <color> argument
-  --color_reader           which must be one of [ default, black, brightblack,
-  --color_freebusy             red, brightred, green, brightgreen, yellow,
-  --color_date                 brightyellow, blue, brightblue, magenta,
-  --color_now_marker           brightmagenta, cyan, brightcyan, white,
-  --color_border               brightwhite ]
-
-  --[no]tsv                tab-separated output for 'agenda'. Format is:
-                           start date, start time, end date, end time, link, title, location, description
-                           (default = False)
-
-  --locale <locale>        set a custom locale (i.e. 'de_DE.UTF-8'). Check the
-                           supported locales of your system first.
-
-  --reminder <mins>        number of minutes to use when setting reminders for
-                           the 'quick' and 'add' commands; if not specified
-                           the calendar's default reminder settings are used
-
-  --title <title>          event details used by the 'add' command
-  --where <location>       - the duration is specified in minutes
-  --when <datetime>        - make sure to quote strings with spaces
-  --duration <#>           - datetime examples see 'agenda' below
-  --description <descr>
-  --[no]prompt             Whether we should prompt for any missing pieces of
-                           data when doing an add. (Default = True)
-
-  --[no]refresh            Force a refresh of cached data (Default = False)
-
-  --[no]cache              Use cached data (Default = True)
-
-  --[no]verbose            Output data on each event when importing from an ics
-                           file
+gcalcli [options] command [command args or options]
 
  Commands:
 
@@ -256,7 +162,7 @@ gcalcli [options] command [command args]
                              events, just like the 'search' command
                            - editing is interactive
 
-  import [-v|-d] [file]    import an ics/vcal file to a calendar
+  import [file]            import an ics/vcal file to a calendar
                            - a single --calendar must specified
                            - if a file is not specified then the data is read
                              from standard input
@@ -265,7 +171,7 @@ gcalcli [options] command [command args]
                              or skip it, by default everything is imported
                              quietly without any interaction
                            - if -d is given then each event in the file is
-                             displayed and not imported, a --calendar does
+                             displayed and is not imported, a --calendar does
                              not need to be specified for this option
 
   remind <mins> <command>  execute command if event occurs within <mins>
@@ -274,6 +180,109 @@ gcalcli [options] command [command args]
                            - <mins> default is 10
                            - default command:
                               'notify-send -u critical -a gcalcli %s'
+
+ Options:
+
+  --[no]cache: Execute command without using cache
+    (default: 'true')
+  --calendar: Which calendars to use;
+    repeat this option to specify a list of values
+    (default: '[]')
+  --client_id: API client_id
+    (default: '232867676714.apps.googleusercontent.com')
+  --client_secret: API client_secret
+    (default: '3tZSxItw6_VnZMezQwC8lUqy')
+  --[no]color: Enable/Disable all color output
+    (default: 'true')
+  --color_border: Color of line borders
+    (default: 'white')
+  --color_date: Color for the date
+    (default: 'yellow')
+  --color_freebusy: Color for free/busy calendars
+    (default: 'default')
+  --color_now_marker: Color for the now marker
+    (default: 'brightred')
+  --color_owner: Color for owned calendars
+    (default: 'cyan')
+  --color_reader: Color for read-only calendars
+    (default: 'magenta')
+  --color_writer: Color for writable calendars
+    (default: 'green')
+  --configFolder: Optional directory to load/store all configuration information
+  --[no]conky: Use Conky color codes
+    (default: 'false')
+  --defaultCalendar: Optional default calendar to use if no --calendar options are given;
+    repeat this option to specify a list of values
+    (default: '[]')
+  --[no]default_reminders: If no --reminder is given, use the defaults. If this is false, do not create any reminders.
+    (default: 'true')
+  --description: Event description
+  --[no]detail_all: Display all details
+    (default: 'false')
+  --[no]detail_attendees: Display event attendees
+    (default: 'false')
+  --[no]detail_calendar: Display calendar name
+    (default: 'false')
+  --[no]detail_description: Display description
+    (default: 'false')
+  --detail_description_width: Set description width
+    (default: '80')
+    (an integer)
+  --[no]detail_length: Display length of event
+    (default: 'false')
+  --[no]detail_location: Display event location
+    (default: 'false')
+  --[no]detail_reminders: Display reminders
+    (default: 'false')
+  --detail_url: <long|short>: Set URL output
+  --details: Which parts to display, can be: 'all', 'calendar', 'location', 'length', 'reminders', 'description', 'longurl', 'shorturl', 'url', 'attendees';
+    repeat this option to specify a list of values
+    (default: '[]')
+  -d,--[no]dump: Print events and don't import
+    (default: 'false')
+  --duration: Event duration
+    (an integer)
+  --flagfile: Insert flag definitions from the given file into the command line.
+    (default: '')
+  --[no]help: Show this help
+  --[no]helpshort: Show command help only
+  --[no]helpxml: like --help, but generates XML output
+  --[no]iamaexpert: Probably not
+    (default: 'false')
+  --[no]includeRc: Whether to include ~/.gcalclirc when using configFolder
+    (default: 'false')
+  --[no]lineart: Enable/Disable line art
+    (default: 'true')
+  --locale: System locale
+  --[no]military: Use 24 hour display
+    (default: 'false')
+  --[no]monday: Start the week on Monday
+    (default: 'false')
+  --[no]prompt: Prompt for missing data when adding events
+    (default: 'true')
+  --[no]refresh: Delete and refresh cached data
+    (default: 'false')
+  --reminder: Reminders in the form 'TIME METH' or 'TIME'. TIME is a number which may be followed by an optional 'w', 'd', 'h', or 'm' (meaning weeks, days, hours, minutes) and default to minutes. METH is
+    a string 'popup', 'email', or 'sms' and defaults to popup.;
+    repeat this option to specify a list of values
+    (default: '[]')
+  --[no]started: Show events that have started
+    (default: 'true')
+  --title: Event title
+  --[no]tsv: Use Tab Seperated Value output
+    (default: 'false')
+  --undefok: comma-separated list of flag names that it is okay to specify on the command line even if the program does not define a flag with that name. IMPORTANT: flags in this list that have arguments
+    MUST use the --flag=value format.
+    (default: '')
+  -v,--[no]verbose: Be verbose on imports
+    (default: 'false')
+  --[no]version: Show the version and exit
+    (default: 'false')
+  --when: Event time
+  --where: Event location
+  -w,--width: Set output width
+    (default: '10')
+    (an integer)
 ```
 
 #### Login Information

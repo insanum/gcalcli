@@ -108,22 +108,22 @@ Usage:
                              and only one month will be displayed
 
   quick <text>             quick add an event to a calendar
-                           - a single --cal must specified
-                           - the --detail-url option will show the event link
+                           - a single --calendar must specified
+                           - the "--details url" option will show the event link
                            - example text:
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
 
   add                      add a detailed event to a calendar
-                           - a single --cal must specified
-                           - the --detail-url option will show the event link
+                           - a single --calendar must specified
+                           - the "--details url" option will show the event link
                            - example:
-                              gcalcli --cal 'Eric Davis'
+                              gcalcli --calendar 'Eric Davis'
                                       --title 'Analysis of Algorithms Final'
                                       --where UCI
                                       --when '12/14/2012 10:00'
                                       --duration 60
-                                      --descr 'It is going to be hard!'
+                                      --description 'It is going to be hard!'
                                       --reminder 30
                                       add
 
@@ -131,9 +131,9 @@ Usage:
                            - case insensitive search terms to find and delete
                              events, just like the 'search' command
                            - deleting is interactive
-                             use the --iama-expert option to auto delete
+                             use the --iamaexpert option to auto delete
                              THINK YOU'RE AN EXPERT? USE AT YOUR OWN RISK!!!
-                           - use the --detail options to show event details
+                           - use the --details options to show event details
 
   edit <text>              edit event(s)
                            - case insensitive search terms to find and edit
@@ -141,7 +141,7 @@ Usage:
                            - editing is interactive
 
   import [file]            import an ics/vcal file to a calendar
-                           - a single --cal must specified
+                           - a single --calendar must specified
                            - if a file is not specified then the data is read
                              from standard input
                            - if -v is given then each event in the file is
@@ -149,8 +149,8 @@ Usage:
                              or skip it, by default everything is imported
                              quietly without any interaction
                            - if -d is given then each event in the file is
-                             displayed and is not imported, a --cal does not
-                             need to be specified for this option
+                             displayed and is not imported, a --calendar does
+                             not need to be specified for this option
 
   remind <mins> <command>  execute command if event occurs within <mins>
                            minutes time ('%%s' in <command> is replaced with
