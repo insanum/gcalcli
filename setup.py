@@ -6,7 +6,9 @@ except ImportError:
 
 try:
     import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst', 'md')
+    long_description = pypandoc.convert('README.md', 'rst',
+                                        format='markdown_github',
+                                        extra_args=("--no-wrap",))
 except:
     long_description = ''
 
