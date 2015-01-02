@@ -466,14 +466,25 @@ def GetTimeFromStr(eWhen, eDuration=0):
         PrintErrMsg('Date and time is invalid!\n')
         sys.exit(1)
 
-    try:
-        eTimeStop = eTimeStart + timedelta(minutes=float(eDuration))
-    except:
-        PrintErrMsg('Duration time (minutes) is invalid\n')
-        sys.exit(1)
+    if FLAGS.allday:
+        try:
+            eTimeStop = eTimeStart + timedelta(days=float(eDuration))
+        except:
+            PrintErrMsg('Duration time (days) is invalid\n')
+            sys.exit(1)
 
-    sTimeStart = eTimeStart.isoformat()
-    sTimeStop = eTimeStop.isoformat()
+        sTimeStart = eTimeStart.date().isoformat()
+        sTimeStop = eTimeStop.date().isoformat()
+
+    else:
+        try:
+            eTimeStop = eTimeStart + timedelta(minutes=float(eDuration))
+        except:
+            PrintErrMsg('Duration time (minutes) is invalid\n')
+            sys.exit(1)
+
+        sTimeStart = eTimeStart.isoformat()
+        sTimeStop = eTimeStop.isoformat()
 
     return sTimeStart, sTimeStop
 
@@ -1377,12 +1388,22 @@ class gcalcli:
                     newStart, newEnd = GetTimeFromStr(val.strip(), length)
                     event['s'] = parse(newStart)
                     event['e'] = parse(newEnd)
-                    event['start'] = \
-                        {'dateTime': newStart,
-                         'timeZone': event['gcalcli_cal']['timeZone']}
-                    event['end'] = \
-                        {'dateTime': newEnd,
-                         'timeZone': event['gcalcli_cal']['timeZone']}
+
+                    if FLAGS.allday:
+                        event['start'] = {'date': newStart,
+                                          'dateTime': None,
+                                          'timeZone': None}
+                        event['end'] = {'date': newEnd,
+                                        'dateTime': None,
+                                        'timeZone': None}
+
+                    else:
+                        event['start'] = {'date': None,
+                                          'dateTime': newStart,
+                                          'timeZone': event['gcalcli_cal']['timeZone']}
+                        event['end'] = {'date': None,
+                                        'dateTime': newEnd,
+                                        'timeZone': event['gcalcli_cal']['timeZone']}
 
             elif val.lower() == 'g':
                 PrintMsg(CLR_MAG(), "Length (mins): ")
@@ -1392,12 +1413,22 @@ class gcalcli:
                         GetTimeFromStr(event['start']['dateTime'], val.strip())
                     event['s'] = parse(newStart)
                     event['e'] = parse(newEnd)
-                    event['start'] = \
-                        {'dateTime': newStart,
-                         'timeZone': event['gcalcli_cal']['timeZone']}
-                    event['end'] = \
-                        {'dateTime': newEnd,
-                         'timeZone': event['gcalcli_cal']['timeZone']}
+
+                    if FLAGS.allday:
+                        event['start'] = {'date': newStart,
+                                          'dateTime': None,
+                                          'timeZone': None}
+                        event['end'] = {'date': newEnd,
+                                        'dateTime': None,
+                                        'timeZone': None}
+
+                    else:
+                        event['start'] = {'date': None,
+                                          'dateTime': newStart,
+                                          'timeZone': event['gcalcli_cal']['timeZone']}
+                        event['end'] = {'date': None,
+                                        'dateTime': newEnd,
+                                        'timeZone': event['gcalcli_cal']['timeZone']}
 
             elif val.lower() == 'r':
                 rem = []
@@ -1697,10 +1728,17 @@ class gcalcli:
 
         event = {}
         event['summary'] = stringToUnicode(eTitle)
-        event['start'] = {'dateTime': eStart,
-                          'timeZone': self.cals[0]['timeZone']}
-        event['end'] = {'dateTime': eEnd,
-                        'timeZone': self.cals[0]['timeZone']}
+
+        if FLAGS.allday:
+            event['start'] = {'date': eStart}
+            event['end'] = {'date': eEnd}
+
+        else:
+            event['start'] = {'dateTime': eStart,
+                              'timeZone': self.cals[0]['timeZone']}
+            event['end'] = {'dateTime': eEnd,
+                            'timeZone': self.cals[0]['timeZone']}
+
         if eWhere:
             event['location'] = stringToUnicode(eWhere)
         if eDescr:
@@ -2098,8 +2136,13 @@ gflags.DEFINE_multistring("reminder", [],
 gflags.DEFINE_string("title", None, "Event title")
 gflags.DEFINE_string("where", None, "Event location")
 gflags.DEFINE_string("when", None, "Event time")
-gflags.DEFINE_integer("duration", None, "Event duration")
+gflags.DEFINE_integer("duration", None,
+                      "Event duration in minutes or days if --allday is given.")
 gflags.DEFINE_string("description", None, "Event description")
+gflags.DEFINE_bool("allday", False,
+                   "If --allday is given, the event will be an all-day event "
+                   "(possibly multi-day if --duration is greater than 1). The "
+                   "time part of the --when will be ignored.")
 gflags.DEFINE_bool("prompt", True,
                    "Prompt for missing data when adding events")
 gflags.DEFINE_bool("default_reminders", True,
@@ -2384,7 +2427,10 @@ def BowChickaWowWow():
                 PrintMsg(CLR_MAG(), "When: ")
                 FLAGS.when = raw_input()
             if FLAGS.duration is None:
-                PrintMsg(CLR_MAG(), "Duration (mins): ")
+                if FLAGS.allday:
+                    PrintMsg(CLR_MAG(), "Duration (days): ")
+                else:
+                    PrintMsg(CLR_MAG(), "Duration (mins): ")
                 FLAGS.duration = raw_input()
             if FLAGS.description is None:
                 PrintMsg(CLR_MAG(), "Description: ")
