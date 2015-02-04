@@ -1120,9 +1120,9 @@ class gcalcli:
 
     def _tsv(self, startDateTime, eventList):
         for event in eventList:
-            output = "%s\t%s\t%s\t%s" % (event['s'].strftime('%F'),
+            output = "%s\t%s\t%s\t%s" % (event['s'].strftime('%Y-%m-%d'),
                                          event['s'].strftime('%H:%M'),
-                                         event['e'].strftime('%F'),
+                                         event['e'].strftime('%Y-%m-%d'),
                                          event['e'].strftime('%H:%M'))
 
             if self.detailUrl:
@@ -1463,7 +1463,7 @@ class gcalcli:
                 sys.stdout.write('\n')
                 sys.exit(1)
 
-            self._PrintEvent(event, event['s'].strftime('\n%F'))
+            self._PrintEvent(event, event['s'].strftime('\n%Y-%m-%d'))
 
     def _IterateEvents(self, startDateTime, eventList,
                        yearDate=False, work=None):
@@ -1473,7 +1473,7 @@ class gcalcli:
             return
 
         # 10 chars for day and length must match 'indent' in _PrintEvent
-        dayFormat = '\n%F' if yearDate else '\n%a %b %d'
+        dayFormat = '\n%Y-%m-%d' if yearDate else '\n%a %b %d'
         day = ''
 
         for event in eventList:
