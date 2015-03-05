@@ -2106,7 +2106,7 @@ gflags.DEFINE_bool("detail_description", False, "Display description")
 gflags.DEFINE_integer("detail_description_width", 80, "Set description width")
 gflags.DEFINE_enum("detail_url", None, ["long", "short"], "Set URL output")
 
-gflags.DEFINE_bool("tsv", False, "Use Tab Seperated Value output")
+gflags.DEFINE_bool("tsv", False, "Use Tab Separated Value output")
 gflags.DEFINE_bool("started", True, "Show events that have started")
 gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
 gflags.DEFINE_bool("monday", False, "Start the week on Monday")
