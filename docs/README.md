@@ -269,7 +269,7 @@ gcalcli [options] command [command args or options]
   --[no]started: Show events that have started
     (default: 'true')
   --title: Event title
-  --[no]tsv: Use Tab Seperated Value output
+  --[no]tsv: Use Tab Separated Value output
     (default: 'false')
   --undefok: comma-separated list of flag names that it is okay to specify on the command line even if the program does not define a flag with that name. IMPORTANT: flags in this list that have arguments
     MUST use the --flag=value format.
