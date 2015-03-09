@@ -717,7 +717,7 @@ class gcalcli:
             pageToken = calList.get('nextPageToken')
             if pageToken:
                 calList = self._RetryWithBackoff(
-                    self._CalService().calendarList().ist(pageToken=pageToken))
+                    self._CalService().calendarList().list(pageToken=pageToken))
             else:
                 break
 
