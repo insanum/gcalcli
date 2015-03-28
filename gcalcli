@@ -1783,7 +1783,10 @@ class gcalcli:
         self._IterateEvents(self.now, eventList,
                             yearDate=True, work=self._EditEvent)
 
-    def Remind(self, minutes=10, command=None):
+    def Remind(self, minutes=10, command=None, use_reminders=False):
+        """Check for events between now and now+minutes.
+           If use_reminders then only remind if now >= event['start'] - reminder
+    """
 
         if command is None:
             command = self.command
@@ -1802,6 +1805,11 @@ class gcalcli:
             # XXX maybe add a 2+ minute grace period here...
             if event['s'] < self.now:
                 continue
+
+            # not sure if 'reminders' always in event
+            if use_reminders and 'reminders' in event and 'overrides' in event['reminders']:
+                if all(event['s'] - timedelta(minutes=r['minutes']) > self.now for r in event['reminders']['overrides']):
+                   continue   # don't remind if all reminders haven't arrived yet
 
             if self.military:
                 tmpTimeStr = event['s'].strftime('%H:%M')
@@ -2158,6 +2166,8 @@ gflags.DEFINE_bool("verbose", False, "Be verbose on imports",
 gflags.DEFINE_bool("dump", False, "Print events and don't import",
                    short_name="d")
 
+gflags.DEFINE_bool("use_reminders", False, "Honour the remind time when running remind command")
+
 gflags.RegisterValidator("details",
                          lambda value: all(x in ["all", "calendar",
                                                  "location", "length",
@@ -2474,11 +2484,11 @@ def BowChickaWowWow():
 
     elif args[0] == 'remind':
         if len(args) == 3:  # minutes and command
-            gcal.Remind(int(args[1]), args[2])
+            gcal.Remind(int(args[1]), args[2], use_reminders = FLAGS.use_reminders)
         elif len(args) == 2:  # minutes
-            gcal.Remind(int(args[1]))
+            gcal.Remind(int(args[1]), use_reminders = FLAGS.use_reminders)
         elif len(args) == 1:  # defaults
-            gcal.Remind()
+            gcal.Remind(use_reminders = FLAGS.use_reminders)
         else:
             PrintErrMsg('Error: invalid remind arguments\n')
             sys.exit(1)
