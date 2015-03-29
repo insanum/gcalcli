@@ -1627,7 +1627,10 @@ class gcalcli:
         start = self.now if self.ignoreStarted else None
         eventList = self._SearchForCalEvents(start, None, searchText)
 
-        self._IterateEvents(self.now, eventList, yearDate=True)
+        if self.tsv:
+            self._tsv(self.now, eventList)
+        else:
+            self._IterateEvents(self.now, eventList, yearDate=True)
 
     def AgendaQuery(self, startText='', endText=''):
 
@@ -2379,7 +2382,8 @@ def BowChickaWowWow():
         # allow unicode strings for input
         gcal.TextQuery(stringToUnicode(args[1]))
 
-        sys.stdout.write('\n')
+        if not FLAGS.tsv:
+            sys.stdout.write('\n')
 
     elif args[0] == 'agenda':
         if len(args) == 3:  # start and end
