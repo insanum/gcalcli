@@ -549,6 +549,7 @@ class gcalcli:
                  detailDescr=False,
                  detailDescrWidth=80,
                  detailUrl=None,
+                 detailEmail=False,
                  ignoreStarted=False,
                  calWidth=10,
                  calMonday=False,
@@ -586,6 +587,7 @@ class gcalcli:
         self.detailDescrWidth = detailDescrWidth
         self.detailUrl = detailUrl
         self.detailAttendees = detailAttendees
+        self.detailEmail = detailEmail
 
         self.calOwnerColor = calOwnerColor
         self.calWriterColor = calWriterColor
@@ -1170,6 +1172,10 @@ class gcalcli:
             if self.detailCalendar:
                 output += "\t%s" % event['gcalcli_cal']['summary'].strip()
 
+            if self.detailEmail:
+                output += "\t%s" % (event['creator']['email'].strip()
+                                    if 'email' in event['creator'] else '')
+
             output = "%s\n" % output.replace('\n', '''\\n''')
             sys.stdout.write(stringFromUnicode(output))
 
@@ -1289,6 +1295,15 @@ class gcalcli:
                     xstr = "%s  Reminder: %s %d minutes\n" % \
                            (detailsIndent, rem['method'], rem['minutes'])
                     PrintMsg(CLR_NRM(), xstr)
+
+        if self.detailEmail and \
+           'email' in event['creator'] and \
+           event['creator']['email'].strip():
+            xstr = "%s  Email: %s\n" % (
+                detailsIndent,
+                event['creator']['email'].strip()
+            )
+            PrintMsg(CLR_NRM(), xstr)
 
         if self.detailDescr and \
            'description' in event and \
@@ -2138,7 +2153,7 @@ gflags.DEFINE_bool("military", False, "Use 24 hour display")
 gflags.DEFINE_multistring("details", [], "Which parts to display, can be: "
                           "'all', 'calendar', 'location', 'length', "
                           "'reminders', 'description', 'longurl', 'shorturl', "
-                          "'url', 'attendees'")
+                          "'url', 'attendees', 'email'")
 # old style flags for backwards compatibility
 gflags.DEFINE_bool("detail_all", False, "Display all details")
 gflags.DEFINE_bool("detail_calendar", False, "Display calendar name")
@@ -2147,6 +2162,7 @@ gflags.DEFINE_bool("detail_attendees", False, "Display event attendees")
 gflags.DEFINE_bool("detail_length", False, "Display length of event")
 gflags.DEFINE_bool("detail_reminders", False, "Display reminders")
 gflags.DEFINE_bool("detail_description", False, "Display description")
+gflags.DEFINE_bool("detail_email", False, "Display creator email")
 gflags.DEFINE_integer("detail_description_width", 80, "Set description width")
 gflags.DEFINE_enum("detail_url", None, ["long", "short"], "Set URL output")
 
@@ -2209,7 +2225,7 @@ gflags.RegisterValidator("details",
                                                  "location", "length",
                                                  "reminders", "description",
                                                  "longurl", "shorturl", "url",
-                                                 "attendees"]
+                                                 "attendees", "email"]
                                            for x in value))
 gflags.RegisterValidator("reminder",
                          lambda value: all(ParseReminder(x) for x in value))
@@ -2336,6 +2352,8 @@ def BowChickaWowWow():
             FLAGS['detail_url'].value = "long"
         if not FLAGS['detail_attendees'].present:
             FLAGS['detail_attendees'].value = True
+        if not FLAGS['detail_email'].present:
+            FLAGS['detail_email'].value = True
     else:
         if 'calendar' in FLAGS.details:
             FLAGS['detail_calendar'].value = True
@@ -2355,6 +2373,8 @@ def BowChickaWowWow():
             FLAGS['detail_url'].value = 'short'
         if 'attendees' in FLAGS.details:
             FLAGS['detail_attendees'].value = True
+        if 'email' in FLAGS.details:
+            FLAGS['detail_email'].value = True
 
     gcal = gcalcli(calNames=calNames,
                    calNameColors=calNameColors,
@@ -2367,6 +2387,7 @@ def BowChickaWowWow():
                    detailDescr=FLAGS.detail_description,
                    detailDescrWidth=FLAGS.detail_description_width,
                    detailUrl=FLAGS.detail_url,
+                   detailEmail=FLAGS.detail_email,
                    ignoreStarted=not FLAGS.started,
                    calWidth=FLAGS.width,
                    calMonday=FLAGS.monday,
