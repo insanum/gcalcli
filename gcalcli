@@ -127,13 +127,15 @@ Usage:
                                       --reminder 30
                                       add
 
-  delete <text>            delete event(s)
+  delete <text> [start] [end]
+                           delete event(s) within the optional time period
                            - case insensitive search terms to find and delete
                              events, just like the 'search' command
                            - deleting is interactive
                              use the --iamaexpert option to auto delete
                              THINK YOU'RE AN EXPERT? USE AT YOUR OWN RISK!!!
                            - use the --details options to show event details
+                           - [start] and [end] use the same formats as agenda
 
   edit <text>              edit event(s)
                            - case insensitive search terms to find and edit
