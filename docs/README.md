@@ -245,9 +245,11 @@ gcalcli [options] command [command args or options]
   --[no]detail_reminders: Display reminders
     (default: 'false')
   --detail_url: <long|short>: Set URL output
+  --[no]detail_email: Display event creator's email
+    (default: 'false')
   --details: Which parts to display, can be: 'all', 'calendar', 'location',
     'length', 'reminders', 'description', 'longurl', 'shorturl', 'url',
-    'attendees';
+    'attendees', 'email';
     repeat this option to specify a list of values
     (default: '[]')
   -d,--[no]dump: Print events and don't import
