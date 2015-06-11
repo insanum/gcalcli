@@ -560,7 +560,9 @@ class gcalcli:
                  useCache=True,
                  configFolder=None,
                  client_id=__API_CLIENT_ID__,
-                 client_secret=__API_CLIENT_SECRET__):
+                 client_secret=__API_CLIENT_SECRET__,
+                 defaultReminders=False,
+                 allDay=False):
 
         self.military = military
         self.ignoreStarted = ignoreStarted
@@ -569,6 +571,8 @@ class gcalcli:
         self.tsv = tsv
         self.refreshCache = refreshCache
         self.useCache = useCache
+        self.defaultReminders = defaultReminders
+        self.allDay = allDay
 
         self.detailCalendar = detailCalendar
         self.detailLocation = detailLocation
@@ -1414,7 +1418,7 @@ class gcalcli:
                     event['s'] = parse(newStart)
                     event['e'] = parse(newEnd)
 
-                    if FLAGS.allday:
+                    if self.allDay:
                         event['start'] = {'date': newStart,
                                           'dateTime': None,
                                           'timeZone': None}
@@ -1439,7 +1443,7 @@ class gcalcli:
                     event['s'] = parse(newStart)
                     event['e'] = parse(newEnd)
 
-                    if FLAGS.allday:
+                    if self.allDay:
                         event['start'] = {'date': newStart,
                                           'dateTime': None,
                                           'timeZone': None}
@@ -1465,7 +1469,7 @@ class gcalcli:
                         break
                     rem.append(r)
 
-                if rem or not FLAGS.default_reminders:
+                if rem or not self.defaultReminders:
                     event['reminders'] = {'useDefault': False,
                                           'overrides': []}
                     for r in rem:
@@ -1727,7 +1731,7 @@ class gcalcli:
             self._CalService().events().quickAdd(calendarId=self.cals[0]['id'],
                                                  text=eventText))
 
-        if reminder or not FLAGS.default_reminders:
+        if reminder or not self.defaultReminders:
             rem = {}
             rem['reminders'] = {'useDefault': False,
                                 'overrides': []}
@@ -1755,7 +1759,7 @@ class gcalcli:
         event = {}
         event['summary'] = stringToUnicode(eTitle)
 
-        if FLAGS.allday:
+        if self.allDay:
             event['start'] = {'date': eStart}
             event['end'] = {'date': eEnd}
 
@@ -1770,7 +1774,7 @@ class gcalcli:
         if eDescr:
             event['description'] = stringToUnicode(eDescr)
 
-        if reminder or not FLAGS.default_reminders:
+        if reminder or not self.defaultReminders:
             event['reminders'] = {'useDefault': False,
                                   'overrides': []}
             for r in reminder:
@@ -1939,7 +1943,7 @@ class gcalcli:
                 else:
                     event['start'] = {'date': start}
 
-                if reminder or not FLAGS.default_reminders:
+                if reminder or not self.defaultReminders:
                     event['reminders'] = {'useDefault': False,
                                           'overrides': []}
                     for r in reminder:
@@ -2375,7 +2379,9 @@ def BowChickaWowWow():
                    useCache=FLAGS.cache,
                    configFolder=FLAGS.configFolder,
                    client_id=FLAGS.client_id,
-                   client_secret=FLAGS.client_secret
+                   client_secret=FLAGS.client_secret,
+                   defaultReminders=FLAGS.default_reminders,
+                   allDay=FLAGS.allday
                    )
 
     if args[0] == 'list':
