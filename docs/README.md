@@ -94,6 +94,8 @@ HowTo
 #### Usage
 
 ```
+Usage:
+
 gcalcli [options] command [command args or options]
 
  Commands:
@@ -149,13 +151,15 @@ gcalcli [options] command [command args or options]
                                       --reminder 30
                                       add
 
-  delete <text>            delete event(s)
+  delete <text> [start] [end]
+                           delete event(s) within the optional time period
                            - case insensitive search terms to find and delete
                              events, just like the 'search' command
                            - deleting is interactive
                              use the --iamaexpert option to auto delete
                              THINK YOU'RE AN EXPERT? USE AT YOUR OWN RISK!!!
                            - use the --details options to show event details
+                           - [start] and [end] use the same formats as agenda
 
   edit <text>              edit event(s)
                            - case insensitive search terms to find and edit
@@ -183,6 +187,10 @@ gcalcli [options] command [command args or options]
 
  Options:
 
+  --[no]allday: If --allday is given, the event will be an all-day event
+    (possibly multi-day if --duration is greater than 1). The time part of the
+    --when will be ignored.
+    (default: 'false')
   --[no]cache: Execute command without using cache
     (default: 'true')
   --calendar: Which calendars to use;
@@ -211,10 +219,12 @@ gcalcli [options] command [command args or options]
   --configFolder: Optional directory to load/store all configuration information
   --[no]conky: Use Conky color codes
     (default: 'false')
-  --defaultCalendar: Optional default calendar to use if no --calendar options are given;
+  --defaultCalendar: Optional default calendar to use if no --calendar options
+    are given;
     repeat this option to specify a list of values
     (default: '[]')
-  --[no]default_reminders: If no --reminder is given, use the defaults. If this is false, do not create any reminders.
+  --[no]default_reminders: If no --reminder is given, use the defaults. If this
+    is false, do not create any reminders.
     (default: 'true')
   --description: Event description
   --[no]detail_all: Display all details
@@ -235,12 +245,14 @@ gcalcli [options] command [command args or options]
   --[no]detail_reminders: Display reminders
     (default: 'false')
   --detail_url: <long|short>: Set URL output
-  --details: Which parts to display, can be: 'all', 'calendar', 'location', 'length', 'reminders', 'description', 'longurl', 'shorturl', 'url', 'attendees';
+  --details: Which parts to display, can be: 'all', 'calendar', 'location',
+    'length', 'reminders', 'description', 'longurl', 'shorturl', 'url',
+    'attendees';
     repeat this option to specify a list of values
     (default: '[]')
   -d,--[no]dump: Print events and don't import
     (default: 'false')
-  --duration: Event duration
+  --duration: Event duration in minutes or days if --allday is given.
     (an integer)
   --flagfile: Insert flag definitions from the given file into the command line.
     (default: '')
@@ -262,8 +274,10 @@ gcalcli [options] command [command args or options]
     (default: 'true')
   --[no]refresh: Delete and refresh cached data
     (default: 'false')
-  --reminder: Reminders in the form 'TIME METH' or 'TIME'. TIME is a number which may be followed by an optional 'w', 'd', 'h', or 'm' (meaning weeks, days, hours, minutes) and default to minutes. METH is
-    a string 'popup', 'email', or 'sms' and defaults to popup.;
+  --reminder: Reminders in the form 'TIME METH' or 'TIME'. TIME is a number
+    which may be followed by an optional 'w', 'd', 'h', or 'm' (meaning weeks,
+    days, hours, minutes) and default to minutes. METH is a string 'popup',
+    'email', or 'sms' and defaults to popup.;
     repeat this option to specify a list of values
     (default: '[]')
   --[no]started: Show events that have started
@@ -271,9 +285,13 @@ gcalcli [options] command [command args or options]
   --title: Event title
   --[no]tsv: Use Tab Separated Value output
     (default: 'false')
-  --undefok: comma-separated list of flag names that it is okay to specify on the command line even if the program does not define a flag with that name. IMPORTANT: flags in this list that have arguments
-    MUST use the --flag=value format.
+  --undefok: comma-separated list of flag names that it is okay to specify on
+    the command line even if the program does not define a flag with that name.
+    IMPORTANT: flags in this list that have arguments MUST use the --flag=value
+    format.
     (default: '')
+  --[no]use_reminders: Honour the remind time when running remind command
+    (default: 'false')
   -v,--[no]verbose: Be verbose on imports
     (default: 'false')
   --[no]version: Show the version and exit

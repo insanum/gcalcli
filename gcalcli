@@ -67,7 +67,7 @@
 #############################################################################
 
 __program__ = 'gcalcli'
-__version__ = 'v3.2'
+__version__ = 'v3.3'
 __author__ = 'Eric Davis, Brian Hartvigsen'
 __doc__ = '''
 Usage:
@@ -127,13 +127,15 @@ Usage:
                                       --reminder 30
                                       add
 
-  delete <text>            delete event(s)
+  delete <text> [start] [end]
+                           delete event(s) within the optional time period
                            - case insensitive search terms to find and delete
                              events, just like the 'search' command
                            - deleting is interactive
                              use the --iamaexpert option to auto delete
                              THINK YOU'RE AN EXPERT? USE AT YOUR OWN RISK!!!
                            - use the --details options to show event details
+                           - [start] and [end] use the same formats as agenda
 
   edit <text>              edit event(s)
                            - case insensitive search terms to find and edit
@@ -173,6 +175,8 @@ import calendar
 import locale
 import textwrap
 import signal
+import json
+import random
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
 
@@ -227,7 +231,7 @@ def stringFromUnicode(string):
 
 
 def Version():
-    sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
+    sys.stdout.write(__program__ + ' ' + __version__ + ' (' + __author__ + ')\n')
     sys.exit(1)
 
 
@@ -561,7 +565,9 @@ class gcalcli:
                  useCache=True,
                  configFolder=None,
                  client_id=__API_CLIENT_ID__,
-                 client_secret=__API_CLIENT_SECRET__):
+                 client_secret=__API_CLIENT_SECRET__,
+                 defaultReminders=False,
+                 allDay=False):
 
         self.military = military
         self.ignoreStarted = ignoreStarted
@@ -570,6 +576,8 @@ class gcalcli:
         self.tsv = tsv
         self.refreshCache = refreshCache
         self.useCache = useCache
+        self.defaultReminders = defaultReminders
+        self.allDay = allDay
 
         self.detailCalendar = detailCalendar
         self.detailLocation = detailLocation
@@ -637,10 +645,6 @@ class gcalcli:
             try:
                 return method.execute()
             except HttpError, e:
-                print e, e.content, e.resp if hasattr(e, 'resp') else \
-                    None
-                import json
-                import random
                 error = json.loads(e.content)
                 if error.get('code') == '403' and \
                         error.get('errors')[0].get('reason') \
@@ -667,7 +671,7 @@ class gcalcli:
                         client_secret=self.client_secret,
                         scope=['https://www.googleapis.com/auth/calendar',
                                'https://www.googleapis.com/auth/urlshortener'],
-                        user_agent=__program__+'/'+__version__),
+                        user_agent=__program__ + '/' + __version__),
                     storage)
 
             self.authHttp = credentials.authorize(httplib2.Http())
@@ -817,7 +821,7 @@ class gcalcli:
                     if (DaysSinceEpoch(self.now) <
                             DaysSinceEpoch(event['s'])):
                         nowMarkerPrinted = True
-                        weekEventStrings[dayNum-1] += \
+                        weekEventStrings[dayNum - 1] += \
                             ("\n" +
                              str(self.nowMarkerColor) +
                              (self.calWidth * '-'))
@@ -975,7 +979,7 @@ class gcalcli:
         empty = self.calWidth * ' '
 
         # Get the localized day names... January 1, 2001 was a Monday
-        dayNames = [date(2001, 1, i+1).strftime('%A') for i in range(7)]
+        dayNames = [date(2001, 1, i + 1).strftime('%A') for i in range(7)]
         dayNames = dayNames[6:] + dayNames[:6]
 
         dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
@@ -984,7 +988,7 @@ class gcalcli:
                 if i == 6:
                     dayName = dayNames[0]
                 else:
-                    dayName = dayNames[i+1]
+                    dayName = dayNames[i + 1]
             else:
                 dayName = dayNames[i]
             dayName += ' ' * (self.calWidth - self._PrintLen(dayName))
@@ -1137,7 +1141,7 @@ class gcalcli:
 
                 PrintMsg(CLR_NRM(), line + "\n")
 
-            if i < range(count)[len(range(count))-1]:
+            if i < range(count)[len(range(count)) - 1]:
                 PrintMsg(CLR_NRM(), midWeekDivider + "\n")
             else:
                 PrintMsg(CLR_NRM(), botWeekDivider + "\n")
@@ -1196,8 +1200,8 @@ class gcalcli:
                                                       ' ')
                         new_descr += singleLine[:len(indent)] + \
                             str(ART_VRT()) + \
-                            singleLine[(len(indent)+1):
-                                       (self.detailDescrWidth-1)] + \
+                            singleLine[(len(indent) + 1):
+                                       (self.detailDescrWidth - 1)] + \
                             str(ART_VRT()) + '\n'
                 else:
                     new_descr += wrapper.fill(line) + "\n"
@@ -1429,7 +1433,7 @@ class gcalcli:
                     event['s'] = parse(newStart)
                     event['e'] = parse(newEnd)
 
-                    if FLAGS.allday:
+                    if self.allDay:
                         event['start'] = {'date': newStart,
                                           'dateTime': None,
                                           'timeZone': None}
@@ -1454,7 +1458,7 @@ class gcalcli:
                     event['s'] = parse(newStart)
                     event['e'] = parse(newEnd)
 
-                    if FLAGS.allday:
+                    if self.allDay:
                         event['start'] = {'date': newStart,
                                           'dateTime': None,
                                           'timeZone': None}
@@ -1480,7 +1484,7 @@ class gcalcli:
                         break
                     rem.append(r)
 
-                if rem or not FLAGS.default_reminders:
+                if rem or not self.defaultReminders:
                     event['reminders'] = {'useDefault': False,
                                           'overrides': []}
                     for r in rem:
@@ -1591,15 +1595,14 @@ class gcalcli:
     def _SearchForCalEvents(self, start, end, searchText):
 
         eventList = []
-
         for cal in self.cals:
-            events = self._RetryWithBackoff(
-                self._CalService().events().\
+            work = self._CalService().events().\
                 list(calendarId=cal['id'],
                      timeMin=start.isoformat() if start else None,
                      timeMax=end.isoformat() if end else None,
                      q=searchText if searchText else None,
-                     singleEvents=True))
+                     singleEvents=True)
+            events = self._RetryWithBackoff(work)
             eventList.extend(self._GetAllEvents(cal, events, end))
 
         eventList.sort(lambda x, y: cmp(x['s'], y['s']))
@@ -1746,7 +1749,7 @@ class gcalcli:
             self._CalService().events().quickAdd(calendarId=self.cals[0]['id'],
                                                  text=eventText))
 
-        if reminder or not FLAGS.default_reminders:
+        if reminder or not self.defaultReminders:
             rem = {}
             rem['reminders'] = {'useDefault': False,
                                 'overrides': []}
@@ -1774,7 +1777,7 @@ class gcalcli:
         event = {}
         event['summary'] = stringToUnicode(eTitle)
 
-        if FLAGS.allday:
+        if self.allDay:
             event['start'] = {'date': eStart}
             event['end'] = {'date': eEnd}
 
@@ -1789,7 +1792,7 @@ class gcalcli:
         if eDescr:
             event['description'] = stringToUnicode(eDescr)
 
-        if reminder or not FLAGS.default_reminders:
+        if reminder or not self.defaultReminders:
             event['reminders'] = {'useDefault': False,
                                   'overrides': []}
             for r in reminder:
@@ -1805,13 +1808,13 @@ class gcalcli:
             hLink = self._ShortenURL(newEvent['htmlLink'])
             PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
 
-    def DeleteEvents(self, searchText='', expert=False):
+    def DeleteEvents(self, searchText='', expert=False, start=None, end=None):
 
         # the empty string would get *ALL* events...
         if searchText == '':
             return
 
-        eventList = self._SearchForCalEvents(None, None, searchText)
+        eventList = self._SearchForCalEvents(start, end, searchText)
 
         self.iamaExpert = expert
         self._IterateEvents(self.now, eventList,
@@ -1828,7 +1831,10 @@ class gcalcli:
         self._IterateEvents(self.now, eventList,
                             yearDate=True, work=self._EditEvent)
 
-    def Remind(self, minutes=10, command=None):
+    def Remind(self, minutes=10, command=None, use_reminders=False):
+        """Check for events between now and now+minutes.
+           If use_reminders then only remind if now >= event['start'] - reminder
+    """
 
         if command is None:
             command = self.command
@@ -1847,6 +1853,12 @@ class gcalcli:
             # XXX maybe add a 2+ minute grace period here...
             if event['s'] < self.now:
                 continue
+
+            # not sure if 'reminders' always in event
+            if use_reminders and 'reminders' in event and 'overrides' in event['reminders']:
+                if all(event['s'] - timedelta(minutes=r['minutes']) > self.now
+                   for r in event['reminders']['overrides']):
+                    continue   # don't remind if all reminders haven't arrived yet
 
             if self.military:
                 tmpTimeStr = event['s'].strftime('%H:%M')
@@ -1949,7 +1961,7 @@ class gcalcli:
                 else:
                     event['start'] = {'date': start}
 
-                if reminder or not FLAGS.default_reminders:
+                if reminder or not self.defaultReminders:
                     event['reminders'] = {'useDefault': False,
                                           'overrides': []}
                     for r in reminder:
@@ -2206,6 +2218,8 @@ gflags.DEFINE_bool("verbose", False, "Be verbose on imports",
 gflags.DEFINE_bool("dump", False, "Print events and don't import",
                    short_name="d")
 
+gflags.DEFINE_bool("use_reminders", False, "Honour the remind time when running remind command")
+
 gflags.RegisterValidator("details",
                          lambda value: all(x in ["all", "calendar",
                                                  "location", "length",
@@ -2389,7 +2403,9 @@ def BowChickaWowWow():
                    useCache=FLAGS.cache,
                    configFolder=FLAGS.configFolder,
                    client_id=FLAGS.client_id,
-                   client_secret=FLAGS.client_secret
+                   client_secret=FLAGS.client_secret,
+                   defaultReminders=FLAGS.default_reminders,
+                   allDay=FLAGS.allday
                    )
 
     if args[0] == 'list':
@@ -2506,13 +2522,20 @@ def BowChickaWowWow():
                       FLAGS.description, FLAGS.reminder)
 
     elif args[0] == 'delete':
-        if len(args) != 2:
+        eStart = None
+        eEnd = None
+        if len(args) < 2:
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
+        elif len(args) == 4:  # search, start, end
+            eStart = gcal.dateParser.fromString(args[2])
+            eEnd = gcal.dateParser.fromString(args[3])
+        elif len(args) == 3:  # search, start (default end)
+            eStart = gcal.dateParser.fromString(args[2])
 
         # allow unicode strings for input
         gcal.DeleteEvents(stringToUnicode(args[1]),
-                          FLAGS.iamaexpert)
+                          FLAGS.iamaexpert, eStart, eEnd)
 
         sys.stdout.write('\n')
 
@@ -2528,11 +2551,11 @@ def BowChickaWowWow():
 
     elif args[0] == 'remind':
         if len(args) == 3:  # minutes and command
-            gcal.Remind(int(args[1]), args[2])
+            gcal.Remind(int(args[1]), args[2], use_reminders=FLAGS.use_reminders)
         elif len(args) == 2:  # minutes
-            gcal.Remind(int(args[1]))
+            gcal.Remind(int(args[1]), use_reminders=FLAGS.use_reminders)
         elif len(args) == 1:  # defaults
-            gcal.Remind()
+            gcal.Remind(use_reminders=FLAGS.use_reminders)
         else:
             PrintErrMsg('Error: invalid remind arguments\n')
             sys.exit(1)
