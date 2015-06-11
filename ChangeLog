@@ -1,3 +1,8 @@
+v3.3
+  * Support for adding All Day events (238d527 / SBECK-github)
+  * Fix date display issues (e9a4a24 / njoyard)
+  * Attempt fix for per-account quota errors (6416c7d)
+
 v3.2
   * Add enhanced reminder functionality (393993b / cc2c4cc)
   * Unicode cleanup (debe5bf)
