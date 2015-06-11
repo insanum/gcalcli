@@ -175,6 +175,8 @@ import calendar
 import locale
 import textwrap
 import signal
+import json
+import random
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
 
@@ -641,10 +643,6 @@ class gcalcli:
             try:
                 return method.execute()
             except HttpError, e:
-                print e, e.content, e.resp if hasattr(e, 'resp') else \
-                    None
-                import json
-                import random
                 error = json.loads(e.content)
                 if error.get('code') == '403' and \
                         error.get('errors')[0].get('reason') \
