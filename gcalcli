@@ -1790,13 +1790,13 @@ class gcalcli:
             hLink = self._ShortenURL(newEvent['htmlLink'])
             PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
 
-    def DeleteEvents(self, searchText='', expert=False):
+    def DeleteEvents(self, searchText='', expert=False, start=None, end=None):
 
         # the empty string would get *ALL* events...
         if searchText == '':
             return
 
-        eventList = self._SearchForCalEvents(None, None, searchText)
+        eventList = self._SearchForCalEvents(start, end, searchText)
 
         self.iamaExpert = expert
         self._IterateEvents(self.now, eventList,
@@ -2497,13 +2497,20 @@ def BowChickaWowWow():
                       FLAGS.description, FLAGS.reminder)
 
     elif args[0] == 'delete':
-        if len(args) != 2:
+        eStart = None
+        eEnd = None
+        if len(args) < 2:
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
+        elif len(args) == 4:  # search, start, end
+            eStart = gcal.dateParser.fromString(args[2])
+            eEnd = gcal.dateParser.fromString(args[3])
+        elif len(args) == 3:  # search, start (default end)
+            eStart = gcal.dateParser.fromString(args[2])
 
         # allow unicode strings for input
         gcal.DeleteEvents(stringToUnicode(args[1]),
-                          FLAGS.iamaexpert)
+                          FLAGS.iamaexpert, eStart, eEnd)
 
         sys.stdout.write('\n')
 
