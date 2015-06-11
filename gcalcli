@@ -227,7 +227,7 @@ def stringFromUnicode(string):
 
 
 def Version():
-    sys.stdout.write(__program__+' '+__version__+' ('+__author__+')\n')
+    sys.stdout.write(__program__ + ' ' + __version__ + ' (' + __author__ + ')\n')
     sys.exit(1)
 
 
@@ -665,7 +665,7 @@ class gcalcli:
                         client_secret=self.client_secret,
                         scope=['https://www.googleapis.com/auth/calendar',
                                'https://www.googleapis.com/auth/urlshortener'],
-                        user_agent=__program__+'/'+__version__),
+                        user_agent=__program__ + '/' + __version__),
                     storage)
 
             self.authHttp = credentials.authorize(httplib2.Http())
@@ -815,7 +815,7 @@ class gcalcli:
                     if (DaysSinceEpoch(self.now) <
                             DaysSinceEpoch(event['s'])):
                         nowMarkerPrinted = True
-                        weekEventStrings[dayNum-1] += \
+                        weekEventStrings[dayNum - 1] += \
                             ("\n" +
                              str(self.nowMarkerColor) +
                              (self.calWidth * '-'))
@@ -973,7 +973,7 @@ class gcalcli:
         empty = self.calWidth * ' '
 
         # Get the localized day names... January 1, 2001 was a Monday
-        dayNames = [date(2001, 1, i+1).strftime('%A') for i in range(7)]
+        dayNames = [date(2001, 1, i + 1).strftime('%A') for i in range(7)]
         dayNames = dayNames[6:] + dayNames[:6]
 
         dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
@@ -982,7 +982,7 @@ class gcalcli:
                 if i == 6:
                     dayName = dayNames[0]
                 else:
-                    dayName = dayNames[i+1]
+                    dayName = dayNames[i + 1]
             else:
                 dayName = dayNames[i]
             dayName += ' ' * (self.calWidth - self._PrintLen(dayName))
@@ -1135,7 +1135,7 @@ class gcalcli:
 
                 PrintMsg(CLR_NRM(), line + "\n")
 
-            if i < range(count)[len(range(count))-1]:
+            if i < range(count)[len(range(count)) - 1]:
                 PrintMsg(CLR_NRM(), midWeekDivider + "\n")
             else:
                 PrintMsg(CLR_NRM(), botWeekDivider + "\n")
@@ -1190,8 +1190,8 @@ class gcalcli:
                                                       ' ')
                         new_descr += singleLine[:len(indent)] + \
                             str(ART_VRT()) + \
-                            singleLine[(len(indent)+1):
-                                       (self.detailDescrWidth-1)] + \
+                            singleLine[(len(indent) + 1):
+                                       (self.detailDescrWidth - 1)] + \
                             str(ART_VRT()) + '\n'
                 else:
                     new_descr += wrapper.fill(line) + "\n"
@@ -1834,8 +1834,9 @@ class gcalcli:
 
             # not sure if 'reminders' always in event
             if use_reminders and 'reminders' in event and 'overrides' in event['reminders']:
-                if all(event['s'] - timedelta(minutes=r['minutes']) > self.now for r in event['reminders']['overrides']):
-                   continue   # don't remind if all reminders haven't arrived yet
+                if all(event['s'] - timedelta(minutes=r['minutes']) > self.now
+                   for r in event['reminders']['overrides']):
+                    continue   # don't remind if all reminders haven't arrived yet
 
             if self.military:
                 tmpTimeStr = event['s'].strftime('%H:%M')
@@ -2512,11 +2513,11 @@ def BowChickaWowWow():
 
     elif args[0] == 'remind':
         if len(args) == 3:  # minutes and command
-            gcal.Remind(int(args[1]), args[2], use_reminders = FLAGS.use_reminders)
+            gcal.Remind(int(args[1]), args[2], use_reminders=FLAGS.use_reminders)
         elif len(args) == 2:  # minutes
-            gcal.Remind(int(args[1]), use_reminders = FLAGS.use_reminders)
+            gcal.Remind(int(args[1]), use_reminders=FLAGS.use_reminders)
         elif len(args) == 1:  # defaults
-            gcal.Remind(use_reminders = FLAGS.use_reminders)
+            gcal.Remind(use_reminders=FLAGS.use_reminders)
         else:
             PrintErrMsg('Error: invalid remind arguments\n')
             sys.exit(1)
