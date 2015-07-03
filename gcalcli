@@ -859,8 +859,8 @@ class gcalcli:
                 # newline and empty string are the keys to turn off coloring
                 weekEventStrings[dayNum] += \
                     "\n" + \
-                    unicode(str(eventColor), "utf-8") + \
-                    unicode(tmpTimeStr.strip(), "utf-8") + \
+                    stringToUnicode(str(eventColor)) + \
+                    stringToUnicode(tmpTimeStr.strip()) + \
                     " " + \
                     self._ValidTitle(event).strip()
 
@@ -1225,7 +1225,7 @@ class gcalcli:
         else:
             fmt = '  ' + timeFormat + '  %s\n'
             PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
-                     (unicode(tmpTimeStr, "utf-8"), self._ValidTitle(event).strip()))
+                     (stringToUnicode(tmpTimeStr), self._ValidTitle(event).strip()))
 
         if self.detailCalendar:
             xstr = "%s  Calendar: %s\n" % (
