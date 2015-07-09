@@ -311,6 +311,30 @@ OAuth2 is used for authenticating with your Google account. The resulting token
 is placed in the ~/.gcalcli_oauth file. When you first start gcalcli the
 authentication process will proceed. Simply follow the instructions.
 
+If desired, you can use your own Calendar API instead of the default API values.
+*NOTE*: these steps are optional!
+
+* Go to the [Google developer console](https://console.developers.google.com/)
+* Make a new project for gcalcli
+* On the sidebar under APIs & Auth, click APIs
+* Enable the Calendar API
+* On the sidebar click Credentials
+* Create a new Client ID. Set the type to Installed Application and the subtype
+  to Other. You will be asked to fill in some consent form information, but what
+  you put here isn't important. It's just what will show up when gcalcli opens
+  up the OAuth website. Anything optional can safely be left blank.
+* Go back to the credentials page and grab your ID and Secret.
+* If desired, add the client_id and client_secret to your .gcalclirc:
+
+        --client_id=xxxxxxxxxxxxxxx.apps.googleusercontent.com
+        --client_secret=xxxxxxxxxxxxxxxxx
+
+* Remove your existing OAuth information (typically ~/.gcalcli_oauth).
+* Run gcalcli with any desired argument, making sure the new client_id and
+  client_secret are passed on the command line or placed in your .gcalclirc. The
+  OAuth authorization page should be opened automatically in your default
+  browser.
+
 #### HTTP Proxy Support
 
 gcalcli will automatically work with an HTTP Proxy simply by setting up some
