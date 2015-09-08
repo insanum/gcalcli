@@ -665,14 +665,15 @@ class gcalcli:
             credentials = storage.get()
 
             if credentials is None or credentials.invalid:
-                credentials = run_flow(
+                credentials = tools.run_flow(
                     OAuth2WebServerFlow(
                         client_id=self.client_id,
                         client_secret=self.client_secret,
                         scope=['https://www.googleapis.com/auth/calendar',
                                'https://www.googleapis.com/auth/urlshortener'],
                         user_agent=__program__ + '/' + __version__),
-                    storage)
+                    storage,
+                    FLAGS)
 
             self.authHttp = credentials.authorize(httplib2.Http())
 
