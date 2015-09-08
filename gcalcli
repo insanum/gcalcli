@@ -2301,6 +2301,8 @@ def BowChickaWowWow():
         if os.path.exists(os.path.expanduser("%s/gcalclirc" %
                                              FLAGS.configFolder)):
             if not FLAGS.includeRc:
+                # TODO: This will fail right now as all options should be
+                # before the command :(
                 tmpArgv = argv + ["@%s/gcalclirc" %
                                   FLAGS.configFolder, ]
             else:
@@ -2465,12 +2467,11 @@ def BowChickaWowWow():
                       FLAGS.description, FLAGS.reminder)
 
     elif FLAGS.command == 'delete':
+        eStart = None
+        eEnd = None
         if not FLAGS.text:
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
-
-        eStart = None
-        eEnd = None
 
         if FLAGS.start:
             eStart = gcal.dateParser.fromString(FLAGS.start)
@@ -2494,7 +2495,7 @@ def BowChickaWowWow():
         sys.stdout.write('\n')
 
     elif FLAGS.command == 'remind':
-        gcal.Remind(FLAGS.minutes, FLAGS.cmd, use_reminders=FLAGS.use_reminders)
+        gcal.Remind(FLAGS.minutes, " ".join(FLAGS.cmd), use_reminders=FLAGS.use_reminders)
 
     elif FLAGS.command == 'import':
         gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file)
