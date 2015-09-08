@@ -177,6 +177,7 @@ import textwrap
 import signal
 import json
 import random
+import argparse
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
 
@@ -184,13 +185,12 @@ from unicodedata import east_asian_width
 try:
     from dateutil.tz import tzlocal
     from dateutil.parser import parse
-    import gflags
     import httplib2
     from apiclient.discovery import build
     from apiclient.errors import HttpError
     from oauth2client.file import Storage
     from oauth2client.client import OAuth2WebServerFlow
-    from oauth2client.tools import run
+    from oauth2client import tools
 except ImportError as e:
     print "ERROR: Missing module - %s" % e.args[0]
     sys.exit(1)
@@ -665,7 +665,7 @@ class gcalcli:
             credentials = storage.get()
 
             if credentials is None or credentials.invalid:
-                credentials = run(
+                credentials = run_flow(
                     OAuth2WebServerFlow(
                         client_id=self.client_id,
                         client_secret=self.client_secret,
@@ -2126,125 +2126,114 @@ def GetCalColors(calNames):
     return calColors
 
 
-FLAGS = gflags.FLAGS
-# allow mixing of commands and options
-FLAGS.UseGnuGetOpt()
+gflags = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter,
+                                 parents=[tools.argparser])
 
-gflags.DEFINE_bool("help", None, "Show this help")
-gflags.DEFINE_bool("helpshort", None, "Show command help only")
-gflags.DEFINE_bool("version", False, "Show the version and exit")
+gflags.add_argument("--version", action="store_true", help="Show the version and exit")
 
-gflags.DEFINE_string("client_id", __API_CLIENT_ID__, "API client_id")
-gflags.DEFINE_string("client_secret", __API_CLIENT_SECRET__,
-                     "API client_secret")
+gflags.add_argument("--client_id", default=__API_CLIENT_ID__, type=str, help="API client_id")
+gflags.add_argument("--client_secret", default=__API_CLIENT_SECRET__, type=str,
+                    help="API client_secret")
 
-gflags.DEFINE_string("configFolder", None,
-                     "Optional directory to load/store all configuration "
+gflags.add_argument("--configFolder", default=None, type=str,
+                     help="Optional directory to load/store all configuration "
                      "information")
-gflags.DEFINE_bool("includeRc", False,
-                   "Whether to include ~/.gcalclirc when using configFolder")
-gflags.DEFINE_multistring("calendar", [], "Which calendars to use")
-gflags.DEFINE_multistring("defaultCalendar", [],
-                          "Optional default calendar to use if no --calendar "
+gflags.add_argument("--noincluderc", action="store_false", dest="includerc",
+                   help="Whether to include ~/.gcalclirc when using configFolder")
+gflags.add_argument("--calendar", default=[], type=str, action="append", help="Which calendars to use")
+gflags.add_argument("--defaultCalendar", default=[], type=str, action="append",
+                          help="Optional default calendar to use if no --calendar "
                           "options are given")
-gflags.DEFINE_bool("military", False, "Use 24 hour display")
+gflags.add_argument("--military", action="store_true", help="Use 24 hour display")
 
 # Single --detail that allows you to specify what parts you want
-gflags.DEFINE_multistring("details", [], "Which parts to display, can be: "
+gflags.add_argument("--details", default=[], type=str, choices=['all', 'calendar', 'location', 'length', 'reminders', 'description', 'longurl', 'shorturl', 'url', 'attendees', 'email'], action="append", help="Which parts to display, can be: "
                           "'all', 'calendar', 'location', 'length', "
                           "'reminders', 'description', 'longurl', 'shorturl', "
                           "'url', 'attendees', 'email'")
 # old style flags for backwards compatibility
-gflags.DEFINE_bool("detail_all", False, "Display all details")
-gflags.DEFINE_bool("detail_calendar", False, "Display calendar name")
-gflags.DEFINE_bool("detail_location", False, "Display event location")
-gflags.DEFINE_bool("detail_attendees", False, "Display event attendees")
-gflags.DEFINE_bool("detail_length", False, "Display length of event")
-gflags.DEFINE_bool("detail_reminders", False, "Display reminders")
-gflags.DEFINE_bool("detail_description", False, "Display description")
-gflags.DEFINE_bool("detail_email", False, "Display creator email")
-gflags.DEFINE_integer("detail_description_width", 80, "Set description width")
-gflags.DEFINE_enum("detail_url", None, ["long", "short"], "Set URL output")
+# gflags.add_argument("--detail_all", default=False, type=bool, help="Display all details")
+# gflags.add_argument("--detail_calendar", default=False, type=bool, help="Display calendar name")
+# gflags.add_argument("--detail_location", default=False, type=bool, help="Display event location")
+# gflags.add_argument("--detail_attendees", default=False, type=bool, help="Display event attendees")
+# gflags.add_argument("--detail_length", default=False, type=bool, help="Display length of event")
+# gflags.add_argument("--detail_reminders", default=False, type=bool, help="Display reminders")
+# gflags.add_argument("--detail_description", default=False, type=bool, help="Display description")
+# gflags.add_argument("--detail_email", default=False, type=bool, help="Display creator email")
+# gflags.add_argument("--detail_description_width", default=80, type=int, help="Set description width")
+# gflags.add_argument("--detail_url", type=str, default=None, choices=["long", "short"], help="Set URL output")
 
-gflags.DEFINE_bool("tsv", False, "Use Tab Separated Value output")
-gflags.DEFINE_bool("started", True, "Show events that have started")
-gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
-gflags.DEFINE_bool("monday", False, "Start the week on Monday")
-gflags.DEFINE_bool("color", True, "Enable/Disable all color output")
-gflags.DEFINE_bool("lineart", True, "Enable/Disable line art")
-gflags.DEFINE_bool("conky", False, "Use Conky color codes")
+gflags.add_argument("--tsv", action="store_true", help="Use Tab Separated Value output")
+gflags.add_argument("--nostarted", action="store_false", dest="started", help="Show events that have started")
+gflags.add_argument("--width", "-w", default=10, type=int, help="Set output width")
+gflags.add_argument("--monday", action="store_true", help="Start the week on Monday")
+gflags.add_argument("--nocolor", action="store_false", dest="color", help="Enable/Disable all color output")
+gflags.add_argument("--nolineart", action="store_false", dest="lineart", help="Enable/Disable line art")
+gflags.add_argument("--conky", action="store_true", help="Use Conky color codes")
 
-gflags.DEFINE_string("color_owner", "cyan", "Color for owned calendars")
-gflags.DEFINE_string("color_writer", "green", "Color for writable calendars")
-gflags.DEFINE_string("color_reader", "magenta",
-                     "Color for read-only calendars")
-gflags.DEFINE_string("color_freebusy", "default",
-                     "Color for free/busy calendars")
-gflags.DEFINE_string("color_date", "yellow", "Color for the date")
-gflags.DEFINE_string("color_now_marker", "brightred",
-                     "Color for the now marker")
-gflags.DEFINE_string("color_border", "white", "Color of line borders")
+gflags.add_argument("--color_owner", default="cyan", type=str, help="Color for owned calendars")
+gflags.add_argument("--color_writer", default="green", type=str, help="Color for writable calendars")
+gflags.add_argument("--color_reader", default="magenta", type=str,
+                     help="Color for read-only calendars")
+gflags.add_argument("--color_freebusy", default="default", type=str,
+                     help="Color for free/busy calendars")
+gflags.add_argument("--color_date", default="yellow", type=str, help="Color for the date")
+gflags.add_argument("--color_now_marker", default="brightred", type=str,
+                     help="Color for the now marker")
+gflags.add_argument("--color_border", default="white", type=str, help="Color of line borders")
 
-gflags.DEFINE_string("locale", None, "System locale")
+gflags.add_argument("--locale", default=None, type=str, help="System locale")
 
-gflags.DEFINE_multistring("reminder", [],
-                          "Reminders in the form 'TIME METH' or 'TIME'.  TIME "
+gflags.add_argument("--reminder", default=[], type=str, action="append",
+                          help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
                           "is a number which may be followed by an optional "
                           "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
                           "minutes) and default to minutes.  METH is a string "
                           "'popup', 'email', or 'sms' and defaults to popup.")
-gflags.DEFINE_string("title", None, "Event title")
-gflags.DEFINE_string("where", None, "Event location")
-gflags.DEFINE_string("when", None, "Event time")
-gflags.DEFINE_integer("duration", None,
-                      "Event duration in minutes or days if --allday is given.")
-gflags.DEFINE_string("description", None, "Event description")
-gflags.DEFINE_bool("allday", False,
-                   "If --allday is given, the event will be an all-day event "
+gflags.add_argument("--title", default=None, type=str, help="Event title")
+gflags.add_argument("--where", default=None, type=str, help="Event location")
+gflags.add_argument("--when", default=None, type=str, help="Event time")
+gflags.add_argument("--duration", default=None, type=int,
+                      help="Event duration in minutes or days if --allday is given.")
+gflags.add_argument("--description", default=None, type=str, help="Event description")
+gflags.add_argument("--allday", action="store_true",
+                   help="If --allday is given, the event will be an all-day event "
                    "(possibly multi-day if --duration is greater than 1). The "
                    "time part of the --when will be ignored.")
-gflags.DEFINE_bool("prompt", True,
-                   "Prompt for missing data when adding events")
-gflags.DEFINE_bool("default_reminders", True,
-                   "If no --reminder is given, use the defaults.  If this is "
+gflags.add_argument("--prompt", action="store_true",
+                   help="Prompt for missing data when adding events")
+gflags.add_argument("--default_reminders", action="store_true",
+                   help="If no --reminder is given, use the defaults.  If this is "
                    "false, do not create any reminders.")
 
-gflags.DEFINE_bool("iamaexpert", False, "Probably not")
-gflags.DEFINE_bool("refresh", False, "Delete and refresh cached data")
-gflags.DEFINE_bool("cache", True, "Execute command without using cache")
+gflags.add_argument("--iamaexpert", action="store_true", help="Probably not")
+gflags.add_argument("--refresh", action="store_true", help="Delete and refresh cached data")
+gflags.add_argument("--nocache", action="store_false", dest="cache", help="Execute command without using cache")
 
-gflags.DEFINE_bool("verbose", False, "Be verbose on imports",
-                   short_name="v")
-gflags.DEFINE_bool("dump", False, "Print events and don't import",
-                   short_name="d")
+gflags.add_argument("--verbose", "-v", action="count", help="Be verbose on imports")
+gflags.add_argument("--dump", "-d", action="store_true", help="Print events and don't import")
 
-gflags.DEFINE_bool("use_reminders", False, "Honour the remind time when running remind command")
+gflags.add_argument("--use_reminders", action="store_true", help="Honour the remind time when running remind command")
+FLAGS = gflags.parse_args(sys.argv[1:])
 
-gflags.RegisterValidator("details",
-                         lambda value: all(x in ["all", "calendar",
-                                                 "location", "length",
-                                                 "reminders", "description",
-                                                 "longurl", "shorturl", "url",
-                                                 "attendees", "email"]
-                                           for x in value))
-gflags.RegisterValidator("reminder",
-                         lambda value: all(ParseReminder(x) for x in value))
-gflags.RegisterValidator("color_owner",
-                         lambda value: GetColor(value) is not None)
-gflags.RegisterValidator("color_writer",
-                         lambda value: GetColor(value) is not None)
-gflags.RegisterValidator("color_reader",
-                         lambda value: GetColor(value) is not None)
-gflags.RegisterValidator("color_freebusy",
-                         lambda value: GetColor(value) is not None)
-gflags.RegisterValidator("color_date",
-                         lambda value: GetColor(value) is not None)
-gflags.RegisterValidator("color_now_marker",
-                         lambda value: GetColor(value) is not None)
-gflags.RegisterValidator("color_border",
-                         lambda value: GetColor(value) is not None)
-
-gflags.ADOPT_module_key_flags(gflags)
+# gflags.RegisterValidator("reminder",
+#                          lambda value: all(ParseReminder(x) for x in value))
+# gflags.RegisterValidator("color_owner",
+#                          lambda value: GetColor(value) is not None)
+# gflags.RegisterValidator("color_writer",
+#                          lambda value: GetColor(value) is not None)
+# gflags.RegisterValidator("color_reader",
+#                          lambda value: GetColor(value) is not None)
+# gflags.RegisterValidator("color_freebusy",
+#                          lambda value: GetColor(value) is not None)
+# gflags.RegisterValidator("color_date",
+#                          lambda value: GetColor(value) is not None)
+# gflags.RegisterValidator("color_now_marker",
+#                          lambda value: GetColor(value) is not None)
+# gflags.RegisterValidator("color_border",
+#                          lambda value: GetColor(value) is not None)
+# gflags.ADOPT_module_key_flags(gflags)
 
 
 def BowChickaWowWow():
