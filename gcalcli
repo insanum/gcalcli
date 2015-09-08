@@ -2255,6 +2255,7 @@ gflags.add_argument("--dump", "-d", action="store_true", help="Print events and 
 
 gflags.add_argument("--use_reminders", action="store_true", help="Honour the remind time when running remind command")
 
+# TODO: Put all the validators in place!
 # gflags.RegisterValidator("reminder",
 #                          lambda value: all(ParseReminder(x) for x in value))
 # gflags.RegisterValidator("color_owner",
@@ -2420,7 +2421,7 @@ def BowChickaWowWow():
 
     elif FLAGS.command == 'quick':
         if not FLAGS.text:
-            PrintErrMsg('Error: invalid search string\n')
+            PrintErrMsg('Error: invalid event text\n')
             sys.exit(1)
 
         # allow unicode strings for input
@@ -2467,8 +2468,6 @@ def BowChickaWowWow():
         if not FLAGS.text:
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
-
-        print FLAGS.text, FLAGS.start, FLAGS.end
 
         eStart = None
         eEnd = None
