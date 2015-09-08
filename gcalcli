@@ -2280,13 +2280,13 @@ def BowChickaWowWow():
     # GetTimeFromStr would you believe me?
     global FLAGS
     try:
-        argv = sys.argv
+        argv = sys.argv[1:]
         gcalclirc = os.path.expanduser('~/.gcalclirc')
         if os.path.exists(gcalclirc):
             # We want .gcalclirc to be sourced before any other --flagfile
             # params since we may be told to use a specific config folder, we
             # need to store generated argv in temp variable
-            tmpArgv = [argv[1], "@%s" % gcalclirc] + argv[2:]
+            tmpArgv = ["@%s" % gcalclirc] + argv
         else:
             tmpArgv = argv
         FLAGS = gflags.parse_args(tmpArgv)
