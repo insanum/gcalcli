@@ -1652,7 +1652,7 @@ class gcalcli:
 
     def AgendaQuery(self, startText='', endText=''):
 
-        if startText == '':
+        if not startText:
             # convert now to midnight this morning and use for default
             start = self.now.replace(hour=0,
                                      minute=0,
@@ -1671,7 +1671,7 @@ class gcalcli:
         if self.ignoreStarted and start < self.now:
             start = self.now
 
-        if endText == '':
+        if not endText:
             end = (start + timedelta(days=self.agendaLength))
         else:
             try:
@@ -1689,7 +1689,7 @@ class gcalcli:
 
     def CalQuery(self, cmd, startText='', count=1):
 
-        if startText == '':
+        if not startText:
             # convert now to midnight this morning and use for default
             start = self.now.replace(hour=0,
                                      minute=0,
@@ -2128,7 +2128,46 @@ def GetCalColors(calNames):
 
 gflags = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter,
+                                 fromfile_prefix_chars="@",
                                  parents=[tools.argparser])
+sub = gflags.add_subparsers(help="Sub command help?", dest="command")
+
+sub.add_parser("list")
+
+search = sub.add_parser("search")
+search.add_argument("text", nargs=argparse.REMAINDER)
+
+agenda = sub.add_parser("agenda")
+agenda.add_argument("start", type=str, nargs="?")
+agenda.add_argument("end", type=str, nargs="?")
+
+calw = sub.add_parser("calw")
+calw.add_argument("weeks", type=int, default=1, nargs="?")
+calw.add_argument("start", type=str, nargs="?")
+
+calm = sub.add_parser("calm")
+calm.add_argument("start", type=str, nargs="?")
+
+quick = sub.add_parser("quick")
+quick.add_argument("text", nargs=argparse.REMAINDER)
+
+sub.add_parser("add")
+
+# TODO: Fix this it doesn't work this way as nothing ever goes into [start] or [end]
+delete = sub.add_parser("delete")
+delete.add_argument("text", type=str, nargs=argparse.REMAINDER)
+delete.add_argument("start", type=str, nargs="?")
+delete.add_argument("end", type=str, nargs="?")
+
+edit = sub.add_parser("edit")
+edit.add_argument("text", nargs=argparse.REMAINDER)
+
+_import = sub.add_parser("import")
+_import.add_argument("file", type=argparse.FileType('r'), nargs="?")
+
+remind = sub.add_parser("remind")
+remind.add_argument("minutes", type=int)
+remind.add_argument("cmd", type=str, nargs=argparse.REMAINDER)
 
 gflags.add_argument("--version", action="store_true", help="Show the version and exit")
 
@@ -2139,7 +2178,7 @@ gflags.add_argument("--client_secret", default=__API_CLIENT_SECRET__, type=str,
 gflags.add_argument("--configFolder", default=None, type=str,
                      help="Optional directory to load/store all configuration "
                      "information")
-gflags.add_argument("--noincluderc", action="store_false", dest="includerc",
+gflags.add_argument("--noincluderc", action="store_false", dest="includeRc",
                    help="Whether to include ~/.gcalclirc when using configFolder")
 gflags.add_argument("--calendar", default=[], type=str, action="append", help="Which calendars to use")
 gflags.add_argument("--defaultCalendar", default=[], type=str, action="append",
@@ -2215,7 +2254,6 @@ gflags.add_argument("--verbose", "-v", action="count", help="Be verbose on impor
 gflags.add_argument("--dump", "-d", action="store_true", help="Print events and don't import")
 
 gflags.add_argument("--use_reminders", action="store_true", help="Honour the remind time when running remind command")
-FLAGS = gflags.parse_args(sys.argv[1:])
 
 # gflags.RegisterValidator("reminder",
 #                          lambda value: all(ParseReminder(x) for x in value))
@@ -2237,17 +2275,21 @@ FLAGS = gflags.parse_args(sys.argv[1:])
 
 
 def BowChickaWowWow():
+    # If I told you I had no idea why it had to be global'd here but not in
+    # GetTimeFromStr would you believe me?
+    global FLAGS
     try:
         argv = sys.argv
-        if os.path.exists(os.path.expanduser('~/.gcalclirc')):
+        gcalclirc = os.path.expanduser('~/.gcalclirc')
+        if os.path.exists(gcalclirc):
             # We want .gcalclirc to be sourced before any other --flagfile
             # params since we may be told to use a specific config folder, we
             # need to store generated argv in temp variable
-            tmpArgv = [argv[0], "--flagfile=~/.gcalclirc"] + argv[1:]
+            tmpArgv = [argv[1], "@%s" % gcalclirc] + argv[2:]
         else:
             tmpArgv = argv
-        args = FLAGS(tmpArgv)
-    except gflags.FlagsError, e:
+        FLAGS = gflags.parse_args(tmpArgv)
+    except Exception as e:
         PrintErrMsg(str(e))
         Usage(True)
         sys.exit(1)
@@ -2258,26 +2300,17 @@ def BowChickaWowWow():
         if os.path.exists(os.path.expanduser("%s/gcalclirc" %
                                              FLAGS.configFolder)):
             if not FLAGS.includeRc:
-                tmpArgv = argv + ["--flagfile=%s/gcalclirc" %
+                tmpArgv = argv + ["@%s/gcalclirc" %
                                   FLAGS.configFolder, ]
             else:
-                tmpArgv += ["--flagfile=%s/gcalclirc" % FLAGS.configFolder, ]
+                tmpArgv += ["@%s/gcalclirc" % FLAGS.configFolder, ]
 
-        FLAGS.Reset()
-        args = FLAGS(tmpArgv)
+        FLAGS = gflags.parse_args(tmpArgv)
 
     argv = tmpArgv
 
     if FLAGS.version:
         Version()
-
-    if FLAGS.help:
-        Usage(True)
-        sys.exit()
-
-    if FLAGS.helpshort:
-        Usage()
-        sys.exit()
 
     if not FLAGS.color:
         CLR.useColor = False
@@ -2296,23 +2329,6 @@ def BowChickaWowWow():
                         "Check supported locales of your system.\n")
             sys.exit(1)
 
-    # pop executable off the stack
-    args = args[1:]
-    if len(args) == 0:
-        PrintErrMsg('Error: no command\n')
-        sys.exit(1)
-
-    # No sense instaniating gcalcli for nothing
-    if not args[0] in ['list', 'search', 'agenda', 'calw', 'calm', 'quick',
-                       'add', 'delete', 'edit', 'remind', 'import', 'help']:
-        PrintErrMsg('Error: %s is an invalid command' % args[0])
-        sys.exit(1)
-
-    # all other commands require gcalcli be brought up
-    if args[0] == 'help':
-        Usage()
-        sys.exit(0)
-
     if len(FLAGS.calendar) == 0:
         FLAGS.calendar = FLAGS.defaultCalendar
 
@@ -2326,57 +2342,25 @@ def BowChickaWowWow():
         calNameColors.append(calColors[calNameSimple])
     calNames = calNamesFiltered
 
-    if 'all' in FLAGS.details or FLAGS.detail_all:
-        if not FLAGS['detail_calendar'].present:
-            FLAGS['detail_calendar'].value = True
-        if not FLAGS['detail_location'].present:
-            FLAGS['detail_location'].value = True
-        if not FLAGS['detail_length'].present:
-            FLAGS['detail_length'].value = True
-        if not FLAGS['detail_reminders'].present:
-            FLAGS['detail_reminders'].value = True
-        if not FLAGS['detail_description'].present:
-            FLAGS['detail_description'].value = True
-        if not FLAGS['detail_url'].present:
-            FLAGS['detail_url'].value = "long"
-        if not FLAGS['detail_attendees'].present:
-            FLAGS['detail_attendees'].value = True
-        if not FLAGS['detail_email'].present:
-            FLAGS['detail_email'].value = True
-    else:
-        if 'calendar' in FLAGS.details:
-            FLAGS['detail_calendar'].value = True
-        if 'location' in FLAGS.details:
-            FLAGS['detail_location'].value = True
-        if 'attendees' in FLAGS.details:
-            FLAGS['detail_attendees'].value = True
-        if 'length' in FLAGS.details:
-            FLAGS['detail_length'].value = True
-        if 'reminders' in FLAGS.details:
-            FLAGS['detail_reminders'].value = True
-        if 'description' in FLAGS.details:
-            FLAGS['detail_description'].value = True
-        if 'longurl' in FLAGS.details or 'url' in FLAGS.details:
-            FLAGS['detail_url'].value = 'long'
-        elif 'shorturl' in FLAGS.details:
-            FLAGS['detail_url'].value = 'short'
-        if 'attendees' in FLAGS.details:
-            FLAGS['detail_attendees'].value = True
-        if 'email' in FLAGS.details:
-            FLAGS['detail_email'].value = True
+    def hasDetail(option):
+        if 'all' in FLAGS.details or option in FLAGS.details:
+            return True
+        else:
+            return False
 
     gcal = gcalcli(calNames=calNames,
                    calNameColors=calNameColors,
                    military=FLAGS.military,
-                   detailCalendar=FLAGS.detail_calendar,
-                   detailLocation=FLAGS.detail_location,
-                   detailAttendees=FLAGS.detail_attendees,
-                   detailLength=FLAGS.detail_length,
-                   detailReminders=FLAGS.detail_reminders,
-                   detailDescr=FLAGS.detail_description,
-                   detailDescrWidth=FLAGS.detail_description_width,
-                   detailUrl=FLAGS.detail_url,
-                   detailEmail=FLAGS.detail_email,
+                   detailCalendar=hasDetail('calendar'),
+                   detailLocation=hasDetail('location'),
+                   detailAttendees=hasDetail('attendees'),
+                   detailLength=hasDetail('length'),
+                   detailReminders=hasDetail('reminders'),
+                   detailDescr=hasDetail('description'),
+                   # Gotta figure this one out...
+                   #detailDescrWidth=hasDetail('description_width'),
+                   detailUrl=hasDetail('url'),
+                   detailEmail=hasDetail('email'),
                    ignoreStarted=not FLAGS.started,
                    calWidth=FLAGS.width,
                    calMonday=FLAGS.monday,
@@ -2397,84 +2381,53 @@ def BowChickaWowWow():
                    allDay=FLAGS.allday
                    )
 
-    if args[0] == 'list':
+    if FLAGS.command == 'list':
         gcal.ListAllCalendars()
 
-    elif args[0] == 'search':
-        if len(args) != 2:
+    elif FLAGS.command == 'search':
+        if not FLAGS.text:
+            PrintErrMsg('Error: invalid search string\n')
+            sys.exit(1)
+        # allow unicode strings for input
+        gcal.TextQuery(stringToUnicode(" ".join(FLAGS.text)))
+
+        if not FLAGS.tsv:
+            sys.stdout.write('\n')
+
+    elif FLAGS.command == 'agenda':
+        gcal.AgendaQuery(startText=FLAGS.start, endText=FLAGS.end)
+
+        if not FLAGS.tsv:
+            sys.stdout.write('\n')
+
+    elif FLAGS.command == 'calw':
+        # TODO: Move this to a check in argparse ^^^
+        if not FLAGS.width:
+            PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
+            sys.exit(1)
+
+        gcal.CalQuery(FLAGS.command, count=FLAGS.weeks, startText=FLAGS.start)
+        sys.stdout.write('\n')
+
+    elif FLAGS.command == 'calm':
+        # TODO: Move this to a check in argparse ^^^
+        if not FLAGS.width:
+            PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
+            sys.exit(1)
+
+        gcal.CalQuery(FLAGS.command, startText=FLAGS.start)
+        sys.stdout.write('\n')
+
+    elif FLAGS.command == 'quick':
+        if not FLAGS.text:
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.TextQuery(stringToUnicode(args[1]))
-
-        if not FLAGS.tsv:
-            sys.stdout.write('\n')
-
-    elif args[0] == 'agenda':
-        if len(args) == 3:  # start and end
-            gcal.AgendaQuery(startText=args[1], endText=args[2])
-        elif len(args) == 2:  # start
-            gcal.AgendaQuery(startText=args[1])
-        elif len(args) == 1:  # defaults
-            gcal.AgendaQuery()
-        else:
-            PrintErrMsg('Error: invalid agenda arguments\n')
-            sys.exit(1)
-
-        if not FLAGS.tsv:
-            sys.stdout.write('\n')
-
-    elif args[0] == 'calw':
-        if not FLAGS.width:
-            PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
-            sys.exit(1)
-
-        if len(args) >= 2:
-            try:
-                # Test to make sure args[1] is a number
-                int(args[1])
-            except:
-                PrintErrMsg('Error: invalid calw arguments\n')
-                sys.exit(1)
-
-        if len(args) == 3:  # weeks and start
-            gcal.CalQuery(args[0], count=int(args[1]), startText=args[2])
-        elif len(args) == 2:  # weeks
-            gcal.CalQuery(args[0], count=int(args[1]))
-        elif len(args) == 1:  # defaults
-            gcal.CalQuery(args[0])
-        else:
-            PrintErrMsg('Error: invalid calw arguments\n')
-            sys.exit(1)
-
-        sys.stdout.write('\n')
-
-    elif args[0] == 'calm':
-        if not FLAGS.width:
-            PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
-            sys.exit(1)
-
-        if len(args) == 2:  # start
-            gcal.CalQuery(args[0], startText=args[1])
-        elif len(args) == 1:  # defaults
-            gcal.CalQuery(args[0])
-        else:
-            PrintErrMsg('Error: invalid calm arguments\n')
-            sys.exit(1)
-
-        sys.stdout.write('\n')
-
-    elif args[0] == 'quick':
-        if len(args) != 2:
-            PrintErrMsg('Error: invalid event text\n')
-            sys.exit(1)
-
-        # allow unicode strings for input
-        gcal.QuickAddEvent(stringToUnicode(args[1]),
+        gcal.QuickAddEvent(stringToUnicode(" ".join(FLAGS.text)),
                            reminder=FLAGS.reminder)
 
-    elif (args[0] == 'add'):
+    elif FLAGS.command == 'add':
         if FLAGS.prompt:
             if FLAGS.title is None:
                 PrintMsg(CLR_MAG(), "Title: ")
@@ -2510,54 +2463,42 @@ def BowChickaWowWow():
         gcal.AddEvent(FLAGS.title, FLAGS.where, eStart, eEnd,
                       FLAGS.description, FLAGS.reminder)
 
-    elif args[0] == 'delete':
-        eStart = None
-        eEnd = None
-        if len(args) < 2:
+    elif FLAGS.command == 'delete':
+        if not FLAGS.text:
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
-        elif len(args) == 4:  # search, start, end
-            eStart = gcal.dateParser.fromString(args[2])
-            eEnd = gcal.dateParser.fromString(args[3])
-        elif len(args) == 3:  # search, start (default end)
-            eStart = gcal.dateParser.fromString(args[2])
+
+        print FLAGS.text, FLAGS.start, FLAGS.end
+
+        eStart = None
+        eEnd = None
+
+        if FLAGS.start:
+            eStart = gcal.dateParser.fromString(FLAGS.start)
+        if FLAGS.end:
+            eEnd = gcal.dateParser.fromString(FLAGS.end)
 
         # allow unicode strings for input
-        gcal.DeleteEvents(stringToUnicode(args[1]),
+        gcal.DeleteEvents(stringToUnicode(" ".join(FLAGS.text)),
                           FLAGS.iamaexpert, eStart, eEnd)
 
         sys.stdout.write('\n')
 
-    elif args[0] == 'edit':
-        if len(args) != 2:
+    elif FLAGS.command == 'edit':
+        if not FLAGS.text:
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.EditEvents(stringToUnicode(args[1]))
+        gcal.EditEvents(stringToUnicode(" ".join(FLAGS.text)))
 
         sys.stdout.write('\n')
 
-    elif args[0] == 'remind':
-        if len(args) == 3:  # minutes and command
-            gcal.Remind(int(args[1]), args[2], use_reminders=FLAGS.use_reminders)
-        elif len(args) == 2:  # minutes
-            gcal.Remind(int(args[1]), use_reminders=FLAGS.use_reminders)
-        elif len(args) == 1:  # defaults
-            gcal.Remind(use_reminders=FLAGS.use_reminders)
-        else:
-            PrintErrMsg('Error: invalid remind arguments\n')
-            sys.exit(1)
+    elif FLAGS.command == 'remind':
+        gcal.Remind(FLAGS.minutes, FLAGS.cmd, use_reminders=FLAGS.use_reminders)
 
-    elif args[0] == 'import':
-        if len(args) == 1:  # stdin
-            gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder)
-        elif len(args) == 2:  # ics file
-            gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, args[1])
-        else:
-            PrintErrMsg('Error: invalid import arguments\n')
-            sys.exit(1)
-
+    elif FLAGS.command == 'import':
+        gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file)
 
 def SIGINT_handler(signum, frame):
     PrintErrMsg('Signal caught, bye!\n')
