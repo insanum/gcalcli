@@ -2269,7 +2269,7 @@ def BowChickaWowWow():
             # We want .gcalclirc to be sourced before any other --flagfile
             # params since we may be told to use a specific config folder, we
             # need to store generated argv in temp variable
-            tmpArgv = ["@%s" % gcalclirc] + argv
+            tmpArgv = ["@%s" % gcalclirc, ] + argv
         else:
             tmpArgv = argv
         FLAGS = gflags.parse_args(tmpArgv)
@@ -2285,16 +2285,11 @@ def BowChickaWowWow():
         if os.path.exists(os.path.expanduser("%s/gcalclirc" %
                                              FLAGS.configFolder)):
             if not FLAGS.includeRc:
-                # TODO: This will fail right now as all options should be
-                # before the command :(
-                tmpArgv = argv + ["@%s/gcalclirc" %
-                                  FLAGS.configFolder, ]
+                tmpArgv = ["@%s/gcalclirc" % FLAGS.configFolder, ] + argv
             else:
-                tmpArgv += ["@%s/gcalclirc" % FLAGS.configFolder, ]
+                tmpArgv = ["@%s/gcalclirc" % FLAGS.configFolder, ] + tmpArgv
 
         FLAGS = gflags.parse_args(tmpArgv)
-
-    argv = tmpArgv
 
     if not FLAGS.color:
         CLR.useColor = False
