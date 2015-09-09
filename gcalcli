@@ -485,8 +485,8 @@ def GetTimeFromStr(eWhen, eDuration=0):
 def ParseReminder(rem):
     matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
     if not matchObj:
-        PrintErrMsg('Invalid reminder: ' + rem + '\n')
-        sys.exit(1)
+        # Allow argparse to generate a message when parsing options
+        return None
     n = int(matchObj.group(1))
     t = matchObj.group(2)
     m = matchObj.group(3)
@@ -2115,6 +2115,26 @@ def GetCalColors(calNames):
     return calColors
 
 
+def ValidColor(value):
+    if not GetColor(value):
+        raise argparse.ArgumentTypeError("%s is not a valid color" % value)
+    else:
+        return value
+
+
+def ValidWidth(value):
+    if type(value) == int and value < 10:
+        raise argparse.ArgumentTypeError("Width must be a number >= 10")
+    else:
+        return int(value)
+
+
+def ValidReminder(value):
+    if not ParseReminder(value):
+        raise argparse.ArgumentTypeError("Not a valid reminder string: %s" % value)
+    else:
+        return value
+
 gflags = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter,
                                  fromfile_prefix_chars="@",
@@ -2194,26 +2214,26 @@ gflags.add_argument("--details", default=[], type=str, choices=['all', 'calendar
 
 gflags.add_argument("--tsv", action="store_true", help="Use Tab Separated Value output")
 gflags.add_argument("--nostarted", action="store_false", dest="started", help="Show events that have started")
-gflags.add_argument("--width", "-w", default=10, type=int, help="Set output width")
+gflags.add_argument("--width", "-w", default=10, type=ValidWidth, help="Set output width")
 gflags.add_argument("--monday", action="store_true", help="Start the week on Monday")
 gflags.add_argument("--nocolor", action="store_false", dest="color", help="Enable/Disable all color output")
 gflags.add_argument("--nolineart", action="store_false", dest="lineart", help="Enable/Disable line art")
 gflags.add_argument("--conky", action="store_true", help="Use Conky color codes")
 
-gflags.add_argument("--color_owner", default="cyan", type=str, help="Color for owned calendars")
-gflags.add_argument("--color_writer", default="green", type=str, help="Color for writable calendars")
-gflags.add_argument("--color_reader", default="magenta", type=str,
-                     help="Color for read-only calendars")
-gflags.add_argument("--color_freebusy", default="default", type=str,
-                     help="Color for free/busy calendars")
-gflags.add_argument("--color_date", default="yellow", type=str, help="Color for the date")
-gflags.add_argument("--color_now_marker", default="brightred", type=str,
-                     help="Color for the now marker")
-gflags.add_argument("--color_border", default="white", type=str, help="Color of line borders")
+gflags.add_argument("--color_owner", default="cyan", type=ValidColor, help="Color for owned calendars")
+gflags.add_argument("--color_writer", default="green", type=ValidColor, help="Color for writable calendars")
+gflags.add_argument("--color_reader", default="magenta", type=ValidColor,
+                    help="Color for read-only calendars")
+gflags.add_argument("--color_freebusy", default="default", type=ValidColor,
+                    help="Color for free/busy calendars")
+gflags.add_argument("--color_date", default="yellow", type=ValidColor, help="Color for the date")
+gflags.add_argument("--color_now_marker", default="brightred", type=ValidColor,
+                    help="Color for the now marker")
+gflags.add_argument("--color_border", default="white", type=ValidColor, help="Color of line borders")
 
 gflags.add_argument("--locale", default=None, type=str, help="System locale")
 
-gflags.add_argument("--reminder", default=[], type=str, action="append",
+gflags.add_argument("--reminder", default=[], type=ValidReminder, action="append",
                           help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
                           "is a number which may be followed by an optional "
                           "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
@@ -2243,25 +2263,6 @@ gflags.add_argument("--verbose", "-v", action="count", help="Be verbose on impor
 gflags.add_argument("--dump", "-d", action="store_true", help="Print events and don't import")
 
 gflags.add_argument("--use_reminders", action="store_true", help="Honour the remind time when running remind command")
-
-# TODO: Put all the validators in place!
-# gflags.RegisterValidator("reminder",
-#                          lambda value: all(ParseReminder(x) for x in value))
-# gflags.RegisterValidator("color_owner",
-#                          lambda value: GetColor(value) is not None)
-# gflags.RegisterValidator("color_writer",
-#                          lambda value: GetColor(value) is not None)
-# gflags.RegisterValidator("color_reader",
-#                          lambda value: GetColor(value) is not None)
-# gflags.RegisterValidator("color_freebusy",
-#                          lambda value: GetColor(value) is not None)
-# gflags.RegisterValidator("color_date",
-#                          lambda value: GetColor(value) is not None)
-# gflags.RegisterValidator("color_now_marker",
-#                          lambda value: GetColor(value) is not None)
-# gflags.RegisterValidator("color_border",
-#                          lambda value: GetColor(value) is not None)
-# gflags.ADOPT_module_key_flags(gflags)
 
 
 def BowChickaWowWow():
@@ -2391,20 +2392,11 @@ def BowChickaWowWow():
             sys.stdout.write('\n')
 
     elif FLAGS.command == 'calw':
-        # TODO: Move this to a check in argparse ^^^
-        if not FLAGS.width:
-            PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
-            sys.exit(1)
 
         gcal.CalQuery(FLAGS.command, count=FLAGS.weeks, startText=FLAGS.start)
         sys.stdout.write('\n')
 
     elif FLAGS.command == 'calm':
-        # TODO: Move this to a check in argparse ^^^
-        if not FLAGS.width:
-            PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
-            sys.exit(1)
-
         gcal.CalQuery(FLAGS.command, startText=FLAGS.start)
         sys.stdout.write('\n')
 
