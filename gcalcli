@@ -2135,6 +2135,7 @@ def ValidReminder(value):
     else:
         return value
 
+FLAGS = {}
 gflags = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter,
                                  fromfile_prefix_chars="@",
@@ -2266,9 +2267,6 @@ gflags.add_argument("--use_reminders", action="store_true", help="Honour the rem
 
 
 def BowChickaWowWow():
-    # If I told you I had no idea why it had to be global'd here but not in
-    # GetTimeFromStr would you believe me?
-    global FLAGS
     try:
         argv = sys.argv[1:]
         gcalclirc = os.path.expanduser('~/.gcalclirc')
