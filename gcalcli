@@ -2165,7 +2165,7 @@ sub.add_parser("add")
 
 # TODO: Fix this it doesn't work this way as nothing ever goes into [start] or [end]
 delete = sub.add_parser("delete")
-delete.add_argument("text", type=str, nargs=argparse.REMAINDER)
+delete.add_argument("text", nargs=argparse.REMAINDER)
 delete.add_argument("start", type=str, nargs="?")
 delete.add_argument("end", type=str, nargs="?")
 
@@ -2181,38 +2181,32 @@ remind.add_argument("cmd", type=str, nargs=argparse.REMAINDER)
 
 gflags.add_argument("--version", action="version", version="%%(prog)s %s (%s)" % (__version__, __author__))
 
+# Program level options
 gflags.add_argument("--client_id", default=__API_CLIENT_ID__, type=str, help="API client_id")
 gflags.add_argument("--client_secret", default=__API_CLIENT_SECRET__, type=str,
                     help="API client_secret")
-
 gflags.add_argument("--configFolder", default=None, type=str,
-                     help="Optional directory to load/store all configuration "
-                     "information")
+                    help="Optional directory to load/store all configuration "
+                    "information")
 gflags.add_argument("--noincluderc", action="store_false", dest="includeRc",
-                   help="Whether to include ~/.gcalclirc when using configFolder")
+                    help="Whether to include ~/.gcalclirc when using configFolder")
 gflags.add_argument("--calendar", default=[], type=str, action="append", help="Which calendars to use")
 gflags.add_argument("--defaultCalendar", default=[], type=str, action="append",
-                          help="Optional default calendar to use if no --calendar "
-                          "options are given")
-gflags.add_argument("--military", action="store_true", help="Use 24 hour display")
+                    help="Optional default calendar to use if no --calendar "
+                    "options are given")
+gflags.add_argument("--locale", default=None, type=str, help="System locale")
+gflags.add_argument("--refresh", action="store_true", help="Delete and refresh cached data")
+gflags.add_argument("--nocache", action="store_false", dest="cache", help="Execute command without using cache")
 
-# Single --detail that allows you to specify what parts you want
-gflags.add_argument("--details", default=[], type=str, choices=['all', 'calendar', 'location', 'length', 'reminders', 'description', 'longurl', 'shorturl', 'url', 'attendees', 'email'], action="append", help="Which parts to display, can be: "
-                          "'all', 'calendar', 'location', 'length', "
-                          "'reminders', 'description', 'longurl', 'shorturl', "
-                          "'url', 'attendees', 'email'")
-# old style flags for backwards compatibility
-# gflags.add_argument("--detail_all", default=False, type=bool, help="Display all details")
-# gflags.add_argument("--detail_calendar", default=False, type=bool, help="Display calendar name")
-# gflags.add_argument("--detail_location", default=False, type=bool, help="Display event location")
-# gflags.add_argument("--detail_attendees", default=False, type=bool, help="Display event attendees")
-# gflags.add_argument("--detail_length", default=False, type=bool, help="Display length of event")
-# gflags.add_argument("--detail_reminders", default=False, type=bool, help="Display reminders")
-# gflags.add_argument("--detail_description", default=False, type=bool, help="Display description")
-# gflags.add_argument("--detail_email", default=False, type=bool, help="Display creator email")
-# gflags.add_argument("--detail_description_width", default=80, type=int, help="Set description width")
-# gflags.add_argument("--detail_url", type=str, default=None, choices=["long", "short"], help="Set URL output")
-
+# Options for calw, calm, agenda, search
+gflags.add_argument("--details", default=[], type=str, action="append",
+                    choices=['all', 'calendar', 'location', 'length',
+                             'reminders', 'description', 'longurl', 'shorturl',
+                             'url', 'attendees', 'email'],
+                    help="Which parts to display, can be: "
+                    "'all', 'calendar', 'location', 'length', "
+                    "'reminders', 'description', 'longurl', 'shorturl', "
+                    "'url', 'attendees', 'email'")
 gflags.add_argument("--tsv", action="store_true", help="Use Tab Separated Value output")
 gflags.add_argument("--nostarted", action="store_false", dest="started", help="Show events that have started")
 gflags.add_argument("--width", "-w", default=10, type=ValidWidth, help="Set output width")
@@ -2220,6 +2214,7 @@ gflags.add_argument("--monday", action="store_true", help="Start the week on Mon
 gflags.add_argument("--nocolor", action="store_false", dest="color", help="Enable/Disable all color output")
 gflags.add_argument("--nolineart", action="store_false", dest="lineart", help="Enable/Disable line art")
 gflags.add_argument("--conky", action="store_true", help="Use Conky color codes")
+gflags.add_argument("--military", action="store_true", help="Use 24 hour display")
 
 gflags.add_argument("--color_owner", default="cyan", type=ValidColor, help="Color for owned calendars")
 gflags.add_argument("--color_writer", default="green", type=ValidColor, help="Color for writable calendars")
@@ -2232,37 +2227,37 @@ gflags.add_argument("--color_now_marker", default="brightred", type=ValidColor,
                     help="Color for the now marker")
 gflags.add_argument("--color_border", default="white", type=ValidColor, help="Color of line borders")
 
-gflags.add_argument("--locale", default=None, type=str, help="System locale")
-
+# Options for add
 gflags.add_argument("--reminder", default=[], type=ValidReminder, action="append",
-                          help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
-                          "is a number which may be followed by an optional "
-                          "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
-                          "minutes) and default to minutes.  METH is a string "
-                          "'popup', 'email', or 'sms' and defaults to popup.")
+                    help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
+                    "is a number which may be followed by an optional "
+                    "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
+                    "minutes) and default to minutes.  METH is a string "
+                    "'popup', 'email', or 'sms' and defaults to popup.")
 gflags.add_argument("--title", default=None, type=str, help="Event title")
 gflags.add_argument("--where", default=None, type=str, help="Event location")
 gflags.add_argument("--when", default=None, type=str, help="Event time")
 gflags.add_argument("--duration", default=None, type=int,
-                      help="Event duration in minutes or days if --allday is given.")
+                    help="Event duration in minutes or days if --allday is given.")
 gflags.add_argument("--description", default=None, type=str, help="Event description")
 gflags.add_argument("--allday", action="store_true",
-                   help="If --allday is given, the event will be an all-day event "
-                   "(possibly multi-day if --duration is greater than 1). The "
-                   "time part of the --when will be ignored.")
+                    help="If --allday is given, the event will be an all-day event "
+                    "(possibly multi-day if --duration is greater than 1). The "
+                    "time part of the --when will be ignored.")
 gflags.add_argument("--prompt", action="store_true",
-                   help="Prompt for missing data when adding events")
+                    help="Prompt for missing data when adding events")
 gflags.add_argument("--default_reminders", action="store_true",
-                   help="If no --reminder is given, use the defaults.  If this is "
-                   "false, do not create any reminders.")
+                    help="If no --reminder is given, use the defaults.  If this is "
+                    "false, do not create any reminders.")
 
+# Option for delete
 gflags.add_argument("--iamaexpert", action="store_true", help="Probably not")
-gflags.add_argument("--refresh", action="store_true", help="Delete and refresh cached data")
-gflags.add_argument("--nocache", action="store_false", dest="cache", help="Execute command without using cache")
 
+# Options for import
 gflags.add_argument("--verbose", "-v", action="count", help="Be verbose on imports")
 gflags.add_argument("--dump", "-d", action="store_true", help="Print events and don't import")
 
+# Option for remind
 gflags.add_argument("--use_reminders", action="store_true", help="Honour the remind time when running remind command")
 
 
