@@ -230,18 +230,6 @@ def stringFromUnicode(string):
                          "UTF-8", "replace")
 
 
-def Version():
-    sys.stdout.write(__program__ + ' ' + __version__ + ' (' + __author__ + ')\n')
-    sys.exit(1)
-
-
-def Usage(expanded=False):
-    sys.stdout.write(__doc__ % sys.argv[0])
-    if expanded:
-        print FLAGS.MainModuleHelp()
-    sys.exit(1)
-
-
 class CLR:
 
     useColor = True
@@ -2170,7 +2158,7 @@ remind = sub.add_parser("remind")
 remind.add_argument("minutes", type=int)
 remind.add_argument("cmd", type=str, nargs=argparse.REMAINDER)
 
-gflags.add_argument("--version", action="store_true", help="Show the version and exit")
+gflags.add_argument("--version", action="version", version="%%(prog)s %s (%s)" % (__version__, __author__))
 
 gflags.add_argument("--client_id", default=__API_CLIENT_ID__, type=str, help="API client_id")
 gflags.add_argument("--client_secret", default=__API_CLIENT_SECRET__, type=str,
@@ -2293,7 +2281,8 @@ def BowChickaWowWow():
         FLAGS = gflags.parse_args(tmpArgv)
     except Exception as e:
         PrintErrMsg(str(e))
-        Usage(True)
+        print
+        gflags.print_usage()
         sys.exit(1)
 
     if FLAGS.configFolder:
@@ -2312,9 +2301,6 @@ def BowChickaWowWow():
         FLAGS = gflags.parse_args(tmpArgv)
 
     argv = tmpArgv
-
-    if FLAGS.version:
-        Version()
 
     if not FLAGS.color:
         CLR.useColor = False
