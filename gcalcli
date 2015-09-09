@@ -2342,7 +2342,7 @@ def BowChickaWowWow():
                    detailReminders=hasDetail('reminders'),
                    detailDescr=hasDetail('description'),
                    # Gotta figure this one out...
-                   #detailDescrWidth=hasDetail('description_width'),
+                   # detailDescrWidth=hasDetail('description_width'),
                    detailUrl=hasDetail('url'),
                    detailEmail=hasDetail('email'),
                    ignoreStarted=not FLAGS.started,
@@ -2471,6 +2471,7 @@ def BowChickaWowWow():
 
     elif FLAGS.command == 'import':
         gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file)
+
 
 def SIGINT_handler(signum, frame):
     PrintErrMsg('Signal caught, bye!\n')
