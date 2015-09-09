@@ -2154,13 +2154,13 @@ gflags.add_argument("--nolineart", action="store_false", dest="lineart", help="E
 
 detailsParser = argparse.ArgumentParser(add_help=False)
 detailsParser.add_argument("--details", default=[], type=str, action="append",
-                    choices=['all', 'calendar', 'location', 'length',
-                             'reminders', 'description', 'longurl', 'shorturl',
-                             'url', 'attendees', 'email'],
-                    help="Which parts to display, can be: "
-                    "'all', 'calendar', 'location', 'length', "
-                    "'reminders', 'description', 'longurl', 'shorturl', "
-                    "'url', 'attendees', 'email'")
+                           choices=['all', 'calendar', 'location', 'length',
+                                    'reminders', 'description', 'longurl', 'shorturl',
+                                    'url', 'attendees', 'email'],
+                           help="Which parts to display, can be: "
+                           "'all', 'calendar', 'location', 'length', "
+                           "'reminders', 'description', 'longurl', 'shorturl', "
+                           "'url', 'attendees', 'email'")
 
 outputParser = argparse.ArgumentParser(add_help=False)
 outputParser.add_argument("--tsv", action="store_true", help="Use Tab Separated Value output")
@@ -2172,24 +2172,24 @@ colorParser = argparse.ArgumentParser(add_help=False)
 colorParser.add_argument("--color_owner", default="cyan", type=ValidColor, help="Color for owned calendars")
 colorParser.add_argument("--color_writer", default="green", type=ValidColor, help="Color for writable calendars")
 colorParser.add_argument("--color_reader", default="magenta", type=ValidColor,
-                    help="Color for read-only calendars")
+                         help="Color for read-only calendars")
 colorParser.add_argument("--color_freebusy", default="default", type=ValidColor,
-                    help="Color for free/busy calendars")
+                         help="Color for free/busy calendars")
 colorParser.add_argument("--color_date", default="yellow", type=ValidColor, help="Color for the date")
 colorParser.add_argument("--color_now_marker", default="brightred", type=ValidColor,
-                    help="Color for the now marker")
+                         help="Color for the now marker")
 colorParser.add_argument("--color_border", default="white", type=ValidColor, help="Color of line borders")
 
 remindParser = argparse.ArgumentParser(add_help=False)
 remindParser.add_argument("--reminder", default=[], type=ValidReminder, action="append",
-                    help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
-                    "is a number which may be followed by an optional "
-                    "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
-                    "minutes) and default to minutes.  METH is a string "
-                    "'popup', 'email', or 'sms' and defaults to popup.")
+                          help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
+                          "is a number which may be followed by an optional "
+                          "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
+                          "minutes) and default to minutes.  METH is a string "
+                          "'popup', 'email', or 'sms' and defaults to popup.")
 remindParser.add_argument("--default_reminders", action="store_true",
-                    help="If no --reminder is given, use the defaults.  If this is "
-                    "false, do not create any reminders.")
+                          help="If no --reminder is given, use the defaults.  If this is "
+                          "false, do not create any reminders.")
 
 sub = gflags.add_subparsers(help="Sub command help?", dest="command")
 
@@ -2219,14 +2219,14 @@ add.add_argument("--title", default=None, type=str, help="Event title")
 add.add_argument("--where", default=None, type=str, help="Event location")
 add.add_argument("--when", default=None, type=str, help="Event time")
 add.add_argument("--duration", default=None, type=int,
-                    help="Event duration in minutes or days if --allday is given.")
+                 help="Event duration in minutes or days if --allday is given.")
 add.add_argument("--description", default=None, type=str, help="Event description")
 add.add_argument("--allday", action="store_true",
-                    help="If --allday is given, the event will be an all-day event "
-                    "(possibly multi-day if --duration is greater than 1). The "
-                    "time part of the --when will be ignored.")
+                 help="If --allday is given, the event will be an all-day event "
+                 "(possibly multi-day if --duration is greater than 1). The "
+                 "time part of the --when will be ignored.")
 add.add_argument("--prompt", action="store_true",
-                    help="Prompt for missing data when adding events")
+                 help="Prompt for missing data when adding events")
 
 # TODO: Fix this it doesn't work this way as nothing ever goes into [start] or [end]
 delete = sub.add_parser("delete")
