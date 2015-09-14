@@ -67,7 +67,7 @@
 #############################################################################
 
 __program__ = 'gcalcli'
-__version__ = 'v3.3'
+__version__ = 'v3.3.2'
 __author__ = 'Eric Davis, Brian Hartvigsen'
 __doc__ = '''
 Usage:
