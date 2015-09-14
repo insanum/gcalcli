@@ -22,7 +22,7 @@ setup(name='gcalcli',
       license='MIT',
       scripts=['gcalcli'],
       install_requires=[
-          'dateutils',
+          'python-dateutil',
           'python-gflags',
           'httplib2',
           'google-api-python-client',
