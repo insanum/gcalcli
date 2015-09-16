@@ -149,6 +149,7 @@ gcalcli [options] command [command args or options]
                                       --duration 60
                                       --description 'It is going to be hard!'
                                       --reminder 30
+                                      --who 'boss@example.com'
                                       add
 
   delete <text> [start] [end]
@@ -300,6 +301,9 @@ gcalcli [options] command [command args or options]
     (default: 'false')
   --when: Event time
   --where: Event location
+  --who: Event attendees;
+    repeat this option to specify a list of values
+    (default: '[]')
   -w,--width: Set output width
     (default: '10')
     (an integer)
