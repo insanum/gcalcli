@@ -122,6 +122,8 @@ Usage:
                                       --title 'Analysis of Algorithms Final'
                                       --where UCI
                                       --when '12/14/2012 10:00'
+                                      --who 'foo@bar.com'
+                                      --who 'baz@bar.com'
                                       --duration 60
                                       --description 'It is going to be hard!'
                                       --reminder 30
@@ -1768,7 +1770,7 @@ class gcalcli:
             hLink = self._ShortenURL(newEvent['htmlLink'])
             PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
 
-    def AddEvent(self, eTitle, eWhere, eStart, eEnd, eDescr, reminder):
+    def AddEvent(self, eTitle, eWhere, eStart, eEnd, eDescr, eWho, reminder):
 
         if len(self.cals) != 1:
             PrintErrMsg("Must specify a single calendar\n")
@@ -1791,6 +1793,8 @@ class gcalcli:
             event['location'] = stringToUnicode(eWhere)
         if eDescr:
             event['description'] = stringToUnicode(eDescr)
+
+        event['attendees'] = map(lambda w: {'email': stringToUnicode(w)}, eWho)
 
         if reminder or not self.defaultReminders:
             event['reminders'] = {'useDefault': False,
@@ -2194,6 +2198,7 @@ gflags.DEFINE_multistring("reminder", [],
                           "minutes) and default to minutes.  METH is a string "
                           "'popup', 'email', or 'sms' and defaults to popup.")
 gflags.DEFINE_string("title", None, "Event title")
+gflags.DEFINE_multistring("who", [], "Event attendees")
 gflags.DEFINE_string("where", None, "Event location")
 gflags.DEFINE_string("when", None, "Event time")
 gflags.DEFINE_integer("duration", None,
@@ -2519,7 +2524,8 @@ def BowChickaWowWow():
         eStart, eEnd = GetTimeFromStr(FLAGS.when, FLAGS.duration)
 
         gcal.AddEvent(FLAGS.title, FLAGS.where, eStart, eEnd,
-                      FLAGS.description, FLAGS.reminder)
+                      FLAGS.description, FLAGS.who,
+                      FLAGS.reminder)
 
     elif args[0] == 'delete':
         eStart = None
