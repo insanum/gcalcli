@@ -1270,7 +1270,7 @@ class gcalcli:
                     detailsIndent,
                     event['organizer'].get('displayName', 'Not Provided')
                                       .strip(),
-                    event['organizer']['email'].strip()
+                    event['organizer'].get('email', 'Not Provided').strip()
                 )
                 PrintMsg(CLR_NRM(), xstr)
 
@@ -1279,7 +1279,7 @@ class gcalcli:
                     xstr = "%s    %s: <%s>\n" % (
                         detailsIndent,
                         attendee.get('displayName', 'Not Provided').strip(),
-                        attendee['email'].strip()
+                        attendee.get('email', 'Not Provided').strip()
                     )
                     PrintMsg(CLR_NRM(), xstr)
 
