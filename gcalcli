@@ -2129,6 +2129,10 @@ def GetCalColors(calNames):
         calColors[calNameSimple] = calColor
     return calColors
 
+def GetWidth():
+    rows, columns = os.popen('stty size', 'r').read().split()
+    dynamicWidth = (int(columns) - 8) / 7
+    return dynamicWidth;
 
 FLAGS = gflags.FLAGS
 # allow mixing of commands and options
@@ -2172,7 +2176,7 @@ gflags.DEFINE_enum("detail_url", None, ["long", "short"], "Set URL output")
 
 gflags.DEFINE_bool("tsv", False, "Use Tab Separated Value output")
 gflags.DEFINE_bool("started", True, "Show events that have started")
-gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
+gflags.DEFINE_integer("width", GetWidth(), "Set output width", short_name="w")
 gflags.DEFINE_bool("monday", False, "Start the week on Monday")
 gflags.DEFINE_bool("color", True, "Enable/Disable all color output")
 gflags.DEFINE_bool("lineart", True, "Enable/Disable line art")
