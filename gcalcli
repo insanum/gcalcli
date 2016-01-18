@@ -1150,6 +1150,8 @@ class gcalcli:
 
     def _tsv(self, startDateTime, eventList):
         for event in eventList:
+            if self.ignoreStarted and (event['s'] < self.now):
+                continue
             output = "%s\t%s\t%s\t%s" % (event['s'].strftime('%Y-%m-%d'),
                                          event['s'].strftime('%H:%M'),
                                          event['e'].strftime('%Y-%m-%d'),
