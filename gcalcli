@@ -546,6 +546,7 @@ class gcalcli:
                  detailCalendar=False,
                  detailLocation=False,
                  detailAttendees=False,
+                 detailAttachments=False,
                  detailLength=False,
                  detailReminders=False,
                  detailDescr=False,
@@ -589,6 +590,7 @@ class gcalcli:
         self.detailDescrWidth = detailDescrWidth
         self.detailUrl = detailUrl
         self.detailAttendees = detailAttendees
+        self.detailAttachments = detailAttachments
         self.detailEmail = detailEmail
 
         self.calOwnerColor = calOwnerColor
@@ -1284,6 +1286,19 @@ class gcalcli:
                         attendee.get('email', 'Not Provided').strip()
                     )
                     PrintMsg(CLR_NRM(), xstr)
+
+        if self.detailAttachments and 'attachments' in event:
+            xstr = "%s  Attachments:\n" % (detailsIndent)
+            PrintMsg(CLR_NRM(), xstr)
+
+            for attendee in event['attachments']:
+                xstr = "%s    %s\n%s    -> %s\n" % (
+                    detailsIndent,
+                    attendee.get('title', 'Not Provided').strip(),
+                    detailsIndent,
+                    attendee.get('fileUrl', 'Not Provided').strip()
+                )
+                PrintMsg(CLR_NRM(), xstr)
 
         if self.detailLength:
             diffDateTime = (event['e'] - event['s'])
@@ -2165,6 +2180,7 @@ gflags.DEFINE_bool("detail_all", False, "Display all details")
 gflags.DEFINE_bool("detail_calendar", False, "Display calendar name")
 gflags.DEFINE_bool("detail_location", False, "Display event location")
 gflags.DEFINE_bool("detail_attendees", False, "Display event attendees")
+gflags.DEFINE_bool("detail_attachments", False, "Display event attachments")
 gflags.DEFINE_bool("detail_length", False, "Display length of event")
 gflags.DEFINE_bool("detail_reminders", False, "Display reminders")
 gflags.DEFINE_bool("detail_description", False, "Display description")
@@ -2232,7 +2248,7 @@ gflags.RegisterValidator("details",
                                                  "location", "length",
                                                  "reminders", "description",
                                                  "longurl", "shorturl", "url",
-                                                 "attendees", "email"]
+                                                 "attendees", "attachments", "email"]
                                            for x in value))
 gflags.RegisterValidator("reminder",
                          lambda value: all(ParseReminder(x) for x in value))
@@ -2359,6 +2375,8 @@ def BowChickaWowWow():
             FLAGS['detail_url'].value = "long"
         if not FLAGS['detail_attendees'].present:
             FLAGS['detail_attendees'].value = True
+        if not FLAGS['detail_attachments'].present:
+            FLAGS['detail_attachments'].value = True
         if not FLAGS['detail_email'].present:
             FLAGS['detail_email'].value = True
     else:
@@ -2368,6 +2386,8 @@ def BowChickaWowWow():
             FLAGS['detail_location'].value = True
         if 'attendees' in FLAGS.details:
             FLAGS['detail_attendees'].value = True
+        if 'attachments' in FLAGS.details:
+            FLAGS['detail_attachments'].value = True
         if 'length' in FLAGS.details:
             FLAGS['detail_length'].value = True
         if 'reminders' in FLAGS.details:
@@ -2389,6 +2409,7 @@ def BowChickaWowWow():
                    detailCalendar=FLAGS.detail_calendar,
                    detailLocation=FLAGS.detail_location,
                    detailAttendees=FLAGS.detail_attendees,
+                   detailAttachments=FLAGS.detail_attachments,
                    detailLength=FLAGS.detail_length,
                    detailReminders=FLAGS.detail_reminders,
                    detailDescr=FLAGS.detail_description,
