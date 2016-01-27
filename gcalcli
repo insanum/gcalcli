@@ -516,6 +516,8 @@ def ParseReminder(rem):
 
     return n, m
 
+def GetDefaultWidth():
+    return (int(os.popen('tput cols', 'r').read()) - 8) / 7
 
 class gcalcli:
 
@@ -2190,7 +2192,7 @@ gflags.DEFINE_enum("detail_url", None, ["long", "short"], "Set URL output")
 
 gflags.DEFINE_bool("tsv", False, "Use Tab Separated Value output")
 gflags.DEFINE_bool("started", True, "Show events that have started")
-gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
+gflags.DEFINE_integer("width", GetDefaultWidth(), "Set output width", short_name="w")
 gflags.DEFINE_bool("monday", False, "Start the week on Monday")
 gflags.DEFINE_bool("color", True, "Enable/Disable all color output")
 gflags.DEFINE_bool("lineart", True, "Enable/Disable line art")
