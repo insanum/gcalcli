@@ -554,6 +554,7 @@ class gcalcli:
                  detailUrl=None,
                  detailEmail=False,
                  ignoreStarted=False,
+                 ignoreDeclined=False,
                  calWidth=10,
                  calMonday=False,
                  calOwnerColor=CLR_CYN(),
@@ -574,6 +575,7 @@ class gcalcli:
 
         self.military = military
         self.ignoreStarted = ignoreStarted
+        self.ignoreDeclined = ignoreDeclined
         self.calWidth = calWidth
         self.calMonday = calMonday
         self.tsv = tsv
@@ -1543,6 +1545,10 @@ class gcalcli:
 
             if self.ignoreStarted and (event['s'] < self.now):
                 continue
+            if self.ignoreDeclined:
+                attendee = [a for a in event['attendees'] if a['email'] == event['gcalcli_cal']['id']][0]
+                if attendee and attendee['responseStatus'] == 'declined':
+                    continue
 
             tmpDayStr = event['s'].strftime(dayFormat)
             prefix = None
@@ -2190,6 +2196,7 @@ gflags.DEFINE_enum("detail_url", None, ["long", "short"], "Set URL output")
 
 gflags.DEFINE_bool("tsv", False, "Use Tab Separated Value output")
 gflags.DEFINE_bool("started", True, "Show events that have started")
+gflags.DEFINE_bool("declined", True, "Show events that have been declined")
 gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
 gflags.DEFINE_bool("monday", False, "Start the week on Monday")
 gflags.DEFINE_bool("color", True, "Enable/Disable all color output")
@@ -2417,6 +2424,7 @@ def BowChickaWowWow():
                    detailUrl=FLAGS.detail_url,
                    detailEmail=FLAGS.detail_email,
                    ignoreStarted=not FLAGS.started,
+                   ignoreDeclined=not FLAGS.declined,
                    calWidth=FLAGS.width,
                    calMonday=FLAGS.monday,
                    calOwnerColor=GetColor(FLAGS.color_owner),
