@@ -1767,8 +1767,12 @@ class gcalcli:
         if eventText == '':
             return
 
-        if len(self.cals) != 1:
-            PrintErrMsg("Must specify a single calendar\n")
+        if len(self.cals) > 1:
+            PrintErrMsg("You must only specify a single calendar\n")
+            return
+
+        if len(self.cals) < 1:
+            PrintErrMsg("Calendar not specified or not found.\nIf \"gcalcli list\" doesn't find the calendar you're trying to use,\nyour cache file might be stale and you might need to remove it and try again\n")
             return
 
         newEvent = self._RetryWithBackoff(
