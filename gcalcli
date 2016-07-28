@@ -78,11 +78,13 @@ Usage:
 
   list                     list all calendars
 
-  search <text>            search for events
+  search <text> [start] [end]            
+                           search for events within an optional time period
                            - case insensitive search terms to find events that
                              match these terms in any field, like traditional
                              Google search with quotes, exclusion, etc.
                            - for example to get just games: "soccer -practice"
+                           - [start] and [end] use the same formats as agenda
 
   agenda [start] [end]     get an agenda for a time period
                            - start time default is 12am today
@@ -1656,7 +1658,7 @@ class gcalcli:
             PrintMsg(self._CalendarColor(cal),
                      format % (cal['accessRole'], cal['summary']))
 
-    def TextQuery(self, searchText=''):
+    def TextQuery(self, searchText='', startText='', endText=''):
 
         # the empty string would get *ALL* events...
         if searchText == '':
@@ -1668,8 +1670,25 @@ class gcalcli:
         # TODO: Look at moving this into the _SearchForCalEvents
         #       Don't forget to clean up AgendaQuery too!
 
-        start = self.now if self.ignoreStarted else None
-        eventList = self._SearchForCalEvents(start, None, searchText)
+        if startText == '':
+            start = self.now if self.ignoreStarted else None
+        else:
+            try:
+                start = self.dateParser.fromString(startText)
+            except:
+                PrintErrMsg('Error: failed to parse start time\n')
+                return
+
+        if endText == '':
+            end = None
+        else:
+            try:
+                end = self.dateParser.fromString(endText)
+            except:
+                PrintErrMsg('Error: failed to parse end time\n')
+                return
+
+        eventList = self._SearchForCalEvents(start, end, searchText)
 
         if self.tsv:
             self._tsv(self.now, eventList)
@@ -2453,12 +2472,16 @@ def BowChickaWowWow():
         gcal.ListAllCalendars()
 
     elif args[0] == 'search':
-        if len(args) != 2:
+
+        if len(args) == 4: # start and end
+            gcal.TextQuery(stringToUnicode(args[1]), startText=args[2], endText=args[3])
+        elif len(args) == 3: # start
+            gcal.TextQuery(stringToUnicode(args[1]), startText=args[2])
+        elif len(args) == 2: # defaults
+            gcal.TextQuery(stringToUnicode(args[1]))
+        else:
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
-
-        # allow unicode strings for input
-        gcal.TextQuery(stringToUnicode(args[1]))
 
         if not FLAGS.tsv:
             sys.stdout.write('\n')
