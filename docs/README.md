@@ -102,11 +102,13 @@ gcalcli [options] command [command args or options]
 
   list                     list all calendars
 
-  search <text>            search for events
+  search <text> [start] [end]            
+                           search for events within an optional time period
                            - case insensitive search terms to find events that
                              match these terms in any field, like traditional
                              Google search with quotes, exclusion, etc.
                            - for example to get just games: "soccer -practice"
+                           - [start] and [end] use the same formats as agenda
 
   agenda [start] [end]     get an agenda for a time period
                            - start time default is 12am today
