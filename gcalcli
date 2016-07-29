@@ -794,6 +794,10 @@ class gcalcli:
         else:
             return "(No title)"
 
+    def _IsAllDay(self, event):
+        return event['s'].hour == 0 and event['s'].minute == 0 and \
+                        event['e'].hour == 0 and event['e'].minute == 0
+
     def _GetWeekEventStrings(self, cmd, curMonth,
                              startDateTime, endDateTime, eventList):
 
@@ -819,11 +823,7 @@ class gcalcli:
 
                 forceEventColorAsMarker = False
 
-                if event['s'].hour == 0 and event['s'].minute == 0 and \
-                        event['e'].hour == 0 and event['e'].minute == 0:
-                    allDay = True
-                else:
-                    allDay = False
+                allDay = self._IsAllDay(event)
 
                 if not nowMarkerPrinted:
                     if (DaysSinceEpoch(self.now) <
@@ -1233,15 +1233,17 @@ class gcalcli:
             prefix = indent
 
         PrintMsg(self.dateColor, prefix)
-        if event['s'].hour == 0 and event['s'].minute == 0 and \
-           event['e'].hour == 0 and event['e'].minute == 0:
+
+        happeningNow = event['s'] <= self.now <= event['e']
+        allDay = self._IsAllDay(event)
+        eventColor = self.nowMarkerColor if happeningNow and not allDay else self._CalendarColor(event['gcalcli_cal'])
+
+        if allDay:
             fmt = '  ' + timeFormat + '  %s\n'
-            PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
-                     ('', self._ValidTitle(event).strip()))
+            PrintMsg(eventColor, fmt % ('', self._ValidTitle(event).strip()))
         else:
             fmt = '  ' + timeFormat + '  %s\n'
-            PrintMsg(self._CalendarColor(event['gcalcli_cal']), fmt %
-                     (stringToUnicode(tmpTimeStr), self._ValidTitle(event).strip()))
+            PrintMsg(eventColor, fmt % (stringToUnicode(tmpTimeStr), self._ValidTitle(event).strip()))
 
         if self.detailCalendar:
             xstr = "%s  Calendar: %s\n" % (
