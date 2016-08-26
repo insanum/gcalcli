@@ -566,8 +566,10 @@ class gcalcli:
         self.detailLength = hasDetail('length')
         self.detailReminders = hasDetail('reminders')
         self.detailDescr = hasDetail('description')
-        self.detailDescrWidth = hasDetail('longurl') or hasDetail('url')
-        self.detailUrl = hasDetail('shorturl')
+        self.detailDescrWidth = hasOption('width', 80)
+        self.detailUrl = 'short' if hasDetail('shorturl') else \
+                         'long' if hasDetail('longurl') or hasDetail('url') \
+                         else None
         self.detailAttendees = hasDetail('attendees')
         self.detailEmail = hasDetail('email')
         self.detailAttachments = hasDetail('attachements')
