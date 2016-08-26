@@ -1074,7 +1074,7 @@ class gcalcli:
 
                 for j in xrange(7):
 
-                    if weekEventStrings[j] == '':
+                    if not weekEventStrings[j]:
                         weekColorStrings[j] = ''
                         line += (empty +
                                  str(self.borderColor) +
@@ -1673,7 +1673,7 @@ class gcalcli:
     def TextQuery(self, searchText='', startText='', endText=''):
 
         # the empty string would get *ALL* events...
-        if searchText == '':
+        if not searchText:
             return
 
         # This is really just an optimization to the gcalendar api
@@ -1756,7 +1756,7 @@ class gcalcli:
 
     def QuickAddEvent(self, eventText, reminder=None):
 
-        if eventText == '':
+        if not eventText:
             return
 
         if len(self.cals) > 1:
@@ -1835,7 +1835,7 @@ class gcalcli:
     def DeleteEvents(self, searchText='', expert=False, start=None, end=None):
 
         # the empty string would get *ALL* events...
-        if searchText == '':
+        if not searchText:
             return
 
         eventList = self._SearchForCalEvents(start, end, searchText)
@@ -1847,7 +1847,7 @@ class gcalcli:
     def EditEvents(self, searchText=''):
 
         # the empty string would get *ALL* events...
-        if searchText == '':
+        if not searchText:
             return
 
         eventList = self._SearchForCalEvents(None, None, searchText)
@@ -1894,7 +1894,7 @@ class gcalcli:
             message += '%s  %s\n' % \
                        (tmpTimeStr, self._ValidTitle(event).strip())
 
-        if message == '':
+        if not message:
             return
 
         cmd = shlex.split(command)
