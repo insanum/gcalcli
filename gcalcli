@@ -1642,6 +1642,34 @@ class gcalcli:
             PrintMsg(self._CalendarColor(cal),
                      format % (cal['accessRole'], cal['summary']))
 
+    def _ParseStartEnd(self, startText, endText):
+        start = None
+        end = None
+
+        if not startText:
+            start = self.now if self.ignoreStarted else None
+        else:
+            try:
+                start = self.dateParser.fromString(startText)
+            except:
+                raise Exception('Error: failed to parse start time\n')
+
+        if endText:
+            try:
+                end = self.dateParser.fromString(endText)
+            except:
+                raise Exception('Error: failed to parse end time\n')
+
+        return (start, end)
+
+    def _DisplayQueriedEvents(self, start, end, search=None, yearDate=False):
+        eventList = self._SearchForCalEvents(start, end, search)
+
+        if self.tsv:
+            self._tsv(start, eventList)
+        else:
+            self._IterateEvents(start, eventList, yearDate=yearDate)
+
     def TextQuery(self, searchText='', startText='', endText=''):
 
         # the empty string would get *ALL* events...
@@ -1654,67 +1682,28 @@ class gcalcli:
         # TODO: Look at moving this into the _SearchForCalEvents
         #       Don't forget to clean up AgendaQuery too!
 
-        if not startText:
-            start = self.now if self.ignoreStarted else None
-        else:
-            try:
-                start = self.dateParser.fromString(startText)
-            except:
-                PrintErrMsg('Error: failed to parse start time\n')
-                return
+        try:
+            start, end = self._ParseStartEnd(startText, endText)
+        except Exception as e:
+            PrintErrMsg(str(e))
+            return
 
-        if not endText:
-            end = None
-        else:
-            try:
-                end = self.dateParser.fromString(endText)
-            except:
-                PrintErrMsg('Error: failed to parse end time\n')
-                return
-
-        eventList = self._SearchForCalEvents(start, end, searchText)
-
-        if self.tsv:
-            self._tsv(self.now, eventList)
-        else:
-            self._IterateEvents(self.now, eventList, yearDate=True)
+        self._DisplayQueriedEvents(start, end, searchText, True)
 
     def AgendaQuery(self, startText='', endText=''):
+        try:
+            start, end = self._ParseStartEnd(startText, endText)
+        except Exception as e:
+            PrintErrMsg(str(e))
+            return
 
-        if not startText:
-            # convert now to midnight this morning and use for default
-            start = self.now.replace(hour=0,
-                                     minute=0,
-                                     second=0,
-                                     microsecond=0)
-        else:
-            try:
-                start = self.dateParser.fromString(startText)
-            except:
-                PrintErrMsg('Error: failed to parse start time\n')
-                return
+        if not start:
+            start = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        # Again optimizing calls to the api.  If we've been told to
-        # ignore started events, then it doesn't make ANY sense to
-        # search for things that may be in the past
-        if self.ignoreStarted and start < self.now:
-            start = self.now
-
-        if not endText:
+        if not end:
             end = (start + timedelta(days=self.agendaLength))
-        else:
-            try:
-                end = self.dateParser.fromString(endText)
-            except:
-                PrintErrMsg('Error: failed to parse end time\n')
-                return
 
-        eventList = self._SearchForCalEvents(start, end, None)
-
-        if self.tsv:
-            self._tsv(start, eventList)
-        else:
-            self._IterateEvents(start, eventList, yearDate=False)
+        self._DisplayQueriedEvents(start, end)
 
     def CalQuery(self, cmd, startText='', count=1):
 
