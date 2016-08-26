@@ -1,0 +1,3 @@
+include ChangeLog
+include README.md
+include docs/*

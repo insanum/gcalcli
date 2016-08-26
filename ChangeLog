@@ -1,3 +1,13 @@
+v3.3.2
+  * More ascii vs. unicode issues (*le sigh*)
+  * Use correct dateutil package (python-dateutil)
+
+v3.3.1
+  * TSV support for search
+  * `--detail email` to display event creator's address
+  * Pin oauth2client version to prevent issues with gflags
+  * Updated README with options to use custom client_id/client_secret
+
 v3.3
   * Support for adding All Day events (238d527 / SBECK-github)
   * Fix date display issues (e9a4a24 / njoyard)
