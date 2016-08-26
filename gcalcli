@@ -67,7 +67,7 @@
 #############################################################################
 
 __program__ = 'gcalcli'
-__version__ = 'v3.3.2'
+__version__ = 'v3.4.0'
 __author__ = 'Eric Davis, Brian Hartvigsen'
 __doc__ = '''
 Usage:
@@ -78,7 +78,7 @@ Usage:
 
   list                     list all calendars
 
-  search <text> [start] [end]            
+  search <text> [start] [end]
                            search for events within an optional time period
                            - case insensitive search terms to find events that
                              match these terms in any field, like traditional

@@ -1,3 +1,13 @@
+v3.4.0
+  * Support for adding attendees (jcmuller)
+  * Fix crash when organizer/attendee don't have emails (tschwinge)
+  * TSV export support `--no-started` (matthewdavis)
+  * Support for displaying attachment links (shi2wei3)
+  * Allow ignoring declined events (dmathieu)
+  * Warning if cache appears to be stale (nealmcb)
+  * search now supports start and end times like agenda (watersm)
+  * current event is proper colored in agenda (karlicoss)
+
 v3.3.2
   * More ascii vs. unicode issues (*le sigh*)
   * Use correct dateutil package (python-dateutil)
