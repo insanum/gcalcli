@@ -232,6 +232,7 @@ def _u(string):
     else:
         return string.decode(encoding, "replace")
 
+
 class CLR:
 
     useColor = True
@@ -720,12 +721,6 @@ class gcalcli:
             else:
                 break
 
-        # gcalcli defined way to order calendars
-        order = {self.ACCESS_OWNER: 1,
-                 self.ACCESS_WRITER: 2,
-                 self.ACCESS_READER: 3,
-                 self.ACCESS_FREEBUSY: 4}
-
         self.allCals.sort(key=lambda x: x['accessRole'])
 
         if self.useCache:
@@ -1205,7 +1200,8 @@ class gcalcli:
 
         happeningNow = event['s'] <= self.now <= event['e']
         allDay = self._IsAllDay(event)
-        eventColor = self.nowMarkerColor if happeningNow and not allDay else self._CalendarColor(event['gcalcli_cal'])
+        eventColor = self.nowMarkerColor if happeningNow and not allDay \
+            else self._CalendarColor(event['gcalcli_cal'])
 
         if allDay:
             fmt = '  ' + timeFormat + '  %s\n'
@@ -1215,10 +1211,7 @@ class gcalcli:
             PrintMsg(eventColor, fmt % (_u(tmpTimeStr), _u(self._ValidTitle(event).strip())))
 
         if self.detailCalendar:
-            xstr = "%s  Calendar: %s\n" % (
-                detailsIndent,
-                event['gcalcli_cal']['summary']
-            )
+            xstr = "%s  Calendar: %s\n" % (detailsIndent, event['gcalcli_cal']['summary'])
             PrintMsg(CLR_NRM(), xstr)
 
         if self.detailUrl and 'htmlLink' in event:
@@ -1607,7 +1600,8 @@ class gcalcli:
 
     def _DeclinedEvent(self, event):
         if 'attendees' in event:
-            attendee = [a for a in event['attendees'] if a['email'] == event['gcalcli_cal']['id']][0]
+            attendee = [a for a in event['attendees']
+                        if a['email'] == event['gcalcli_cal']['id']][0]
             if attendee and attendee['responseStatus'] == 'declined':
                 return True
         return False
@@ -1755,7 +1749,10 @@ class gcalcli:
             return
 
         if len(self.cals) < 1:
-            PrintErrMsg("Calendar not specified or not found.\nIf \"gcalcli list\" doesn't find the calendar you're trying to use,\nyour cache file might be stale and you might need to remove it and try again\n")
+            PrintErrMsg("Calendar not specified or not found.\n"
+                        "If \"gcalcli list\" doesn't find the calendar you're trying to use,\n"
+                        "your cache file might be stale and you might need to remove it and try"
+                        "again\n")
             return
 
         newEvent = self._RetryWithBackoff(
@@ -1933,17 +1930,13 @@ class gcalcli:
                 DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
             if verbose:
                 if ve.dtstart.value:
-                    print("Start........%s" % \
-                        ve.dtstart.value.isoformat())
+                    print("Start........%s" % ve.dtstart.value.isoformat())
                 if ve.dtend.value:
-                    print("End..........%s" % \
-                        ve.dtend.value.isoformat())
+                    print("End..........%s" % ve.dtend.value.isoformat())
                 if ve.dtstart.value:
-                    print("Local Start..%s" % \
-                        self._LocalizeDateTime(ve.dtstart.value))
+                    print("Local Start..%s" % self._LocalizeDateTime(ve.dtstart.value))
                 if ve.dtend.value:
-                    print("Local End....%s" % \
-                        self._LocalizeDateTime(ve.dtend.value))
+                    print("Local End....%s" % self._LocalizeDateTime(ve.dtend.value))
 
             if hasattr(ve, 'rrule'):
 
@@ -2167,7 +2160,8 @@ gflags = argparse.ArgumentParser(description=__doc__,
                                  fromfile_prefix_chars="@",
                                  parents=[tools.argparser])
 
-gflags.add_argument("--version", action="version", version="%%(prog)s %s (%s)" % (__version__, __author__))
+gflags.add_argument("--version", action="version", version="%%(prog)s %s (%s)" %
+                                                           (__version__, __author__))
 
 # Program level options
 gflags.add_argument("--client_id", default=__API_CLIENT_ID__, type=str, help="API client_id")
@@ -2178,16 +2172,20 @@ gflags.add_argument("--configFolder", default=None, type=str,
                     "information")
 gflags.add_argument("--noincluderc", action="store_false", dest="includeRc",
                     help="Whether to include ~/.gcalclirc when using configFolder")
-gflags.add_argument("--calendar", default=[], type=str, action="append", help="Which calendars to use")
+gflags.add_argument("--calendar", default=[], type=str, action="append",
+                    help="Which calendars to use")
 gflags.add_argument("--defaultCalendar", default=[], type=str, action="append",
                     help="Optional default calendar to use if no --calendar "
                     "options are given")
 gflags.add_argument("--locale", default=None, type=str, help="System locale")
 gflags.add_argument("--refresh", action="store_true", help="Delete and refresh cached data")
-gflags.add_argument("--nocache", action="store_false", dest="cache", help="Execute command without using cache")
+gflags.add_argument("--nocache", action="store_false", dest="cache",
+                    help="Execute command without using cache")
 gflags.add_argument("--conky", action="store_true", help="Use Conky color codes")
-gflags.add_argument("--nocolor", action="store_false", dest="color", help="Enable/Disable all color output")
-gflags.add_argument("--nolineart", action="store_false", dest="lineart", help="Enable/Disable line art")
+gflags.add_argument("--nocolor", action="store_false", dest="color",
+                    help="Enable/Disable all color output")
+gflags.add_argument("--nolineart", action="store_false", dest="lineart",
+                    help="Enable/Disable line art")
 
 detailsParser = argparse.ArgumentParser(add_help=False)
 detailsParser.add_argument("--details", default=[], type=str, action="append",
@@ -2201,22 +2199,28 @@ detailsParser.add_argument("--details", default=[], type=str, action="append",
 
 outputParser = argparse.ArgumentParser(add_help=False)
 outputParser.add_argument("--tsv", action="store_true", help="Use Tab Separated Value output")
-outputParser.add_argument("--nostarted", action="store_false", dest="started", help="Hide events that have started")
-outputParser.add_argument("--nodeclined", action="store_false", dest="declined", help="Hide events that have been declined")
+outputParser.add_argument("--nostarted", action="store_false", dest="started",
+                          help="Hide events that have started")
+outputParser.add_argument("--nodeclined", action="store_false", dest="declined",
+                          help="Hide events that have been declined")
 outputParser.add_argument("--width", "-w", default=10, type=ValidWidth, help="Set output width")
 outputParser.add_argument("--military", action="store_true", help="Use 24 hour display")
 
 colorParser = argparse.ArgumentParser(add_help=False)
-colorParser.add_argument("--color_owner", default="cyan", type=ValidColor, help="Color for owned calendars")
-colorParser.add_argument("--color_writer", default="green", type=ValidColor, help="Color for writable calendars")
+colorParser.add_argument("--color_owner", default="cyan", type=ValidColor,
+                         help="Color for owned calendars")
+colorParser.add_argument("--color_writer", default="green", type=ValidColor,
+                         help="Color for writable calendars")
 colorParser.add_argument("--color_reader", default="magenta", type=ValidColor,
                          help="Color for read-only calendars")
 colorParser.add_argument("--color_freebusy", default="default", type=ValidColor,
                          help="Color for free/busy calendars")
-colorParser.add_argument("--color_date", default="yellow", type=ValidColor, help="Color for the date")
+colorParser.add_argument("--color_date", default="yellow", type=ValidColor,
+                         help="Color for the date")
 colorParser.add_argument("--color_now_marker", default="brightred", type=ValidColor,
                          help="Color for the now marker")
-colorParser.add_argument("--color_border", default="white", type=ValidColor, help="Color of line borders")
+colorParser.add_argument("--color_border", default="white", type=ValidColor,
+                         help="Color of line borders")
 
 remindParser = argparse.ArgumentParser(add_help=False)
 remindParser.add_argument("--reminder", default=[], type=ValidReminder, action="append",
@@ -2289,7 +2293,8 @@ _import.add_argument("--dump", "-d", action="store_true", help="Print events and
 remind = sub.add_parser("remind")
 remind.add_argument("minutes", type=int)
 remind.add_argument("cmd", type=str)
-remind.add_argument("--use_reminders", action="store_true", help="Honour the remind time when running remind command")
+remind.add_argument("--use_reminders", action="store_true",
+                    help="Honour the remind time when running remind command")
 
 
 def BowChickaWowWow():
