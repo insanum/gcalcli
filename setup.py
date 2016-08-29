@@ -23,12 +23,13 @@ setup(name='gcalcli',
       scripts=['gcalcli'],
       install_requires=[
           'python-dateutil',
+          'google-api-python-client>=1.4',
           'httplib2',
-          'google-api-python-client',
-          'oauth2client'
+          'oauth2client',
+          'six'
       ],
       extras_require={
-          'vobject':  ["vobject"],
+          'vobject': ["vobject"],
           'parsedatetime': ["parsedatetime"],
       },
       classifiers=[
@@ -39,4 +40,5 @@ setup(name='gcalcli',
           "Programming Language :: Python :: 2",
           "Programming Language :: Python :: 2.6",
           "Programming Language :: Python :: 2.7",
+          "Programming Language :: Python :: 3",
       ])
