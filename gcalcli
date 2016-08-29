@@ -1208,7 +1208,7 @@ class gcalcli:
         eventColor = self.nowMarkerColor if happeningNow and not allDay else self._CalendarColor(event['gcalcli_cal'])
 
         if allDay:
-            fmt =   '  ' + timeFormat + '  %s\n'
+            fmt = '  ' + timeFormat + '  %s\n'
             PrintMsg(eventColor, fmt % ('', _u(self._ValidTitle(event).strip())))
         else:
             fmt = '  ' + timeFormat + '  %s\n'
