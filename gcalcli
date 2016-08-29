@@ -1747,7 +1747,7 @@ class gcalcli:
                 if offsetDays < 0:
                     offsetDays = 6
             totalDays = (daysInMonth + offsetDays)
-            count = (totalDays / 7)
+            count = int(totalDays / 7)
             if totalDays % 7:
                 count += 1
 
