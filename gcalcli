@@ -630,7 +630,7 @@ class gcalcli:
         for n in range(0, self.maxRetries):
             try:
                 return method.execute()
-            except HttpError, e:
+            except HttpError as e:
                 error = json.loads(e.content)
                 if error.get('code') == '403' and \
                         error.get('errors')[0].get('reason') \
@@ -2064,7 +2064,7 @@ class gcalcli:
         if icsFile:
             try:
                 f = file(icsFile)
-            except Exception, e:
+            except Exception as e:
                 PrintErrMsg("Error: " + str(e) + "!\n")
                 sys.exit(1)
 
@@ -2352,7 +2352,7 @@ def BowChickaWowWow():
     if FLAGS.locale:
         try:
             locale.setlocale(locale.LC_ALL, FLAGS.locale)
-        except Exception, e:
+        except Exception as e:
             PrintErrMsg("Error: " + str(e) + "!\n"
                         "Check supported locales of your system.\n")
             sys.exit(1)
