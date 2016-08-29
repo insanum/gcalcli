@@ -732,9 +732,7 @@ class gcalcli:
                  self.ACCESS_READER: 3,
                  self.ACCESS_FREEBUSY: 4}
 
-        self.allCals.sort(lambda x, y:
-                          cmp(order[x['accessRole']],
-                              order[y['accessRole']]))
+        self.allCals.sort(key=lambda x: x['accessRole'])
 
         if self.useCache:
             self.cache['allCals'] = self.allCals
@@ -1613,7 +1611,7 @@ class gcalcli:
             events = self._RetryWithBackoff(work)
             eventList.extend(self._GetAllEvents(cal, events, end))
 
-        eventList.sort(lambda x, y: cmp(x['s'], y['s']))
+        eventList.sort(key=lambda x: x['s'])
 
         return eventList
 
