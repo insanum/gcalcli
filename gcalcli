@@ -2234,6 +2234,7 @@ remindParser.add_argument("--default_reminders", action="store_true",
                           "false, do not create any reminders.")
 
 sub = gflags.add_subparsers(help="Sub command help?", dest="command")
+sub.required = True
 
 sub.add_parser("list", parents=[colorParser])
 
@@ -2311,7 +2312,7 @@ def BowChickaWowWow():
         (FLAGS, junk) = gflags.parse_known_args(tmpArgv)
     except Exception as e:
         PrintErrMsg(str(e))
-        print
+        print()
         gflags.print_usage()
         sys.exit(1)
 
