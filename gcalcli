@@ -65,6 +65,7 @@
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
 #                                                                           #
 #############################################################################
+from __future__ import print_function
 
 __program__ = 'gcalcli'
 __version__ = 'v4.0.0a1'
@@ -196,7 +197,7 @@ try:
     from oauth2client.client import OAuth2WebServerFlow
     from oauth2client import tools
 except ImportError as e:
-    print "ERROR: Missing module - %s" % e.args[0]
+    print("ERROR: Missing module - %s" % e.args[0])
     sys.exit(1)
 
 # cPickle is a standard library, but in case someone did something really
@@ -424,7 +425,7 @@ def dprint(obj):
         from pprint import pprint
         pprint(obj)
     except ImportError:
-        print obj
+        print(obj)
 
 
 class DateTimeParser:
@@ -1917,20 +1918,20 @@ class gcalcli:
             event = {}
 
             if verbose:
-                print "+----------------+"
-                print "| Calendar Event |"
-                print "+----------------+"
+                print("+----------------+")
+                print("| Calendar Event |")
+                print("+----------------+")
 
             if hasattr(ve, 'summary'):
                 DebugPrint("SUMMARY: %s\n" % ve.summary.value)
                 if verbose:
-                    print "Event........%s" % ve.summary.value
+                    print("Event........%s" % ve.summary.value)
                 event['summary'] = ve.summary.value
 
             if hasattr(ve, 'location'):
                 DebugPrint("LOCATION: %s\n" % ve.location.value)
                 if verbose:
-                    print "Location.....%s" % ve.location.value
+                    print("Location.....%s" % ve.location.value)
                 event['location'] = ve.location.value
 
             if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
@@ -1944,23 +1945,23 @@ class gcalcli:
                 DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
             if verbose:
                 if ve.dtstart.value:
-                    print "Start........%s" % \
-                        ve.dtstart.value.isoformat()
+                    print("Start........%s" % \
+                        ve.dtstart.value.isoformat())
                 if ve.dtend.value:
-                    print "End..........%s" % \
-                        ve.dtend.value.isoformat()
+                    print("End..........%s" % \
+                        ve.dtend.value.isoformat())
                 if ve.dtstart.value:
-                    print "Local Start..%s" % \
-                        self._LocalizeDateTime(ve.dtstart.value)
+                    print("Local Start..%s" % \
+                        self._LocalizeDateTime(ve.dtstart.value))
                 if ve.dtend.value:
-                    print "Local End....%s" % \
-                        self._LocalizeDateTime(ve.dtend.value)
+                    print("Local End....%s" % \
+                        self._LocalizeDateTime(ve.dtend.value))
 
             if hasattr(ve, 'rrule'):
 
                 DebugPrint("RRULE: %s\n" % ve.rrule.value)
                 if verbose:
-                    print "Recurrence...%s" % ve.rrule.value
+                    print("Recurrence...%s" % ve.rrule.value)
 
                 event['recurrence'] = ["RRULE:" + ve.rrule.value]
 
@@ -2012,7 +2013,7 @@ class gcalcli:
                 descr = ve.description.value.strip()
                 DebugPrint("DESCRIPTION: %s\n" % descr)
                 if verbose:
-                    print "Description:\n%s" % descr
+                    print("Description:\n%s" % descr)
                 event['description'] = descr
 
             if hasattr(ve, 'organizer'):
@@ -2023,14 +2024,14 @@ class gcalcli:
                 else:
                     email = ve.organizer.value
                 if verbose:
-                    print "organizer:\n %s" % email
+                    print("organizer:\n %s" % email)
                 event['organizer'] = {'displayName': ve.organizer.name,
                                       'email': email}
 
             if hasattr(ve, 'attendee_list'):
                 DebugPrint("ATTENDEE_LIST : %s\n" % ve.attendee_list)
                 if verbose:
-                    print "attendees:"
+                    print("attendees:")
                 event['attendees'] = []
                 for attendee in ve.attendee_list:
                     if attendee.value.upper().startswith("MAILTO:"):
@@ -2038,7 +2039,7 @@ class gcalcli:
                     else:
                         email = attendee.value
                     if verbose:
-                        print " %s" % email
+                        print(" %s" % email)
 
                     event['attendees'].append({'displayName': attendee.name,
                                                'email': email})
