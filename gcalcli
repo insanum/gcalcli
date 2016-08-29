@@ -68,7 +68,7 @@
 from __future__ import print_function
 
 __program__ = 'gcalcli'
-__version__ = 'v4.0.0a1'
+__version__ = 'v4.0.0a2'
 __author__ = 'Eric Davis, Brian Hartvigsen'
 __doc__ = '''
 Usage:

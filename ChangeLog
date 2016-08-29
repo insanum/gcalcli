@@ -1,3 +1,6 @@
+v4.0.0a2
+  * Support for Python3 via six
+
 v4.0.0a1
   * Move from gflags to argparse
     This is a major, non-backwards compatible change (hence the roll up to v4)
