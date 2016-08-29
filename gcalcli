@@ -191,6 +191,7 @@ try:
     from dateutil.tz import tzlocal
     from dateutil.parser import parse
     import httplib2
+    from six.moves import range, zip, map, cPickle as pickle
     from apiclient.discovery import build
     from apiclient.errors import HttpError
     from oauth2client.file import Storage
@@ -199,13 +200,6 @@ try:
 except ImportError as e:
     print("ERROR: Missing module - %s" % e.args[0])
     sys.exit(1)
-
-# cPickle is a standard library, but in case someone did something really
-# dumb, fall back to pickle.  If that's not their, your python is fucked
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 
 # If they have parsedatetime, we'll use it for fuzzy datetime comparison.  If
 # not, we just return a fake failure every time and use only dateutil.
@@ -594,7 +588,7 @@ class gcalcli:
             # Changing the order of this and the `cal in self.allCals` loop
             # is necessary for the matching to actually be sane (ie match
             # supplied name to cached vs matching cache against supplied names)
-            for i in xrange(len(calNames)):
+            for i in range(len(calNames)):
                 matches = []
                 for cal in self.allCals:
                     # For exact match, we should match only 1 entry and accept
@@ -968,7 +962,7 @@ class gcalcli:
         dayNames = dayNames[6:] + dayNames[:6]
 
         dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
-        for i in xrange(7):
+        for i in range(7):
             if self.calMonday:
                 if i == 6:
                     dayName = dayNames[0]
@@ -1028,11 +1022,11 @@ class gcalcli:
         startWeekDateTime = startDateTime
         endWeekDateTime = (startWeekDateTime + timedelta(days=7))
 
-        for i in xrange(count):
+        for i in range(count):
 
             # create/print date line
             line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
-            for j in xrange(7):
+            for j in range(7):
                 if cmd == 'calw':
                     d = (startWeekDateTime +
                          timedelta(days=j)).strftime("%d %b")
@@ -1073,7 +1067,7 @@ class gcalcli:
                 done = True
                 line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
 
-                for j in xrange(7):
+                for j in range(7):
 
                     if not weekEventStrings[j]:
                         weekColorStrings[j] = ''
@@ -1900,7 +1894,7 @@ class gcalcli:
 
         cmd = shlex.split(command)
 
-        for i, a in zip(xrange(len(cmd)), cmd):
+        for i, a in zip(range(len(cmd)), cmd):
             if a == '%s':
                 cmd[i] = message
 
