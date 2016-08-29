@@ -191,6 +191,7 @@ try:
     from dateutil.tz import tzlocal
     from dateutil.parser import parse
     import httplib2
+    import six
     from six.moves import range, zip, map, cPickle as pickle
     from apiclient.discovery import build
     from apiclient.errors import HttpError
@@ -214,20 +215,22 @@ except:
 locale.setlocale(locale.LC_ALL, "")
 
 
-def stringToUnicode(string):
-    if string:
-        return unicode(string, locale.getlocale()[1] or
-                       locale.getpreferredencoding(False) or
-                       "UTF-8")
+def _u(string):
+    encoding = locale.getlocale()[1] or locale.getpreferredencoding(False) or "UTF-8"
+    if issubclass(type(string), six.text_type):
+        return string
+    if not issubclass(type(string), six.string_types):
+        if six.PY3:
+            if isinstance(string, bytes):
+                return six.text_type(string, encoding, "replace")
+            else:
+                return six.text_type(string)
+        elif hasattr(string, '__unicode__'):
+            return six.text_type(string)
+        else:
+            return six.text_type(bytes(string), encoding, "replace")
     else:
-        return u''
-
-
-def stringFromUnicode(string):
-    return string.encode(locale.getlocale()[1] or
-                         locale.getpreferredencoding(False) or
-                         "UTF-8", "replace")
-
+        return string.decode(encoding, "replace")
 
 class CLR:
 
@@ -398,9 +401,6 @@ def PrintErrMsg(msg):
 
 
 def PrintMsg(color, msg):
-    if isinstance(msg, unicode):
-        msg = stringFromUnicode(msg)
-
     if CLR.useColor:
         sys.stdout.write(str(color))
         sys.stdout.write(msg)
@@ -840,10 +840,10 @@ class gcalcli:
                 # newline and empty string are the keys to turn off coloring
                 weekEventStrings[dayNum] += \
                     "\n" + \
-                    stringToUnicode(str(eventColor)) + \
-                    stringToUnicode(tmpTimeStr.strip()) + \
+                    _u(str(eventColor)) + \
+                    _u(tmpTimeStr.strip()) + \
                     " " + \
-                    self._ValidTitle(event).strip()
+                    _u(self._ValidTitle(event).strip())
 
         return weekEventStrings
 
@@ -852,10 +852,8 @@ class gcalcli:
         # us the info we want.  Date string were coming in as `str` type
         # so we convert them to unicode and then check their size. Fixes
         # the output issues we were seeing around non-US locale strings
-        if not isinstance(string, unicode):
-            string = stringToUnicode(string)
         printLen = 0
-        for tmpChar in string:
+        for tmpChar in _u(string):
             printLen += self.UNIWIDTH[east_asian_width(tmpChar)]
         return printLen
 
@@ -863,9 +861,7 @@ class gcalcli:
     def _NextCut(self, string, curPrintLen):
         idx = 0
         printLen = 0
-        if not isinstance(string, unicode):
-            string = stringToUnicode(string)
-        for tmpChar in string:
+        for tmpChar in _u(string):
             if (curPrintLen + printLen) >= self.calWidth:
                 return (printLen, idx, True)
             if tmpChar in (' ', '\n'):
@@ -1142,7 +1138,7 @@ class gcalcli:
                 output += "\t%s" % (self._ShortenURL(event['hangoutLink'])
                                     if 'hangoutLink' in event else '')
 
-            output += "\t%s" % self._ValidTitle(event).strip()
+            output += "\t%s" % _u(self._ValidTitle(event).strip())
 
             if self.detailLocation:
                 output += "\t%s" % (event['location'].strip()
@@ -1160,7 +1156,7 @@ class gcalcli:
                                     if 'email' in event['creator'] else '')
 
             output = "%s\n" % output.replace('\n', '''\\n''')
-            sys.stdout.write(stringFromUnicode(output))
+            sys.stdout.write(output)
 
     def _PrintEvent(self, event, prefix):
 
@@ -1212,11 +1208,11 @@ class gcalcli:
         eventColor = self.nowMarkerColor if happeningNow and not allDay else self._CalendarColor(event['gcalcli_cal'])
 
         if allDay:
-            fmt = '  ' + timeFormat + '  %s\n'
-            PrintMsg(eventColor, fmt % ('', self._ValidTitle(event).strip()))
+            fmt =   '  ' + timeFormat + '  %s\n'
+            PrintMsg(eventColor, fmt % ('', _u(self._ValidTitle(event).strip())))
         else:
             fmt = '  ' + timeFormat + '  %s\n'
-            PrintMsg(eventColor, fmt % (stringToUnicode(tmpTimeStr), self._ValidTitle(event).strip()))
+            PrintMsg(eventColor, fmt % (_u(tmpTimeStr), _u(self._ValidTitle(event).strip())))
 
         if self.detailCalendar:
             xstr = "%s  Calendar: %s\n" % (
@@ -1412,14 +1408,14 @@ class gcalcli:
                 val = raw_input()
                 if val.strip():
                     event['summary'] = \
-                        stringToUnicode(val.strip())
+                        _u(val.strip())
 
             elif val.lower() == 'l':
                 PrintMsg(CLR_MAG(), "Location: ")
                 val = raw_input()
                 if val.strip():
                     event['location'] = \
-                        stringToUnicode(val.strip())
+                        _u(val.strip())
 
             elif val.lower() == 'w':
                 PrintMsg(CLR_MAG(), "When: ")
@@ -1498,7 +1494,7 @@ class gcalcli:
                 val = raw_input()
                 if val.strip():
                     event['description'] = \
-                        stringToUnicode(val.strip())
+                        _u(val.strip())
 
             else:
                 PrintErrMsg('Error: invalid input\n')
@@ -1792,7 +1788,7 @@ class gcalcli:
             return
 
         event = {}
-        event['summary'] = stringToUnicode(eTitle)
+        event['summary'] = _u(eTitle)
 
         if self.allDay:
             event['start'] = {'date': eStart}
@@ -1805,11 +1801,11 @@ class gcalcli:
                             'timeZone': self.cals[0]['timeZone']}
 
         if eWhere:
-            event['location'] = stringToUnicode(eWhere)
+            event['location'] = _u(eWhere)
         if eDescr:
-            event['description'] = stringToUnicode(eDescr)
+            event['description'] = _u(eDescr)
 
-        event['attendees'] = map(lambda w: {'email': stringToUnicode(w)}, eWho)
+        event['attendees'] = map(lambda w: {'email': _u(w)}, eWho)
 
         if reminder or not self.defaultReminders:
             event['reminders'] = {'useDefault': False,
@@ -1887,7 +1883,7 @@ class gcalcli:
                     event['s'].strftime('%p').lower()
 
             message += '%s  %s\n' % \
-                       (tmpTimeStr, self._ValidTitle(event).strip())
+                       (tmpTimeStr, _u(self._ValidTitle(event).strip()))
 
         if not message:
             return
@@ -2359,7 +2355,7 @@ def BowChickaWowWow():
     calNamesFiltered = []
     for calName in FLAGS.calendar:
         calNameSimple = calName.split("#")[0]
-        calNamesFiltered.append(stringToUnicode(calNameSimple))
+        calNamesFiltered.append(_u(calNameSimple))
         calNameColors.append(calColors[calNameSimple])
     calNames = calNamesFiltered
 
@@ -2381,7 +2377,7 @@ def BowChickaWowWow():
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
 
-        gcal.TextQuery(stringToUnicode(FLAGS.text[0]), startText=FLAGS.start, endText=FLAGS.end)
+        gcal.TextQuery(_u(FLAGS.text[0]), startText=FLAGS.start, endText=FLAGS.end)
 
         if not FLAGS.tsv:
             sys.stdout.write('\n')
@@ -2407,7 +2403,7 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.QuickAddEvent(stringToUnicode(FLAGS.text),
+        gcal.QuickAddEvent(_u(FLAGS.text),
                            reminder=FLAGS.reminder)
 
     elif FLAGS.command == 'add':
@@ -2460,7 +2456,7 @@ def BowChickaWowWow():
             eEnd = gcal.dateParser.fromString(FLAGS.end)
 
         # allow unicode strings for input
-        gcal.DeleteEvents(stringToUnicode(FLAGS.text[0]),
+        gcal.DeleteEvents(_u(FLAGS.text[0]),
                           FLAGS.iamaexpert, eStart, eEnd)
 
         sys.stdout.write('\n')
@@ -2471,7 +2467,7 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.EditEvents(stringToUnicode(FLAGS.text))
+        gcal.EditEvents(_u(FLAGS.text))
 
         sys.stdout.write('\n')
 
