@@ -559,6 +559,7 @@ class gcalcli:
                  ignoreDeclined=False,
                  calWidth=10,
                  calMonday=False,
+                 calWeekend=True,
                  calOwnerColor=CLR_CYN(),
                  calWriterColor=CLR_GRN(),
                  calReaderColor=CLR_MAG(),
@@ -580,6 +581,7 @@ class gcalcli:
         self.ignoreDeclined = ignoreDeclined
         self.calWidth = calWidth
         self.calMonday = calMonday
+        self.calWeekend = calWeekend
         self.tsv = tsv
         self.refreshCache = refreshCache
         self.useCache = useCache
@@ -814,6 +816,7 @@ class gcalcli:
                 continue
 
             dayNum = int(event['s'].strftime("%w"))
+
             if self.calMonday:
                 dayNum -= 1
                 if dayNum < 0:
@@ -969,19 +972,22 @@ class gcalcli:
 
         dayWidthLine = (self.calWidth * str(ART_HRZ()))
 
+        dayNums = range(7) if self.calWeekend else range(1,6)
+        days = len(dayNums)
+
         topWeekDivider = (str(self.borderColor) +
                           str(ART_ULC()) + dayWidthLine +
-                          (6 * (str(ART_UTE()) + dayWidthLine)) +
+                          ((days - 1) * (str(ART_UTE()) + dayWidthLine)) +
                           str(ART_URC()) + str(CLR_NRM()))
 
         midWeekDivider = (str(self.borderColor) +
                           str(ART_LTE()) + dayWidthLine +
-                          (6 * (str(ART_CRS()) + dayWidthLine)) +
+                          ((days - 1) * (str(ART_CRS()) + dayWidthLine)) +
                           str(ART_RTE()) + str(CLR_NRM()))
 
         botWeekDivider = (str(self.borderColor) +
                           str(ART_LLC()) + dayWidthLine +
-                          (6 * (str(ART_BTE()) + dayWidthLine)) +
+                          ((days - 1) * (str(ART_BTE()) + dayWidthLine)) +
                           str(ART_LRC()) + str(CLR_NRM()))
 
         empty = self.calWidth * ' '
@@ -991,7 +997,8 @@ class gcalcli:
         dayNames = dayNames[6:] + dayNames[:6]
 
         dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
-        for i in xrange(7):
+
+        for i in dayNums:
             if self.calMonday:
                 if i == 6:
                     dayName = dayNames[0]
@@ -1007,12 +1014,12 @@ class gcalcli:
         if cmd == 'calm':
             topMonthDivider = (str(self.borderColor) +
                                str(ART_ULC()) + dayWidthLine +
-                               (6 * (str(ART_HRZ()) + dayWidthLine)) +
+                               ((days - 1) * (str(ART_HRZ()) + dayWidthLine)) +
                                str(ART_URC()) + str(CLR_NRM()))
             PrintMsg(CLR_NRM(), "\n" + topMonthDivider + "\n")
 
             m = startDateTime.strftime('%B %Y')
-            mw = (self.calWidth * 7) + 6
+            mw = (self.calWidth * days) + (days - 1)
             m += ' ' * (mw - self._PrintLen(m))
             PrintMsg(CLR_NRM(),
                      str(self.borderColor) +
@@ -1028,7 +1035,7 @@ class gcalcli:
 
             botMonthDivider = (str(self.borderColor) +
                                str(ART_LTE()) + dayWidthLine +
-                               (6 * (str(ART_UTE()) + dayWidthLine)) +
+                               ((days - 1) * (str(ART_UTE()) + dayWidthLine)) +
                                str(ART_RTE()) + str(CLR_NRM()))
             PrintMsg(CLR_NRM(), botMonthDivider + "\n")
 
@@ -1055,7 +1062,7 @@ class gcalcli:
 
             # create/print date line
             line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
-            for j in xrange(7):
+            for j in dayNums:
                 if cmd == 'calw':
                     d = (startWeekDateTime +
                          timedelta(days=j)).strftime("%d %b")
@@ -1096,7 +1103,7 @@ class gcalcli:
                 done = True
                 line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
 
-                for j in xrange(7):
+                for j in dayNums:
 
                     if weekEventStrings[j] == '':
                         weekColorStrings[j] = ''
@@ -2225,6 +2232,7 @@ gflags.DEFINE_bool("started", True, "Show events that have started")
 gflags.DEFINE_bool("declined", True, "Show events that have been declined")
 gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
 gflags.DEFINE_bool("monday", False, "Start the week on Monday")
+gflags.DEFINE_bool("weekend", True, "Hide Saturday/Sunday")
 gflags.DEFINE_bool("color", True, "Enable/Disable all color output")
 gflags.DEFINE_bool("lineart", True, "Enable/Disable line art")
 gflags.DEFINE_bool("conky", False, "Use Conky color codes")
@@ -2453,6 +2461,7 @@ def BowChickaWowWow():
                    ignoreDeclined=not FLAGS.declined,
                    calWidth=FLAGS.width,
                    calMonday=FLAGS.monday,
+                   calWeekend=FLAGS.weekend,
                    calOwnerColor=GetColor(FLAGS.color_owner),
                    calWriterColor=GetColor(FLAGS.color_writer),
                    calReaderColor=GetColor(FLAGS.color_reader),
