@@ -551,6 +551,7 @@ class gcalcli:
         self.ignoreDeclined = not hasOption('declined', True)
         self.calWidth = hasOption('width', 10)
         self.calMonday = hasOption('monday', False)
+        self.calWeekend = hasOption('noweekend', True)
         self.tsv = hasOption('tsv', False)
         self.refreshCache = hasOption('refresh', False)
         self.useCache = hasOption('cache', True)
@@ -931,19 +932,22 @@ class gcalcli:
 
         dayWidthLine = (self.calWidth * str(ART_HRZ()))
 
+        dayNums = range(7) if self.calWeekend else range(1,6)
+        days = len(dayNums)
+
         topWeekDivider = (str(self.borderColor) +
                           str(ART_ULC()) + dayWidthLine +
-                          (6 * (str(ART_UTE()) + dayWidthLine)) +
+                          ((days - 1) * (str(ART_UTE()) + dayWidthLine)) +
                           str(ART_URC()) + str(CLR_NRM()))
 
         midWeekDivider = (str(self.borderColor) +
                           str(ART_LTE()) + dayWidthLine +
-                          (6 * (str(ART_CRS()) + dayWidthLine)) +
+                          ((days - 1) * (str(ART_CRS()) + dayWidthLine)) +
                           str(ART_RTE()) + str(CLR_NRM()))
 
         botWeekDivider = (str(self.borderColor) +
                           str(ART_LLC()) + dayWidthLine +
-                          (6 * (str(ART_BTE()) + dayWidthLine)) +
+                          ((days - 1) * (str(ART_BTE()) + dayWidthLine)) +
                           str(ART_LRC()) + str(CLR_NRM()))
 
         empty = self.calWidth * ' '
@@ -953,7 +957,7 @@ class gcalcli:
         dayNames = dayNames[6:] + dayNames[:6]
 
         dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
-        for i in range(7):
+        for i in dayNums:
             if self.calMonday:
                 if i == 6:
                     dayName = dayNames[0]
@@ -969,12 +973,12 @@ class gcalcli:
         if cmd == 'calm':
             topMonthDivider = (str(self.borderColor) +
                                str(ART_ULC()) + dayWidthLine +
-                               (6 * (str(ART_HRZ()) + dayWidthLine)) +
+                               ((days - 1) * (str(ART_HRZ()) + dayWidthLine)) +
                                str(ART_URC()) + str(CLR_NRM()))
             PrintMsg(CLR_NRM(), "\n" + topMonthDivider + "\n")
 
             m = startDateTime.strftime('%B %Y')
-            mw = (self.calWidth * 7) + 6
+            mw = (self.calWidth * days) + (days - 1)
             m += ' ' * (mw - self._PrintLen(m))
             PrintMsg(CLR_NRM(),
                      str(self.borderColor) +
@@ -990,7 +994,7 @@ class gcalcli:
 
             botMonthDivider = (str(self.borderColor) +
                                str(ART_LTE()) + dayWidthLine +
-                               (6 * (str(ART_UTE()) + dayWidthLine)) +
+                               ((days - 1) * (str(ART_UTE()) + dayWidthLine)) +
                                str(ART_RTE()) + str(CLR_NRM()))
             PrintMsg(CLR_NRM(), botMonthDivider + "\n")
 
@@ -1017,7 +1021,7 @@ class gcalcli:
 
             # create/print date line
             line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
-            for j in range(7):
+            for j in dayNums:
                 if cmd == 'calw':
                     d = (startWeekDateTime +
                          timedelta(days=j)).strftime("%d %b")
@@ -1058,7 +1062,7 @@ class gcalcli:
                 done = True
                 line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
 
-                for j in range(7):
+                for j in dayNums:
 
                     if not weekEventStrings[j]:
                         weekColorStrings[j] = ''
@@ -2251,10 +2255,12 @@ calw = sub.add_parser("calw", parents=[detailsParser, outputParser, colorParser]
 calw.add_argument("weeks", type=int, default=1, nargs="?")
 calw.add_argument("start", type=str, nargs="?")
 calw.add_argument("--monday", action="store_true", help="Start the week on Monday")
+calw.add_argument("--noweekend", action="store_false", help="Hide Saturday and Sunday")
 
 calm = sub.add_parser("calm", parents=[detailsParser, outputParser, colorParser])
 calm.add_argument("start", type=str, nargs="?")
 calm.add_argument("--monday", action="store_true", help="Start the week on Monday")
+calm.add_argument("--noweekend", action="store_false", help="Hide Saturday and Sunday")
 
 quick = sub.add_parser("quick", parents=[detailsParser, remindParser])
 quick.add_argument("text")
