@@ -219,21 +219,6 @@ except:
 locale.setlocale(locale.LC_ALL, "")
 
 
-def stringToUnicode(string):
-    if string:
-        return str(string, locale.getlocale()[1] or
-                       locale.getpreferredencoding(False) or
-                       "UTF-8")
-    else:
-        return ''
-
-
-def stringFromUnicode(string):
-    return string.encode(locale.getlocale()[1] or
-                         locale.getpreferredencoding(False) or
-                         "UTF-8", "replace")
-
-
 def Version():
     sys.stdout.write(__program__ + ' ' + __version__ + ' (' + __author__ + ')\n')
     sys.exit(1)
@@ -415,15 +400,12 @@ def PrintErrMsg(msg):
 
 
 def PrintMsg(color, msg):
-    if isinstance(msg, str):
-        msg = stringFromUnicode(msg)
-
     if CLR.useColor:
         sys.stdout.write(str(color))
-        sys.stdout.write(msg)
+        sys.stdout.write(str(msg))
         sys.stdout.write(str(CLR_NRM()))
     else:
-        sys.stdout.write(msg)
+        sys.stdout.write(str(msg))
 
 
 def DebugPrint(msg):
@@ -869,8 +851,8 @@ class gcalcli:
                 # newline and empty string are the keys to turn off coloring
                 weekEventStrings[dayNum] += \
                     "\n" + \
-                    stringToUnicode(str(eventColor)) + \
-                    stringToUnicode(tmpTimeStr.strip()) + \
+                    str(eventColor) + \
+                    str(tmpTimeStr.strip()) + \
                     " " + \
                     self._ValidTitle(event).strip()
 
@@ -882,7 +864,7 @@ class gcalcli:
         # so we convert them to unicode and then check their size. Fixes
         # the output issues we were seeing around non-US locale strings
         if not isinstance(string, str):
-            string = stringToUnicode(string)
+            string = str(string)
         printLen = 0
         for tmpChar in string:
             printLen += self.UNIWIDTH[east_asian_width(tmpChar)]
@@ -893,7 +875,7 @@ class gcalcli:
         idx = 0
         printLen = 0
         if not isinstance(string, str):
-            string = stringToUnicode(string)
+            string = str(string)
         for tmpChar in string:
             if (curPrintLen + printLen) >= self.calWidth:
                 return (printLen, idx, True)
@@ -1187,7 +1169,7 @@ class gcalcli:
                                     if 'email' in event['creator'] else '')
 
             output = "%s\n" % output.replace('\n', '''\\n''')
-            sys.stdout.write(stringFromUnicode(output))
+            sys.stdout.write(str(output))
 
     def _PrintEvent(self, event, prefix):
 
@@ -1243,7 +1225,7 @@ class gcalcli:
             PrintMsg(eventColor, fmt % ('', self._ValidTitle(event).strip()))
         else:
             fmt = '  ' + timeFormat + '  %s\n'
-            PrintMsg(eventColor, fmt % (stringToUnicode(tmpTimeStr), self._ValidTitle(event).strip()))
+            PrintMsg(eventColor, fmt % (str(tmpTimeStr), self._ValidTitle(event).strip()))
 
         if self.detailCalendar:
             xstr = "%s  Calendar: %s\n" % (
@@ -1439,14 +1421,14 @@ class gcalcli:
                 val = input()
                 if val.strip():
                     event['summary'] = \
-                        stringToUnicode(val.strip())
+                        str(val.strip())
 
             elif val.lower() == 'l':
                 PrintMsg(CLR_MAG(), "Location: ")
                 val = input()
                 if val.strip():
                     event['location'] = \
-                        stringToUnicode(val.strip())
+                        str(val.strip())
 
             elif val.lower() == 'w':
                 PrintMsg(CLR_MAG(), "When: ")
@@ -1525,7 +1507,7 @@ class gcalcli:
                 val = input()
                 if val.strip():
                     event['description'] = \
-                        stringToUnicode(val.strip())
+                        str(val.strip())
 
             else:
                 PrintErrMsg('Error: invalid input\n')
@@ -1826,7 +1808,7 @@ class gcalcli:
             return
 
         event = {}
-        event['summary'] = stringToUnicode(eTitle)
+        event['summary'] = str(eTitle)
 
         if self.allDay:
             event['start'] = {'date': eStart}
@@ -1839,11 +1821,11 @@ class gcalcli:
                             'timeZone': self.cals[0]['timeZone']}
 
         if eWhere:
-            event['location'] = stringToUnicode(eWhere)
+            event['location'] = str(eWhere)
         if eDescr:
-            event['description'] = stringToUnicode(eDescr)
+            event['description'] = str(eDescr)
 
-        event['attendees'] = [{'email': stringToUnicode(w)} for w in eWho]
+        event['attendees'] = [{'email': str(w)} for w in eWho]
 
         if reminder or not self.defaultReminders:
             event['reminders'] = {'useDefault': False,
@@ -2389,7 +2371,7 @@ def BowChickaWowWow():
     calNamesFiltered = []
     for calName in FLAGS.calendar:
         calNameSimple = calName.split("#")[0]
-        calNamesFiltered.append(stringToUnicode(calNameSimple))
+        calNamesFiltered.append(str(calNameSimple))
         calNameColors.append(calColors[calNameSimple])
     calNames = calNamesFiltered
 
@@ -2476,11 +2458,11 @@ def BowChickaWowWow():
     elif args[0] == 'search':
 
         if len(args) == 4: # start and end
-            gcal.TextQuery(stringToUnicode(args[1]), startText=args[2], endText=args[3])
+            gcal.TextQuery(str(args[1]), startText=args[2], endText=args[3])
         elif len(args) == 3: # start
-            gcal.TextQuery(stringToUnicode(args[1]), startText=args[2])
+            gcal.TextQuery(str(args[1]), startText=args[2])
         elif len(args) == 2: # defaults
-            gcal.TextQuery(stringToUnicode(args[1]))
+            gcal.TextQuery(str(args[1]))
         else:
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
@@ -2548,7 +2530,7 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.QuickAddEvent(stringToUnicode(args[1]),
+        gcal.QuickAddEvent(str(args[1]),
                            reminder=FLAGS.reminder)
 
     elif (args[0] == 'add'):
@@ -2601,7 +2583,7 @@ def BowChickaWowWow():
             eStart = gcal.dateParser.fromString(args[2])
 
         # allow unicode strings for input
-        gcal.DeleteEvents(stringToUnicode(args[1]),
+        gcal.DeleteEvents(str(args[1]),
                           FLAGS.iamaexpert, eStart, eEnd)
 
         sys.stdout.write('\n')
@@ -2612,7 +2594,7 @@ def BowChickaWowWow():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.EditEvents(stringToUnicode(args[1]))
+        gcal.EditEvents(str(args[1]))
 
         sys.stdout.write('\n')
 
