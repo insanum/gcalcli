@@ -945,6 +945,7 @@ class gcalcli:
         return (cutWidth, cut)
 
     def _GraphEvents(self, cmd, startDateTime, count, eventList):
+        count = int(count)
 
         # ignore started events (i.e. events that start previous day and end
         # start day)
@@ -1945,8 +1946,7 @@ class gcalcli:
                 event['location'] = ve.location.value
 
             if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
-                PrintErrMsg("Error: event does not have a dtstart and "
-                            "dtend!\n")
+                PrintErrMsg("Error: event does not have a dtstart and dtend!\n")
                 return None
 
             if ve.dtstart.value:
@@ -2356,7 +2356,7 @@ def BowChickaWowWow():
     # No sense instaniating gcalcli for nothing
     if not args[0] in ['list', 'search', 'agenda', 'calw', 'calm', 'quick',
                        'add', 'delete', 'edit', 'remind', 'import', 'help']:
-        PrintErrMsg('Error: %s is an invalid command' % args[0])
+        PrintErrMsg('Error: %s is an invalid command\n' % args[0])
         sys.exit(1)
 
     # all other commands require gcalcli be brought up
@@ -2488,7 +2488,7 @@ def BowChickaWowWow():
 
     elif args[0] == 'calw':
         if not FLAGS.width:
-            PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
+            PrintErrMsg('Error: invalid width\n')
             sys.exit(1)
 
         if len(args) >= 2:
@@ -2513,7 +2513,7 @@ def BowChickaWowWow():
 
     elif args[0] == 'calm':
         if not FLAGS.width:
-            PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
+            PrintErrMsg('Error: invalid width\n')
             sys.exit(1)
 
         if len(args) == 2:  # start
