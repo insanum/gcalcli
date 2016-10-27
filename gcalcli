@@ -196,13 +196,13 @@ try:
     from oauth2client.client import OAuth2WebServerFlow
     from oauth2client.tools import run
 except ImportError as e:
-    print "ERROR: Missing module - %s" % e.args[0]
+    print("ERROR: Missing module - %s" % e.args[0])
     sys.exit(1)
 
 # cPickle is a standard library, but in case someone did something really
 # dumb, fall back to pickle.  If that's not their, your python is fucked
 try:
-    import cPickle as pickle
+    import pickle as pickle
 except ImportError:
     import pickle
 
@@ -221,11 +221,11 @@ locale.setlocale(locale.LC_ALL, "")
 
 def stringToUnicode(string):
     if string:
-        return unicode(string, locale.getlocale()[1] or
+        return str(string, locale.getlocale()[1] or
                        locale.getpreferredencoding(False) or
                        "UTF-8")
     else:
-        return u''
+        return ''
 
 
 def stringFromUnicode(string):
@@ -242,7 +242,7 @@ def Version():
 def Usage(expanded=False):
     sys.stdout.write(__doc__ % sys.argv[0])
     if expanded:
-        print FLAGS.MainModuleHelp()
+        print(FLAGS.MainModuleHelp())
     sys.exit(1)
 
 
@@ -415,7 +415,7 @@ def PrintErrMsg(msg):
 
 
 def PrintMsg(color, msg):
-    if isinstance(msg, unicode):
+    if isinstance(msg, str):
         msg = stringFromUnicode(msg)
 
     if CLR.useColor:
@@ -436,7 +436,7 @@ def dprint(obj):
         from pprint import pprint
         pprint(obj)
     except ImportError:
-        print obj
+        print(obj)
 
 
 class DateTimeParser:
@@ -616,7 +616,7 @@ class gcalcli:
             # Changing the order of this and the `cal in self.allCals` loop
             # is necessary for the matching to actually be sane (ie match
             # supplied name to cached vs matching cache against supplied names)
-            for i in xrange(len(calNames)):
+            for i in range(len(calNames)):
                 matches = []
                 for cal in self.allCals:
                     # For exact match, we should match only 1 entry and accept
@@ -652,7 +652,7 @@ class gcalcli:
         for n in range(0, self.maxRetries):
             try:
                 return method.execute()
-            except HttpError, e:
+            except HttpError as e:
                 error = json.loads(e.content)
                 if error.get('code') == '403' and \
                         error.get('errors')[0].get('reason') \
@@ -881,7 +881,7 @@ class gcalcli:
         # us the info we want.  Date string were coming in as `str` type
         # so we convert them to unicode and then check their size. Fixes
         # the output issues we were seeing around non-US locale strings
-        if not isinstance(string, unicode):
+        if not isinstance(string, str):
             string = stringToUnicode(string)
         printLen = 0
         for tmpChar in string:
@@ -892,7 +892,7 @@ class gcalcli:
     def _NextCut(self, string, curPrintLen):
         idx = 0
         printLen = 0
-        if not isinstance(string, unicode):
+        if not isinstance(string, str):
             string = stringToUnicode(string)
         for tmpChar in string:
             if (curPrintLen + printLen) >= self.calWidth:
@@ -991,7 +991,7 @@ class gcalcli:
         dayNames = dayNames[6:] + dayNames[:6]
 
         dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
-        for i in xrange(7):
+        for i in range(7):
             if self.calMonday:
                 if i == 6:
                     dayName = dayNames[0]
@@ -1051,11 +1051,11 @@ class gcalcli:
         startWeekDateTime = startDateTime
         endWeekDateTime = (startWeekDateTime + timedelta(days=7))
 
-        for i in xrange(count):
+        for i in range(count):
 
             # create/print date line
             line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
-            for j in xrange(7):
+            for j in range(7):
                 if cmd == 'calw':
                     d = (startWeekDateTime +
                          timedelta(days=j)).strftime("%d %b")
@@ -1096,7 +1096,7 @@ class gcalcli:
                 done = True
                 line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
 
-                for j in xrange(7):
+                for j in range(7):
 
                     if weekEventStrings[j] == '':
                         weekColorStrings[j] = ''
@@ -1149,7 +1149,7 @@ class gcalcli:
 
                 PrintMsg(CLR_NRM(), line + "\n")
 
-            if i < range(count)[len(range(count)) - 1]:
+            if i < list(range(count))[len(list(range(count))) - 1]:
                 PrintMsg(CLR_NRM(), midWeekDivider + "\n")
             else:
                 PrintMsg(CLR_NRM(), botWeekDivider + "\n")
@@ -1378,7 +1378,7 @@ class gcalcli:
             return
 
         PrintMsg(CLR_MAG(), "Delete? [N]o [y]es [q]uit: ")
-        val = raw_input()
+        val = input()
 
         if not val or val.lower() == 'n':
             return
@@ -1408,7 +1408,7 @@ class gcalcli:
                                 "[t]itle [l]ocation " +
                                 "[w]hen len[g]th " +
                                 "[r]eminder [d]escr: ")
-            val = raw_input()
+            val = input()
 
             if not val or val.lower() == 'n':
                 return
@@ -1436,21 +1436,21 @@ class gcalcli:
 
             elif val.lower() == 't':
                 PrintMsg(CLR_MAG(), "Title: ")
-                val = raw_input()
+                val = input()
                 if val.strip():
                     event['summary'] = \
                         stringToUnicode(val.strip())
 
             elif val.lower() == 'l':
                 PrintMsg(CLR_MAG(), "Location: ")
-                val = raw_input()
+                val = input()
                 if val.strip():
                     event['location'] = \
                         stringToUnicode(val.strip())
 
             elif val.lower() == 'w':
                 PrintMsg(CLR_MAG(), "When: ")
-                val = raw_input()
+                val = input()
                 if val.strip():
                     td = (event['e'] - event['s'])
                     length = ((td.days * 1440) + (td.seconds / 60))
@@ -1476,7 +1476,7 @@ class gcalcli:
 
             elif val.lower() == 'g':
                 PrintMsg(CLR_MAG(), "Length (mins): ")
-                val = raw_input()
+                val = input()
                 if val.strip():
                     newStart, newEnd = \
                         GetTimeFromStr(event['start']['dateTime'], val.strip())
@@ -1504,7 +1504,7 @@ class gcalcli:
                 while 1:
                     PrintMsg(CLR_MAG(),
                              "Enter a valid reminder or '.' to end: ")
-                    r = raw_input()
+                    r = input()
                     if r == '.':
                         break
                     rem.append(r)
@@ -1522,7 +1522,7 @@ class gcalcli:
 
             elif val.lower() == 'd':
                 PrintMsg(CLR_MAG(), "Description: ")
-                val = raw_input()
+                val = input()
                 if val.strip():
                     event['description'] = \
                         stringToUnicode(val.strip())
@@ -1843,7 +1843,7 @@ class gcalcli:
         if eDescr:
             event['description'] = stringToUnicode(eDescr)
 
-        event['attendees'] = map(lambda w: {'email': stringToUnicode(w)}, eWho)
+        event['attendees'] = [{'email': stringToUnicode(w)} for w in eWho]
 
         if reminder or not self.defaultReminders:
             event['reminders'] = {'useDefault': False,
@@ -1928,7 +1928,7 @@ class gcalcli:
 
         cmd = shlex.split(command)
 
-        for i, a in zip(xrange(len(cmd)), cmd):
+        for i, a in zip(range(len(cmd)), cmd):
             if a == '%s':
                 cmd[i] = message
 
@@ -1944,20 +1944,20 @@ class gcalcli:
             event = {}
 
             if verbose:
-                print "+----------------+"
-                print "| Calendar Event |"
-                print "+----------------+"
+                print("+----------------+")
+                print("| Calendar Event |")
+                print("+----------------+")
 
             if hasattr(ve, 'summary'):
                 DebugPrint("SUMMARY: %s\n" % ve.summary.value)
                 if verbose:
-                    print "Event........%s" % ve.summary.value
+                    print("Event........%s" % ve.summary.value)
                 event['summary'] = ve.summary.value
 
             if hasattr(ve, 'location'):
                 DebugPrint("LOCATION: %s\n" % ve.location.value)
                 if verbose:
-                    print "Location.....%s" % ve.location.value
+                    print("Location.....%s" % ve.location.value)
                 event['location'] = ve.location.value
 
             if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
@@ -1971,23 +1971,23 @@ class gcalcli:
                 DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
             if verbose:
                 if ve.dtstart.value:
-                    print "Start........%s" % \
-                        ve.dtstart.value.isoformat()
+                    print("Start........%s" % \
+                        ve.dtstart.value.isoformat())
                 if ve.dtend.value:
-                    print "End..........%s" % \
-                        ve.dtend.value.isoformat()
+                    print("End..........%s" % \
+                        ve.dtend.value.isoformat())
                 if ve.dtstart.value:
-                    print "Local Start..%s" % \
-                        self._LocalizeDateTime(ve.dtstart.value)
+                    print("Local Start..%s" % \
+                        self._LocalizeDateTime(ve.dtstart.value))
                 if ve.dtend.value:
-                    print "Local End....%s" % \
-                        self._LocalizeDateTime(ve.dtend.value)
+                    print("Local End....%s" % \
+                        self._LocalizeDateTime(ve.dtend.value))
 
             if hasattr(ve, 'rrule'):
 
                 DebugPrint("RRULE: %s\n" % ve.rrule.value)
                 if verbose:
-                    print "Recurrence...%s" % ve.rrule.value
+                    print("Recurrence...%s" % ve.rrule.value)
 
                 event['recurrence'] = ["RRULE:" + ve.rrule.value]
 
@@ -2039,7 +2039,7 @@ class gcalcli:
                 descr = ve.description.value.strip()
                 DebugPrint("DESCRIPTION: %s\n" % descr)
                 if verbose:
-                    print "Description:\n%s" % descr
+                    print("Description:\n%s" % descr)
                 event['description'] = descr
 
             if hasattr(ve, 'organizer'):
@@ -2050,14 +2050,14 @@ class gcalcli:
                 else:
                     email = ve.organizer.value
                 if verbose:
-                    print "organizer:\n %s" % email
+                    print("organizer:\n %s" % email)
                 event['organizer'] = {'displayName': ve.organizer.name,
                                       'email': email}
 
             if hasattr(ve, 'attendee_list'):
                 DebugPrint("ATTENDEE_LIST : %s\n" % ve.attendee_list)
                 if verbose:
-                    print "attendees:"
+                    print("attendees:")
                 event['attendees'] = []
                 for attendee in ve.attendee_list:
                     if attendee.value.upper().startswith("MAILTO:"):
@@ -2065,7 +2065,7 @@ class gcalcli:
                     else:
                         email = attendee.value
                     if verbose:
-                        print " %s" % email
+                        print(" %s" % email)
 
                     event['attendees'].append({'displayName': attendee.name,
                                                'email': email})
@@ -2090,14 +2090,14 @@ class gcalcli:
         if icsFile:
             try:
                 f = file(icsFile)
-            except Exception, e:
+            except Exception as e:
                 PrintErrMsg("Error: " + str(e) + "!\n")
                 sys.exit(1)
 
         while True:
 
             try:
-                v = vobject.readComponents(f).next()
+                v = next(vobject.readComponents(f))
             except StopIteration:
                 break
 
@@ -2121,7 +2121,7 @@ class gcalcli:
                     continue
 
                 PrintMsg(CLR_MAG(), "\n[S]kip [i]mport [q]uit: ")
-                val = raw_input()
+                val = input()
                 if not val or val.lower() == 's':
                     continue
                 if val.lower() == 'i':
@@ -2314,7 +2314,7 @@ def BowChickaWowWow():
         else:
             tmpArgv = argv
         args = FLAGS(tmpArgv)
-    except gflags.FlagsError, e:
+    except gflags.FlagsError as e:
         PrintErrMsg(str(e))
         Usage(True)
         sys.exit(1)
@@ -2358,7 +2358,7 @@ def BowChickaWowWow():
     if FLAGS.locale:
         try:
             locale.setlocale(locale.LC_ALL, FLAGS.locale)
-        except Exception, e:
+        except Exception as e:
             PrintErrMsg("Error: " + str(e) + "!\n"
                         "Check supported locales of your system.\n")
             sys.exit(1)
@@ -2555,27 +2555,27 @@ def BowChickaWowWow():
         if FLAGS.prompt:
             if FLAGS.title is None:
                 PrintMsg(CLR_MAG(), "Title: ")
-                FLAGS.title = raw_input()
+                FLAGS.title = input()
             if FLAGS.where is None:
                 PrintMsg(CLR_MAG(), "Location: ")
-                FLAGS.where = raw_input()
+                FLAGS.where = input()
             if FLAGS.when is None:
                 PrintMsg(CLR_MAG(), "When: ")
-                FLAGS.when = raw_input()
+                FLAGS.when = input()
             if FLAGS.duration is None:
                 if FLAGS.allday:
                     PrintMsg(CLR_MAG(), "Duration (days): ")
                 else:
                     PrintMsg(CLR_MAG(), "Duration (mins): ")
-                FLAGS.duration = raw_input()
+                FLAGS.duration = input()
             if FLAGS.description is None:
                 PrintMsg(CLR_MAG(), "Description: ")
-                FLAGS.description = raw_input()
+                FLAGS.description = input()
             if not FLAGS.reminder:
                 while 1:
                     PrintMsg(CLR_MAG(),
                              "Enter a valid reminder or '.' to end: ")
-                    r = raw_input()
+                    r = input()
                     if r == '.':
                         break
                     n, m = ParseReminder(str(r))
