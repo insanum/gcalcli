@@ -33,6 +33,8 @@
 # add support for multiline description input in the 'add' and 'edit' commands
 # maybe add support for freebusy ?
 
+# TODO: "WARNING:root:This function, oauth2client.tools.run(), and the use of the gflags library are deprecated and will be removed in a future version of the library."
+
 #############################################################################
 #                                                                           #
 #                                      (           (     (                  #
@@ -735,9 +737,9 @@ class gcalcli:
                  self.ACCESS_READER: 3,
                  self.ACCESS_FREEBUSY: 4}
 
-        self.allCals.sort(lambda x, y:
-                          cmp(order[x['accessRole']],
-                              order[y['accessRole']]))
+        print (self.allCals)
+
+        self.allCals.sort(key=lambda x: order([x['accessRole']]))
 
         if self.useCache:
             self.cache['allCals'] = self.allCals
@@ -1617,7 +1619,7 @@ class gcalcli:
             events = self._RetryWithBackoff(work)
             eventList.extend(self._GetAllEvents(cal, events, end))
 
-        eventList.sort(lambda x, y: cmp(x['s'], y['s']))
+        eventList.sort(key = lambda x: x['s'])
 
         return eventList
 
