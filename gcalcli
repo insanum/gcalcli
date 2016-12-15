@@ -194,7 +194,7 @@ try:
     from apiclient.errors import HttpError
     from oauth2client.file import Storage
     from oauth2client.client import OAuth2WebServerFlow
-    from oauth2client.tools import run
+    from oauth2client.tools import run_flow
 except ImportError as e:
     print "ERROR: Missing module - %s" % e.args[0]
     sys.exit(1)
@@ -673,7 +673,7 @@ class gcalcli:
             credentials = storage.get()
 
             if credentials is None or credentials.invalid:
-                credentials = run(
+                credentials = run_flow(
                     OAuth2WebServerFlow(
                         client_id=self.client_id,
                         client_secret=self.client_secret,

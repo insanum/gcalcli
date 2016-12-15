@@ -26,7 +26,7 @@ setup(name='gcalcli',
           'python-gflags',
           'httplib2',
           'google-api-python-client',
-          'oauth2client<=1.4.12'
+          'oauth2client'
       ],
       extras_require={
           'vobject':  ["vobject"],
