@@ -819,11 +819,25 @@ class gcalcli:
                 if dayNum < 0:
                     dayNum = 6
 
-            if event['s'] >= startDateTime and event['s'] < endDateTime:
+            allDay = self._IsAllDay(event)
+
+            # NOTE(slawqo): in allDay events end date is always set as day+1 and
+            # hour 0:00 so to not display it one day more, it's necessary to
+            # lower it by one day:
+            if allDay:
+                eventEndDate = event['e'] - timedelta(days=1)
+            else:
+                eventEndDate = event['e']
+
+            # NOTE(slawqo): it's necessary to process events which starts in
+            # current period of time but for all day events also to process
+            # events which was started before current period of time and are
+            # still continue in current period of time
+            if ((event['s'] >= startDateTime and event['s'] < endDateTime) or
+                (allDay and event['s'] < startDateTime and
+                    eventEndDate >= startDateTime)):
 
                 forceEventColorAsMarker = False
-
-                allDay = self._IsAllDay(event)
 
                 if not nowMarkerPrinted:
                     if (DaysSinceEpoch(self.now) <
@@ -846,7 +860,7 @@ class gcalcli:
                     # all day events for specific coloring but not for previous
                     # or next events
                     elif self.now >= event['s'] and \
-                            self.now <= event['e'] and \
+                            self.now <= eventEndDate and \
                             not allDay:
                         # line marker is during the event (recolor event)
                         nowMarkerPrinted = True
@@ -866,13 +880,36 @@ class gcalcli:
                 else:
                     eventColor = self._CalendarColor(event['gcalcli_cal'])
 
-                # newline and empty string are the keys to turn off coloring
-                weekEventStrings[dayNum] += \
-                    "\n" + \
-                    stringToUnicode(str(eventColor)) + \
-                    stringToUnicode(tmpTimeStr.strip()) + \
-                    " " + \
-                    self._ValidTitle(event).strip()
+                # NOTE(slawqo): for all day events it's necessary to add event
+                # to more than one day in weekEventStrings
+                if allDay and event['s'] < eventEndDate:
+                    if eventEndDate > endDateTime:
+                        endDayNum = 6
+                    else:
+                        endDayNum = int(eventEndDate.strftime("%w"))
+                        if self.calMonday:
+                            endDayNum -= 1
+                            if endDayNum < 0:
+                                endDayNum = 6
+                    if dayNum > endDayNum:
+                        dayNum = 0
+                    for day in range(dayNum, endDayNum + 1):
+                        # newline and empty string are the keys to turn off
+                        # coloring
+                        weekEventStrings[day] += \
+                            "\n" + \
+                            stringToUnicode(str(eventColor)) + \
+                            stringToUnicode(tmpTimeStr.strip()) + \
+                            " " + \
+                            self._ValidTitle(event).strip()
+                else:
+                    # newline and empty string are the keys to turn off coloring
+                    weekEventStrings[dayNum] += \
+                        "\n" + \
+                        stringToUnicode(str(eventColor)) + \
+                        stringToUnicode(tmpTimeStr.strip()) + \
+                        " " + \
+                        self._ValidTitle(event).strip()
 
         return weekEventStrings
 
