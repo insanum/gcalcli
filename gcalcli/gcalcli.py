@@ -129,7 +129,7 @@ class GoogleCalendarInterface:
     authHttp = None
     calService = None
     urlService = None
-    command = 'notify-send -u critical -a gcalcli %s'
+    command = 'notify-send -u critical -i appointment-soon -a gcalcli %s'
     dateParser = utils.DateTimeParser()
 
     ACCESS_OWNER = 'owner'
