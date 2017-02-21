@@ -2265,7 +2265,7 @@ calm.add_argument("--noweekend", action="store_false", help="Hide Saturday and S
 quick = sub.add_parser("quick", parents=[detailsParser, remindParser])
 quick.add_argument("text")
 
-add = sub.add_parser("add", parents=[remindParser])
+add = sub.add_parser("add", parents=[detailsParser, remindParser])
 add.add_argument("--title", default=None, type=str, help="Event title")
 add.add_argument("--who", default=[], type=str, action="append",
                  help="Event title")
