@@ -1806,7 +1806,7 @@ class gcalcli:
         if eDescr:
             event['description'] = _u(eDescr)
 
-        event['attendees'] = map(lambda w: {'email': _u(w)}, eWho)
+        event['attendees'] = list(map(lambda w: {'email': _u(w)}, eWho))
 
         if reminder or not self.defaultReminders:
             event['reminders'] = {'useDefault': False,
