@@ -1,3 +1,9 @@
+v4.0.0a3
+  * No weekend option #264
+  * Fixed bug with `add` and iterators #268
+  * Deal with more encoding issues... #261
+  * Get error from JSON object #260
+
 v4.0.0a2
   * Support for Python3 via six
 
