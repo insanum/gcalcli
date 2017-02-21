@@ -628,6 +628,7 @@ class gcalcli:
                 return method.execute()
             except HttpError as e:
                 error = json.loads(e.content)
+                error = error.get('error')
                 if error.get('code') == '403' and \
                         error.get('errors')[0].get('reason') \
                         in ['rateLimitExceeded', 'userRateLimitExceeded']:
