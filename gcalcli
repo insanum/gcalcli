@@ -1126,10 +1126,10 @@ class gcalcli:
                 continue
             if self.ignoreDeclined and self._DeclinedEvent(event):
                 continue
-            output = "%s\t%s\t%s\t%s" % (event['s'].strftime('%Y-%m-%d'),
-                                         event['s'].strftime('%H:%M'),
-                                         event['e'].strftime('%Y-%m-%d'),
-                                         event['e'].strftime('%H:%M'))
+            output = "%s\t%s\t%s\t%s" % (_u(event['s'].strftime('%Y-%m-%d')),
+                                         _u(event['s'].strftime('%H:%M')),
+                                         _u(event['e'].strftime('%Y-%m-%d')),
+                                         _u(event['e'].strftime('%H:%M')))
 
             if self.detailUrl:
                 output += "\t%s" % (self._ShortenURL(event['htmlLink'])
@@ -1140,22 +1140,22 @@ class gcalcli:
             output += "\t%s" % _u(self._ValidTitle(event).strip())
 
             if self.detailLocation:
-                output += "\t%s" % (event['location'].strip()
+                output += "\t%s" % (_u(event['location'].strip())
                                     if 'location' in event else '')
 
             if self.detailDescr:
-                output += "\t%s" % (event['description'].strip()
+                output += "\t%s" % (_u(event['description'].strip())
                                     if 'description' in event else '')
 
             if self.detailCalendar:
-                output += "\t%s" % event['gcalcli_cal']['summary'].strip()
+                output += "\t%s" % _u(event['gcalcli_cal']['summary'].strip())
 
             if self.detailEmail:
                 output += "\t%s" % (event['creator']['email'].strip()
                                     if 'email' in event['creator'] else '')
 
             output = "%s\n" % output.replace('\n', '''\\n''')
-            sys.stdout.write(output)
+            sys.stdout.write(_u(output))
 
     def _PrintEvent(self, event, prefix):
 
