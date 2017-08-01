@@ -119,6 +119,8 @@ Usage:
   add                      add a detailed event to a calendar
                            - a single --calendar must specified
                            - the "--details url" option will show the event link
+                           - you can use "--end" to give an ending time instead
+                             of "--duration"
                            - example:
                               gcalcli --calendar 'Eric Davis'
                                       --title 'Analysis of Algorithms Final'
@@ -2252,6 +2254,7 @@ gflags.DEFINE_string("title", None, "Event title")
 gflags.DEFINE_multistring("who", [], "Event attendees")
 gflags.DEFINE_string("where", None, "Event location")
 gflags.DEFINE_string("when", None, "Event time")
+gflags.DEFINE_string("end", None, "Event ending time. Alternative for duration")
 gflags.DEFINE_integer("duration", None,
                       "Event duration in minutes or days if --allday is given.")
 gflags.DEFINE_string("description", None, "Event description")
@@ -2562,7 +2565,7 @@ def BowChickaWowWow():
             if FLAGS.when is None:
                 PrintMsg(CLR_MAG(), "When: ")
                 FLAGS.when = raw_input()
-            if FLAGS.duration is None:
+            if FLAGS.duration is None and FLAGS.end is None:
                 if FLAGS.allday:
                     PrintMsg(CLR_MAG(), "Duration (days): ")
                 else:
@@ -2582,7 +2585,11 @@ def BowChickaWowWow():
                     FLAGS.reminder.append(str(n) + ' ' + m)
 
         # calculate "when" time:
-        eStart, eEnd = GetTimeFromStr(FLAGS.when, FLAGS.duration)
+        if FLAGS.duration is not None:
+            eStart, eEnd = GetTimeFromStr(FLAGS.when, FLAGS.duration)
+        else:
+            eStart = GetTimeFromStr(FLAGS.when)
+            eEnd = GetTimeFromStr(FLAGS.end)
 
         gcal.AddEvent(FLAGS.title, FLAGS.where, eStart, eEnd,
                       FLAGS.description, FLAGS.who,
