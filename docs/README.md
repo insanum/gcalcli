@@ -143,6 +143,8 @@ gcalcli [options] command [command args or options]
   add                      add a detailed event to a calendar
                            - a single --calendar must specified
                            - the "--details url" option will show the event link
+                           - you can use "--end" to give an ending time instead
+                             of "--duration"
                            - example:
                               gcalcli --calendar 'Eric Davis'
                                       --title 'Analysis of Algorithms Final'
