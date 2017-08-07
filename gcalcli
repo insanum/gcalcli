@@ -859,12 +859,13 @@ class gcalcli:
         idx = 0
         printLen = 0
         for tmpChar in _u(string):
-            if (curPrintLen + printLen) >= self.calWidth:
+            printTmpChar = self.UNIWIDTH[east_asian_width(tmpChar)]
+            if (curPrintLen + printLen + printTmpChar) > self.calWidth:
                 return (printLen, idx, True)
             if tmpChar in (' ', '\n'):
                 return (printLen, idx, False)
             idx += 1
-            printLen += self.UNIWIDTH[east_asian_width(tmpChar)]
+            printLen += printTmpChar
         return (printLen, -1, False)
 
     def _GetCutIndex(self, eventString):
