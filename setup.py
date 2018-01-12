@@ -25,7 +25,7 @@ setup(name='gcalcli',
           'python-dateutil',
           'python-gflags',
           'httplib2',
-          'google-api-python-client',
+          'google-api-python-client<=1.5.1',
           'oauth2client<=1.4.12'
       ],
       extras_require={
