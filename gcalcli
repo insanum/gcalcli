@@ -1158,6 +1158,13 @@ class gcalcli:
         for event in eventList:
             if self.ignoreStarted and (event['s'] < self.now):
                 continue
+            if self.ignoreDeclined:
+                if 'attendees' in event:
+                    current_user_attendance = [a for a in event['attendees'] if a['email'] == event['gcalcli_cal']['id']]
+                    attendee = current_user_attendance[0] if current_user_attendance else None
+                    if attendee and attendee['responseStatus'] == 'declined':
+                        continue
+
             output = "%s\t%s\t%s\t%s" % (event['s'].strftime('%Y-%m-%d'),
                                          event['s'].strftime('%H:%M'),
                                          event['e'].strftime('%Y-%m-%d'),
