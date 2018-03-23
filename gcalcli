@@ -2292,7 +2292,7 @@ delete.add_argument("--iamaexpert", action="store_true", help="Probably not")
 edit = sub.add_parser("edit", parents=[detailsParser, outputParser])
 edit.add_argument("text")
 
-_import = sub.add_parser("import")
+_import = sub.add_parser("import", parents=[remindParser])
 _import.add_argument("file", type=argparse.FileType('r'), nargs="?")
 _import.add_argument("--verbose", "-v", action="count", help="Be verbose on imports")
 _import.add_argument("--dump", "-d", action="store_true", help="Print events and don't import")
@@ -2487,7 +2487,7 @@ def BowChickaWowWow():
         gcal.Remind(FLAGS.minutes, FLAGS.cmd, use_reminders=FLAGS.use_reminders)
 
     elif FLAGS.command == 'import':
-        gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file)
+        gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file.name)
 
 
 def SIGINT_handler(signum, frame):
