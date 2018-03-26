@@ -1,3 +1,8 @@
+v4.0.0a4
+  * Multiday events support #277
+  * Fix textwrap for widechar at cut index #308
+  * Fix errors attempting to import eventus #325
+
 v4.0.0a3
   * No weekend option #264
   * Fixed bug with `add` and iterators #268
