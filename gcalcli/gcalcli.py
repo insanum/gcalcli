@@ -112,14 +112,14 @@ Usage:
 
   quick <text>             quick add an event to a calendar
                            - a single --calendar must specified
-                           - the "--details url" option will show the event link
+                           - the "--details url" option will show the event url
                            - example text:
                               'Dinner with Eric 7pm tomorrow'
                               '5pm 10/31 Trick or Treat'
 
   add                      add a detailed event to a calendar
                            - a single --calendar must specified
-                           - the "--details url" option will show the event link
+                           - the "--details url" option will show the event url
                            - example:
                               gcalcli --calendar 'Eric Davis'
                                       --title 'Analysis of Algorithms Final'
@@ -206,7 +206,7 @@ except ImportError as e:
 # not, we just return a fake failure every time and use only dateutil.
 try:
     from parsedatetime import parsedatetime
-except:
+except ImportError:
     class parsedatetime:
         class Calendar:
             def parse(self, string):
@@ -216,7 +216,8 @@ locale.setlocale(locale.LC_ALL, "")
 
 
 def _u(string):
-    encoding = locale.getlocale()[1] or locale.getpreferredencoding(False) or "UTF-8"
+    encoding = locale.getlocale()[1] or \
+            locale.getpreferredencoding(False) or "UTF-8"
     if issubclass(type(string), six.text_type):
         return string
     if not issubclass(type(string), six.string_types):
@@ -435,7 +436,7 @@ class DateTimeParser:
 
         try:
             eTimeStart = parse(eWhen, default=defaultDateTime)
-        except:
+        except Exception:
             struct, result = self.pdtCalendar.parse(eWhen)
             if not result:
                 raise ValueError("Date and time is invalid")
@@ -455,14 +456,14 @@ def GetTimeFromStr(eWhen, eDuration=0):
 
     try:
         eTimeStart = dtp.fromString(eWhen)
-    except:
+    except Exception:
         PrintErrMsg('Date and time is invalid!\n')
         sys.exit(1)
 
     if 'allday' in FLAGS and FLAGS.allday:
         try:
             eTimeStop = eTimeStart + timedelta(days=float(eDuration))
-        except:
+        except Exception:
             PrintErrMsg('Duration time (days) is invalid\n')
             sys.exit(1)
 
@@ -472,7 +473,7 @@ def GetTimeFromStr(eWhen, eDuration=0):
     else:
         try:
             eTimeStop = eTimeStart + timedelta(minutes=float(eDuration))
-        except:
+        except Exception:
             PrintErrMsg('Duration time (minutes) is invalid\n')
             sys.exit(1)
 
@@ -719,7 +720,8 @@ class gcalcli:
             pageToken = calList.get('nextPageToken')
             if pageToken:
                 calList = self._RetryWithBackoff(
-                    self._CalService().calendarList().list(pageToken=pageToken))
+                    self._CalService().calendarList().list(
+                        pageToken=pageToken))
             else:
                 break
 
@@ -789,9 +791,9 @@ class gcalcli:
 
             allDay = self._IsAllDay(event)
 
-            # NOTE(slawqo): in allDay events end date is always set as day+1 and
-            # hour 0:00 so to not display it one day more, it's necessary to
-            # lower it by one day:
+            # NOTE(slawqo): in allDay events end date is always set as day+1
+            # and hour 0:00 so to not display it one day more, it's necessary
+            # to lower it by one day:
             if allDay:
                 eventEndDate = event['e'] - timedelta(days=1)
             else:
@@ -871,7 +873,8 @@ class gcalcli:
                             " " + \
                             _u(self._ValidTitle(event).strip())
                 else:
-                    # newline and empty string are the keys to turn off coloring
+                    # newline and empty string are the keys to turn off
+                    # coloring
                     weekEventStrings[dayNum] += \
                         "\n" + \
                         _u(eventColor) + \
@@ -971,7 +974,7 @@ class gcalcli:
 
         dayWidthLine = (self.calWidth * str(ART_HRZ()))
 
-        dayNums = range(7) if self.calWeekend else range(1,6)
+        dayNums = range(7) if self.calWeekend else range(1, 6)
         days = len(dayNums)
 
         topWeekDivider = (str(self.borderColor) +
@@ -1248,13 +1251,17 @@ class gcalcli:
 
         if allDay:
             fmt = '  ' + timeFormat + '  %s\n'
-            PrintMsg(eventColor, fmt % ('', _u(self._ValidTitle(event).strip())))
+            PrintMsg(
+                eventColor, fmt % ('', _u(self._ValidTitle(event).strip())))
         else:
             fmt = '  ' + timeFormat + '  %s\n'
-            PrintMsg(eventColor, fmt % (_u(tmpTimeStr), _u(self._ValidTitle(event).strip())))
+            PrintMsg(
+                eventColor, fmt % (
+                    _u(tmpTimeStr), _u(self._ValidTitle(event).strip())))
 
         if self.detailCalendar:
-            xstr = "%s  Calendar: %s\n" % (detailsIndent, event['gcalcli_cal']['summary'])
+            xstr = "%s  Calendar: %s\n" % (
+                    detailsIndent, event['gcalcli_cal']['summary'])
             PrintMsg(CLR_NRM(), xstr)
 
         if self.detailUrl and 'htmlLink' in event:
@@ -1383,7 +1390,7 @@ class gcalcli:
             return
 
         PrintMsg(CLR_MAG(), "Delete? [N]o [y]es [q]uit: ")
-        val = raw_input()
+        val = six.raw_input()
 
         if not val or val.lower() == 'n':
             return
@@ -1404,6 +1411,26 @@ class gcalcli:
             sys.stdout.write('\n')
             sys.exit(1)
 
+    def _SetEventStartEnd(self, start, end, event):
+        event['s'] = parse(start)
+        event['e'] - parse(end)
+
+        if self.allDay:
+            event['start'] = {'date': start,
+                              'dateTime': None,
+                              'timeZone': None}
+            event['end'] = {'date': end,
+                            'dateTime': None,
+                            'timeZone': None}
+        else:
+            event['start'] = {'date': None,
+                              'dateTime': start,
+                              'timeZone': event['gcalcli_cal']['timeZone']}
+            event['end'] = {'date': None,
+                            'dateTime': end,
+                            'timeZone': event['gcalcli_cal']['timeZone']}
+        return event
+
     def _EditEvent(self, event):
 
         while True:
@@ -1413,7 +1440,7 @@ class gcalcli:
                                 "[t]itle [l]ocation " +
                                 "[w]hen len[g]th " +
                                 "[r]eminder [d]escr: ")
-            val = raw_input()
+            val = six.raw_input()
 
             if not val or val.lower() == 'n':
                 return
@@ -1441,75 +1468,40 @@ class gcalcli:
 
             elif val.lower() == 't':
                 PrintMsg(CLR_MAG(), "Title: ")
-                val = raw_input()
+                val = six.raw_input()
                 if val.strip():
                     event['summary'] = \
                         _u(val.strip())
 
             elif val.lower() == 'l':
                 PrintMsg(CLR_MAG(), "Location: ")
-                val = raw_input()
+                val = six.raw_input()
                 if val.strip():
                     event['location'] = \
                         _u(val.strip())
 
             elif val.lower() == 'w':
                 PrintMsg(CLR_MAG(), "When: ")
-                val = raw_input()
+                val = six.raw_input()
                 if val.strip():
                     td = (event['e'] - event['s'])
                     length = ((td.days * 1440) + (td.seconds / 60))
                     newStart, newEnd = GetTimeFromStr(val.strip(), length)
-                    event['s'] = parse(newStart)
-                    event['e'] = parse(newEnd)
-
-                    if self.allDay:
-                        event['start'] = {'date': newStart,
-                                          'dateTime': None,
-                                          'timeZone': None}
-                        event['end'] = {'date': newEnd,
-                                        'dateTime': None,
-                                        'timeZone': None}
-
-                    else:
-                        event['start'] = {'date': None,
-                                          'dateTime': newStart,
-                                          'timeZone': event['gcalcli_cal']['timeZone']}
-                        event['end'] = {'date': None,
-                                        'dateTime': newEnd,
-                                        'timeZone': event['gcalcli_cal']['timeZone']}
+                    event = self._SetEventStartEnd(newStart, newEnd, event)
 
             elif val.lower() == 'g':
                 PrintMsg(CLR_MAG(), "Length (mins): ")
-                val = raw_input()
+                val = six.raw_input()
                 if val.strip():
                     newStart, newEnd = \
                         GetTimeFromStr(event['start']['dateTime'], val.strip())
-                    event['s'] = parse(newStart)
-                    event['e'] = parse(newEnd)
-
-                    if self.allDay:
-                        event['start'] = {'date': newStart,
-                                          'dateTime': None,
-                                          'timeZone': None}
-                        event['end'] = {'date': newEnd,
-                                        'dateTime': None,
-                                        'timeZone': None}
-
-                    else:
-                        event['start'] = {'date': None,
-                                          'dateTime': newStart,
-                                          'timeZone': event['gcalcli_cal']['timeZone']}
-                        event['end'] = {'date': None,
-                                        'dateTime': newEnd,
-                                        'timeZone': event['gcalcli_cal']['timeZone']}
 
             elif val.lower() == 'r':
                 rem = []
                 while 1:
                     PrintMsg(CLR_MAG(),
                              "Enter a valid reminder or '.' to end: ")
-                    r = raw_input()
+                    r = six.raw_input()
                     if r == '.':
                         break
                     rem.append(r)
@@ -1527,7 +1519,7 @@ class gcalcli:
 
             elif val.lower() == 'd':
                 PrintMsg(CLR_MAG(), "Description: ")
-                val = raw_input()
+                val = six.raw_input()
                 if val.strip():
                     event['description'] = \
                         _u(val.strip())
@@ -1679,13 +1671,13 @@ class gcalcli:
         else:
             try:
                 start = self.dateParser.fromString(startText)
-            except:
+            except Exception:
                 raise Exception('Error: failed to parse start time\n')
 
         if endText:
             try:
                 end = self.dateParser.fromString(endText)
-            except:
+            except Exception:
                 raise Exception('Error: failed to parse end time\n')
 
         return (start, end)
@@ -1746,7 +1738,7 @@ class gcalcli:
                 start = self.dateParser.fromString(startText)
                 start = start.replace(hour=0, minute=0, second=0,
                                       microsecond=0)
-            except:
+            except Exception:
                 PrintErrMsg('Error: failed to parse start time\n')
                 return
 
@@ -1793,9 +1785,9 @@ class gcalcli:
 
         if len(self.cals) < 1:
             PrintErrMsg("Calendar not specified or not found.\n"
-                        "If \"gcalcli list\" doesn't find the calendar you're trying to use,\n"
-                        "your cache file might be stale and you might need to remove it and try"
-                        "again\n")
+                        "If \"gcalcli list\" doesn't find the calendar you're"
+                        "trying to use,\n" "your cache file might be stale and"
+                        "you might need to remove it and try" "again\n")
             return
 
         newEvent = self._RetryWithBackoff(
@@ -1887,9 +1879,8 @@ class gcalcli:
                             yearDate=True, work=self._EditEvent)
 
     def Remind(self, minutes=10, command=None, use_reminders=False):
-        """Check for events between now and now+minutes.
-           If use_reminders then only remind if now >= event['start'] - reminder
-    """
+        """Check for events between now and now+minutes.  If use_reminders then
+           only remind if now >= event['start'] - reminder"""
 
         if command is None:
             command = self.command
@@ -1910,10 +1901,12 @@ class gcalcli:
                 continue
 
             # not sure if 'reminders' always in event
-            if use_reminders and 'reminders' in event and 'overrides' in event['reminders']:
+            if use_reminders and 'reminders' in event \
+                    and 'overrides' in event['reminders']:
                 if all(event['s'] - timedelta(minutes=r['minutes']) > self.now
-                   for r in event['reminders']['overrides']):
-                    continue   # don't remind if all reminders haven't arrived yet
+                        for r in event['reminders']['overrides']):
+                    # don't remind if all reminders haven't arrived yet
+                    continue
 
             if self.military:
                 tmpTimeStr = event['s'].strftime('%H:%M')
@@ -1977,9 +1970,11 @@ class gcalcli:
                 if ve.dtend.value:
                     print("End..........%s" % ve.dtend.value.isoformat())
                 if ve.dtstart.value:
-                    print("Local Start..%s" % self._LocalizeDateTime(ve.dtstart.value))
+                    print("Local Start..%s" % self._LocalizeDateTime(
+                        ve.dtstart.value))
                 if ve.dtend.value:
-                    print("Local End....%s" % self._LocalizeDateTime(ve.dtend.value))
+                    print("Local End....%s" % self._LocalizeDateTime(
+                        ve.dtend.value))
 
             if hasattr(ve, 'rrule'):
 
@@ -1996,8 +1991,8 @@ class gcalcli:
                 # same timezone. This needs to be changed to use the timezone
                 # from the DTSTART and DTEND values. Problem is, for example,
                 # the TZID might be "Pacific Standard Time" and Google expects
-                # a timezone string like "America/Los_Angeles". Need to find
-                # a way in python to convert to the more specific timezone
+                # a timezone string like "America/Los_Angeles". Need to find a
+                # way in python to convert to the more specific timezone
                 # string.
                 # XXX
                 # print ve.dtstart.params['X-VOBJ-ORIGINAL-TZID'][0]
@@ -2072,7 +2067,7 @@ class gcalcli:
 
         try:
             import vobject
-        except:
+        except Exception:
             PrintErrMsg('Python vobject module not installed!\n')
             sys.exit(1)
 
@@ -2087,13 +2082,12 @@ class gcalcli:
 
         if icsFile:
             try:
-                f = file(icsFile)
+                f = open(icsFile)
             except Exception as e:
                 PrintErrMsg("Error: " + str(e) + "!\n")
                 sys.exit(1)
 
         while True:
-
             try:
                 v = vobject.readComponents(f).next()
             except StopIteration:
@@ -2119,7 +2113,7 @@ class gcalcli:
                     continue
 
                 PrintMsg(CLR_MAG(), "\n[S]kip [i]mport [q]uit: ")
-                val = raw_input()
+                val = six.raw_input()
                 if not val or val.lower() == 's':
                     continue
                 if val.lower() == 'i':
@@ -2193,134 +2187,179 @@ def ValidWidth(value):
 
 def ValidReminder(value):
     if not ParseReminder(value):
-        raise argparse.ArgumentTypeError("Not a valid reminder string: %s" % value)
+        raise argparse.ArgumentTypeError(
+                "Not a valid reminder string: %s" % value)
     else:
         return value
 
-FLAGS = {}
-gflags = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                                 fromfile_prefix_chars="@",
-                                 parents=[tools.argparser])
 
-gflags.add_argument("--version", action="version", version="%%(prog)s %s (%s)" %
-                                                           (__version__, __author__))
+FLAGS = {}
+gflags = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        fromfile_prefix_chars="@",
+        parents=[tools.argparser])
+
+gflags.add_argument(
+        "--version", action="version", version="%%(prog)s %s (%s)" %
+        (__version__, __author__))
 
 # Program level options
-gflags.add_argument("--client_id", default=__API_CLIENT_ID__, type=str, help="API client_id")
-gflags.add_argument("--client_secret", default=__API_CLIENT_SECRET__, type=str,
-                    help="API client_secret")
-gflags.add_argument("--configFolder", default=None, type=str,
-                    help="Optional directory to load/store all configuration "
-                    "information")
-gflags.add_argument("--noincluderc", action="store_false", dest="includeRc",
-                    help="Whether to include ~/.gcalclirc when using configFolder")
-gflags.add_argument("--calendar", default=[], type=str, action="append",
-                    help="Which calendars to use")
-gflags.add_argument("--defaultCalendar", default=[], type=str, action="append",
-                    help="Optional default calendar to use if no --calendar "
-                    "options are given")
-gflags.add_argument("--locale", default=None, type=str, help="System locale")
-gflags.add_argument("--refresh", action="store_true", help="Delete and refresh cached data")
-gflags.add_argument("--nocache", action="store_false", dest="cache",
-                    help="Execute command without using cache")
-gflags.add_argument("--conky", action="store_true", help="Use Conky color codes")
-gflags.add_argument("--nocolor", action="store_false", dest="color",
-                    help="Enable/Disable all color output")
-gflags.add_argument("--nolineart", action="store_false", dest="lineart",
-                    help="Enable/Disable line art")
+gflags.add_argument(
+        "--client_id", default=__API_CLIENT_ID__, type=str,
+        help="API client_id")
+gflags.add_argument(
+        "--client_secret", default=__API_CLIENT_SECRET__, type=str,
+        help="API client_secret")
+gflags.add_argument(
+        "--configFolder", default=None, type=str,
+        help="Optional directory to load/store all configuration information")
+gflags.add_argument(
+        "--noincluderc", action="store_false", dest="includeRc",
+        help="Whether to include ~/.gcalclirc when using configFolder")
+gflags.add_argument(
+        "--calendar", default=[], type=str, action="append",
+        help="Which calendars to use")
+gflags.add_argument(
+        "--defaultCalendar", default=[], type=str, action="append",
+        help="Optional default calendar to use if no --calendar options" +
+        "are given")
+gflags.add_argument(
+        "--locale", default=None, type=str, help="System locale")
+gflags.add_argument(
+        "--refresh", action="store_true",
+        help="Delete and refresh cached data")
+gflags.add_argument(
+        "--nocache", action="store_false", dest="cache",
+        help="Execute command without using cache")
+gflags.add_argument(
+        "--conky", action="store_true", help="Use Conky color codes")
+gflags.add_argument(
+        "--nocolor", action="store_false", dest="color",
+        help="Enable/Disable all color output")
+gflags.add_argument(
+        "--nolineart", action="store_false", dest="lineart",
+        help="Enable/Disable line art")
 
 detailsParser = argparse.ArgumentParser(add_help=False)
-detailsParser.add_argument("--details", default=[], type=str, action="append",
-                           choices=['all', 'calendar', 'location', 'length',
-                                    'reminders', 'description', 'longurl', 'shorturl',
-                                    'url', 'attendees', 'email', 'attachments'],
-                           help="Which parts to display, can be: "
-                           "'all', 'calendar', 'location', 'length', "
-                           "'reminders', 'description', 'longurl', 'shorturl', "
-                           "'url', 'attendees', 'email'")
+detailsParser.add_argument(
+        "--details", default=[], type=str, action="append",
+        choices=['all', 'calendar', 'location', 'length',
+                 'reminders', 'description', 'longurl', 'shorturl',
+                 'url', 'attendees', 'email', 'attachments'],
+        help="Which parts to display, can be: "
+        "'all', 'calendar', 'location', 'length', "
+        "'reminders', 'description', 'longurl', 'shorturl', "
+        "'url', 'attendees', 'email'")
 
 outputParser = argparse.ArgumentParser(add_help=False)
-outputParser.add_argument("--tsv", action="store_true", help="Use Tab Separated Value output")
-outputParser.add_argument("--nostarted", action="store_false", dest="started",
-                          help="Hide events that have started")
-outputParser.add_argument("--nodeclined", action="store_false", dest="declined",
-                          help="Hide events that have been declined")
-outputParser.add_argument("--width", "-w", default=10, type=ValidWidth, help="Set output width")
-outputParser.add_argument("--military", action="store_true", help="Use 24 hour display")
+outputParser.add_argument(
+        "--tsv", action="store_true", help="Use Tab Separated Value output")
+outputParser.add_argument(
+        "--nostarted", action="store_false", dest="started",
+        help="Hide events that have started")
+outputParser.add_argument(
+        "--nodeclined", action="store_false", dest="declined",
+        help="Hide events that have been declined")
+outputParser.add_argument(
+        "--width", "-w", default=10, type=ValidWidth, help="Set output width")
+outputParser.add_argument(
+        "--military", action="store_true", help="Use 24 hour display")
 
 colorParser = argparse.ArgumentParser(add_help=False)
-colorParser.add_argument("--color_owner", default="cyan", type=ValidColor,
-                         help="Color for owned calendars")
-colorParser.add_argument("--color_writer", default="green", type=ValidColor,
-                         help="Color for writable calendars")
-colorParser.add_argument("--color_reader", default="magenta", type=ValidColor,
-                         help="Color for read-only calendars")
-colorParser.add_argument("--color_freebusy", default="default", type=ValidColor,
-                         help="Color for free/busy calendars")
-colorParser.add_argument("--color_date", default="yellow", type=ValidColor,
-                         help="Color for the date")
-colorParser.add_argument("--color_now_marker", default="brightred", type=ValidColor,
-                         help="Color for the now marker")
-colorParser.add_argument("--color_border", default="white", type=ValidColor,
-                         help="Color of line borders")
+colorParser.add_argument(
+        "--color_owner", default="cyan", type=ValidColor,
+        help="Color for owned calendars")
+colorParser.add_argument(
+        "--color_writer", default="green", type=ValidColor,
+        help="Color for writable calendars")
+colorParser.add_argument(
+        "--color_reader", default="magenta", type=ValidColor,
+        help="Color for read-only calendars")
+colorParser.add_argument(
+        "--color_freebusy", default="default", type=ValidColor,
+        help="Color for free/busy calendars")
+colorParser.add_argument(
+        "--color_date", default="yellow", type=ValidColor,
+        help="Color for the date")
+colorParser.add_argument(
+        "--color_now_marker", default="brightred", type=ValidColor,
+        help="Color for the now marker")
+colorParser.add_argument(
+        "--color_border", default="white", type=ValidColor,
+        help="Color of line borders")
 
 remindParser = argparse.ArgumentParser(add_help=False)
-remindParser.add_argument("--reminder", default=[], type=ValidReminder, action="append",
-                          help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
-                          "is a number which may be followed by an optional "
-                          "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
-                          "minutes) and default to minutes.  METH is a string "
-                          "'popup', 'email', or 'sms' and defaults to popup.")
-remindParser.add_argument("--default_reminders", action="store_true",
-                          help="If no --reminder is given, use the defaults.  If this is "
-                          "false, do not create any reminders.")
+remindParser.add_argument(
+        "--reminder", default=[], type=ValidReminder, action="append",
+        help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
+        "is a number which may be followed by an optional "
+        "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
+        "minutes) and default to minutes.  METH is a string "
+        "'popup', 'email', or 'sms' and defaults to popup.")
+remindParser.add_argument(
+        "--default_reminders", action="store_true",
+        help="If no --reminder is given, use the defaults.  If this is "
+        "false, do not create any reminders.")
 
 sub = gflags.add_subparsers(help="Sub command help?", dest="command")
 sub.required = True
 
 sub.add_parser("list", parents=[colorParser])
 
-search = sub.add_parser("search", parents=[detailsParser, outputParser, colorParser])
+search = sub.add_parser(
+        "search", parents=[detailsParser, outputParser, colorParser])
 search.add_argument("text", nargs=1)
 search.add_argument("start", type=str, nargs="?")
 search.add_argument("end", type=str, nargs="?")
 
-agenda = sub.add_parser("agenda", parents=[detailsParser, outputParser, colorParser])
+agenda = sub.add_parser(
+        "agenda", parents=[detailsParser, outputParser, colorParser])
 agenda.add_argument("start", type=str, nargs="?")
 agenda.add_argument("end", type=str, nargs="?")
 
-calw = sub.add_parser("calw", parents=[detailsParser, outputParser, colorParser])
+calw = sub.add_parser(
+        "calw", parents=[detailsParser, outputParser, colorParser])
 calw.add_argument("weeks", type=int, default=1, nargs="?")
 calw.add_argument("start", type=str, nargs="?")
-calw.add_argument("--monday", action="store_true", help="Start the week on Monday")
-calw.add_argument("--noweekend", action="store_false", help="Hide Saturday and Sunday")
+calw.add_argument(
+        "--monday", action="store_true", help="Start the week on Monday")
+calw.add_argument(
+        "--noweekend", action="store_false", help="Hide Saturday and Sunday")
 
-calm = sub.add_parser("calm", parents=[detailsParser, outputParser, colorParser])
+calm = sub.add_parser(
+        "calm", parents=[detailsParser, outputParser, colorParser])
 calm.add_argument("start", type=str, nargs="?")
-calm.add_argument("--monday", action="store_true", help="Start the week on Monday")
-calm.add_argument("--noweekend", action="store_false", help="Hide Saturday and Sunday")
+calm.add_argument(
+        "--monday", action="store_true", help="Start the week on Monday")
+calm.add_argument(
+        "--noweekend", action="store_false", help="Hide Saturday and Sunday")
 
 quick = sub.add_parser("quick", parents=[detailsParser, remindParser])
 quick.add_argument("text")
 
 add = sub.add_parser("add", parents=[detailsParser, remindParser])
 add.add_argument("--title", default=None, type=str, help="Event title")
-add.add_argument("--who", default=[], type=str, action="append",
-                 help="Event title")
+add.add_argument(
+        "--who", default=[], type=str, action="append", help="Event title")
 add.add_argument("--where", default=None, type=str, help="Event location")
 add.add_argument("--when", default=None, type=str, help="Event time")
-add.add_argument("--duration", default=None, type=int,
-                 help="Event duration in minutes or days if --allday is given.")
-add.add_argument("--description", default=None, type=str, help="Event description")
-add.add_argument("--allday", action="store_true",
-                 help="If --allday is given, the event will be an all-day event "
-                      "(possibly multi-day if --duration is greater than 1). The "
-                      "time part of the --when will be ignored.")
-add.add_argument("--prompt", action="store_true",
-                 help="Prompt for missing data when adding events")
+add.add_argument(
+        "--duration", default=None, type=int,
+        help="Event duration in minutes or days if --allday is given.")
+add.add_argument(
+        "--description", default=None, type=str, help="Event description")
+add.add_argument(
+        "--allday", action="store_true",
+        help="If --allday is given, the event will be an all-day event "
+        "(possibly multi-day if --duration is greater than 1). The "
+        "time part of the --when will be ignored.")
+add.add_argument(
+        "--prompt", action="store_true",
+        help="Prompt for missing data when adding events")
 
-# TODO: Fix this it doesn't work this way as nothing ever goes into [start] or [end]
+# TODO: Fix this it doesn't work this way as nothing ever goes into [start] or
+# [end]
 delete = sub.add_parser("delete")
 delete.add_argument("text", nargs=1)
 delete.add_argument("start", type=str, nargs="?")
@@ -2332,17 +2371,21 @@ edit.add_argument("text")
 
 _import = sub.add_parser("import", parents=[remindParser])
 _import.add_argument("file", type=argparse.FileType('r'), nargs="?")
-_import.add_argument("--verbose", "-v", action="count", help="Be verbose on imports")
-_import.add_argument("--dump", "-d", action="store_true", help="Print events and don't import")
+_import.add_argument(
+        "--verbose", "-v", action="count", help="Be verbose on imports")
+_import.add_argument(
+        "--dump", "-d", action="store_true",
+        help="Print events and don't import")
 
 remind = sub.add_parser("remind")
 remind.add_argument("minutes", type=int)
 remind.add_argument("cmd", type=str)
-remind.add_argument("--use_reminders", action="store_true",
-                    help="Honour the remind time when running remind command")
+remind.add_argument(
+        "--use_reminders", action="store_true",
+        help="Honour the remind time when running remind command")
 
 
-def BowChickaWowWow():
+def main():
     global FLAGS
     try:
         argv = sys.argv[1:]
@@ -2376,8 +2419,9 @@ def BowChickaWowWow():
         (FLAGS, junk) = gflags.parse_known_args(tmpArgv)
 
     if junk:
-        PrintErrMsg("The following options are either no longer valid globally "
-                    "or just plain invalid:\n  %s\n" % "\n  ".join(junk))
+        PrintErrMsg(
+                "The following options are either no longer valid globally "
+                "or just plain invalid:\n  %s\n" % "\n  ".join(junk))
 
     if not FLAGS.color:
         CLR.useColor = False
@@ -2427,7 +2471,8 @@ def BowChickaWowWow():
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
 
-        gcal.TextQuery(_u(FLAGS.text[0]), startText=FLAGS.start, endText=FLAGS.end)
+        gcal.TextQuery(
+                _u(FLAGS.text[0]), startText=FLAGS.start, endText=FLAGS.end)
 
         if not FLAGS.tsv:
             sys.stdout.write('\n')
@@ -2460,27 +2505,27 @@ def BowChickaWowWow():
         if FLAGS.prompt:
             if FLAGS.title is None:
                 PrintMsg(CLR_MAG(), "Title: ")
-                FLAGS.title = raw_input()
+                FLAGS.title = six.raw_input()
             if FLAGS.where is None:
                 PrintMsg(CLR_MAG(), "Location: ")
-                FLAGS.where = raw_input()
+                FLAGS.where = six.raw_input()
             if FLAGS.when is None:
                 PrintMsg(CLR_MAG(), "When: ")
-                FLAGS.when = raw_input()
+                FLAGS.when = six.raw_input()
             if FLAGS.duration is None:
                 if FLAGS.allday:
                     PrintMsg(CLR_MAG(), "Duration (days): ")
                 else:
                     PrintMsg(CLR_MAG(), "Duration (mins): ")
-                FLAGS.duration = raw_input()
+                FLAGS.duration = six.raw_input()
             if FLAGS.description is None:
                 PrintMsg(CLR_MAG(), "Description: ")
-                FLAGS.description = raw_input()
+                FLAGS.description = six.raw_input()
             if not FLAGS.reminder:
                 while 1:
                     PrintMsg(CLR_MAG(),
                              "Enter a valid reminder or '.' to end: ")
-                    r = raw_input()
+                    r = six.raw_input()
                     if r == '.':
                         break
                     n, m = ParseReminder(str(r))
@@ -2522,17 +2567,21 @@ def BowChickaWowWow():
         sys.stdout.write('\n')
 
     elif FLAGS.command == 'remind':
-        gcal.Remind(FLAGS.minutes, FLAGS.cmd, use_reminders=FLAGS.use_reminders)
+        gcal.Remind(
+                FLAGS.minutes, FLAGS.cmd, use_reminders=FLAGS.use_reminders)
 
     elif FLAGS.command == 'import':
-        gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file.name)
+        gcal.ImportICS(
+                FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file.name)
 
 
 def SIGINT_handler(signum, frame):
     PrintErrMsg('Signal caught, bye!\n')
     sys.exit(1)
 
+
 signal.signal(signal.SIGINT, SIGINT_handler)
 
+
 if __name__ == '__main__':
-    BowChickaWowWow()
+    main()
