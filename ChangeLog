@@ -1,3 +1,21 @@
+v4.0.0a4
+  * Multiday events support #277
+  * Fix textwrap for widechar at cut index #308
+  * Fix errors attempting to import eventus #325
+
+v4.0.0a3
+  * No weekend option #264
+  * Fixed bug with `add` and iterators #268
+  * Deal with more encoding issues... #261
+  * Get error from JSON object #260
+
+v4.0.0a2
+  * Support for Python3 via six
+
+v4.0.0a1
+  * Move from gflags to argparse
+    This is a major, non-backwards compatible change (hence the roll up to v4)
+
 v3.4.0
   * Support for adding attendees (jcmuller)
   * Fix crash when organizer/attendee don't have emails (tschwinge)

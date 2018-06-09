@@ -65,9 +65,10 @@
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
 #                                                                           #
 #############################################################################
+from __future__ import print_function
 
 __program__ = 'gcalcli'
-__version__ = 'v3.4.0'
+__version__ = 'v4.0.0a4'
 __author__ = 'Eric Davis, Brian Hartvigsen'
 __doc__ = '''
 Usage:
@@ -181,6 +182,7 @@ import textwrap
 import signal
 import json
 import random
+import argparse
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
 
@@ -188,23 +190,17 @@ from unicodedata import east_asian_width
 try:
     from dateutil.tz import tzlocal
     from dateutil.parser import parse
-    import gflags
     import httplib2
+    import six
+    from six.moves import range, zip, map, cPickle as pickle
     from apiclient.discovery import build
     from apiclient.errors import HttpError
     from oauth2client.file import Storage
     from oauth2client.client import OAuth2WebServerFlow
-    from oauth2client.tools import run
+    from oauth2client import tools
 except ImportError as e:
-    print "ERROR: Missing module - %s" % e.args[0]
+    print("ERROR: Missing module - %s" % e.args[0])
     sys.exit(1)
-
-# cPickle is a standard library, but in case someone did something really
-# dumb, fall back to pickle.  If that's not their, your python is fucked
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 
 # If they have parsedatetime, we'll use it for fuzzy datetime comparison.  If
 # not, we just return a fake failure every time and use only dateutil.
@@ -219,31 +215,22 @@ except:
 locale.setlocale(locale.LC_ALL, "")
 
 
-def stringToUnicode(string):
-    if string:
-        return unicode(string, locale.getlocale()[1] or
-                       locale.getpreferredencoding(False) or
-                       "UTF-8")
+def _u(string):
+    encoding = locale.getlocale()[1] or locale.getpreferredencoding(False) or "UTF-8"
+    if issubclass(type(string), six.text_type):
+        return string
+    if not issubclass(type(string), six.string_types):
+        if six.PY3:
+            if isinstance(string, bytes):
+                return six.text_type(string, encoding, "replace")
+            else:
+                return six.text_type(string)
+        elif hasattr(string, '__unicode__'):
+            return six.text_type(string)
+        else:
+            return six.text_type(bytes(string), encoding, "replace")
     else:
-        return u''
-
-
-def stringFromUnicode(string):
-    return string.encode(locale.getlocale()[1] or
-                         locale.getpreferredencoding(False) or
-                         "UTF-8", "replace")
-
-
-def Version():
-    sys.stdout.write(__program__ + ' ' + __version__ + ' (' + __author__ + ')\n')
-    sys.exit(1)
-
-
-def Usage(expanded=False):
-    sys.stdout.write(__doc__ % sys.argv[0])
-    if expanded:
-        print FLAGS.MainModuleHelp()
-    sys.exit(1)
+        return string.decode(encoding, "replace")
 
 
 class CLR:
@@ -415,9 +402,6 @@ def PrintErrMsg(msg):
 
 
 def PrintMsg(color, msg):
-    if isinstance(msg, unicode):
-        msg = stringFromUnicode(msg)
-
     if CLR.useColor:
         sys.stdout.write(str(color))
         sys.stdout.write(msg)
@@ -436,7 +420,7 @@ def dprint(obj):
         from pprint import pprint
         pprint(obj)
     except ImportError:
-        print obj
+        print(obj)
 
 
 class DateTimeParser:
@@ -475,7 +459,7 @@ def GetTimeFromStr(eWhen, eDuration=0):
         PrintErrMsg('Date and time is invalid!\n')
         sys.exit(1)
 
-    if FLAGS.allday:
+    if 'allday' in FLAGS and FLAGS.allday:
         try:
             eTimeStop = eTimeStart + timedelta(days=float(eDuration))
         except:
@@ -501,8 +485,8 @@ def GetTimeFromStr(eWhen, eDuration=0):
 def ParseReminder(rem):
     matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
     if not matchObj:
-        PrintErrMsg('Invalid reminder: ' + rem + '\n')
-        sys.exit(1)
+        # Allow argparse to generate a message when parsing options
+        return None
     n = int(matchObj.group(1))
     t = matchObj.group(2)
     m = matchObj.group(3)
@@ -544,71 +528,61 @@ class gcalcli:
     def __init__(self,
                  calNames=[],
                  calNameColors=[],
-                 military=False,
-                 detailCalendar=False,
-                 detailLocation=False,
-                 detailAttendees=False,
-                 detailAttachments=False,
-                 detailLength=False,
-                 detailReminders=False,
-                 detailDescr=False,
-                 detailDescrWidth=80,
-                 detailUrl=None,
-                 detailEmail=False,
-                 ignoreStarted=False,
-                 ignoreDeclined=False,
-                 calWidth=10,
-                 calMonday=False,
-                 calOwnerColor=CLR_CYN(),
-                 calWriterColor=CLR_GRN(),
-                 calReaderColor=CLR_MAG(),
-                 calFreeBusyColor=CLR_NRM(),
-                 dateColor=CLR_YLW(),
-                 nowMarkerColor=CLR_BRRED(),
-                 borderColor=CLR_WHT(),
-                 tsv=False,
-                 refreshCache=False,
-                 useCache=True,
-                 configFolder=None,
-                 client_id=__API_CLIENT_ID__,
-                 client_secret=__API_CLIENT_SECRET__,
-                 defaultReminders=False,
-                 allDay=False):
+                 options={}):
 
-        self.military = military
-        self.ignoreStarted = ignoreStarted
-        self.ignoreDeclined = ignoreDeclined
-        self.calWidth = calWidth
-        self.calMonday = calMonday
-        self.tsv = tsv
-        self.refreshCache = refreshCache
-        self.useCache = useCache
-        self.defaultReminders = defaultReminders
-        self.allDay = allDay
+        def hasOption(option, default):
+            return vars(options)[option] if option in options else default
 
-        self.detailCalendar = detailCalendar
-        self.detailLocation = detailLocation
-        self.detailLength = detailLength
-        self.detailReminders = detailReminders
-        self.detailDescr = detailDescr
-        self.detailDescrWidth = detailDescrWidth
-        self.detailUrl = detailUrl
-        self.detailAttendees = detailAttendees
-        self.detailAttachments = detailAttachments
-        self.detailEmail = detailEmail
+        def hasColor(option, default):
+            color = hasOption(option, False)
+            if not color:
+                return default
+            return GetColor(color)
 
-        self.calOwnerColor = calOwnerColor
-        self.calWriterColor = calWriterColor
-        self.calReaderColor = calReaderColor
-        self.calFreeBusyColor = calFreeBusyColor
-        self.dateColor = dateColor
-        self.nowMarkerColor = nowMarkerColor
-        self.borderColor = borderColor
+        def hasDetail(option):
+            if 'details' in options and (option in options.details
+                                         or 'all' in options.details):
+                return True
+            else:
+                return False
 
-        self.configFolder = configFolder
+        self.military = hasOption('military', False)
+        self.ignoreStarted = not hasOption('started', True)
+        self.ignoreDeclined = not hasOption('declined', True)
+        self.calWidth = hasOption('width', 10)
+        self.calMonday = hasOption('monday', False)
+        self.calWeekend = hasOption('noweekend', True)
+        self.tsv = hasOption('tsv', False)
+        self.refreshCache = hasOption('refresh', False)
+        self.useCache = hasOption('cache', True)
+        self.defaultReminders = hasOption('default_reminders', False)
+        self.allDay = hasOption('allday', False)
 
-        self.client_id = client_id
-        self.client_secret = client_secret
+        self.detailCalendar = hasDetail('calendar')
+        self.detailLocation = hasDetail('location')
+        self.detailLength = hasDetail('length')
+        self.detailReminders = hasDetail('reminders')
+        self.detailDescr = hasDetail('description')
+        self.detailDescrWidth = hasOption('width', 80)
+        self.detailUrl = 'short' if hasDetail('shorturl') else \
+                         'long' if hasDetail('longurl') or hasDetail('url') \
+                         else None
+        self.detailAttendees = hasDetail('attendees')
+        self.detailEmail = hasDetail('email')
+        self.detailAttachments = hasDetail('attachements')
+
+        self.calOwnerColor = hasColor('color_owner', CLR_CYN())
+        self.calWriterColor = hasColor('color_writer', CLR_GRN())
+        self.calReaderColor = hasColor('color_reader', CLR_MAG())
+        self.calFreeBusyColor = hasColor('color_freebusy', CLR_NRM())
+        self.dateColor = hasColor('color_date', CLR_YLW())
+        self.nowMarkerColor = hasColor('color_now_marker', CLR_BRRED())
+        self.borderColor = hasColor('color_border', CLR_WHT())
+
+        self.configFolder = hasOption('configFolder', None)
+
+        self.client_id = hasOption('client_id', __API_CLIENT_ID__)
+        self.client_secret = hasOption('client_secret', __API_CLIENT_SECRET__)
 
         self._GetCached()
 
@@ -616,7 +590,7 @@ class gcalcli:
             # Changing the order of this and the `cal in self.allCals` loop
             # is necessary for the matching to actually be sane (ie match
             # supplied name to cached vs matching cache against supplied names)
-            for i in xrange(len(calNames)):
+            for i in range(len(calNames)):
                 matches = []
                 for cal in self.allCals:
                     # For exact match, we should match only 1 entry and accept
@@ -652,8 +626,9 @@ class gcalcli:
         for n in range(0, self.maxRetries):
             try:
                 return method.execute()
-            except HttpError, e:
+            except HttpError as e:
                 error = json.loads(e.content)
+                error = error.get('error')
                 if error.get('code') == '403' and \
                         error.get('errors')[0].get('reason') \
                         in ['rateLimitExceeded', 'userRateLimitExceeded']:
@@ -673,14 +648,15 @@ class gcalcli:
             credentials = storage.get()
 
             if credentials is None or credentials.invalid:
-                credentials = run(
+                credentials = tools.run_flow(
                     OAuth2WebServerFlow(
                         client_id=self.client_id,
                         client_secret=self.client_secret,
                         scope=['https://www.googleapis.com/auth/calendar',
                                'https://www.googleapis.com/auth/urlshortener'],
                         user_agent=__program__ + '/' + __version__),
-                    storage)
+                    storage,
+                    FLAGS)
 
             self.authHttp = credentials.authorize(httplib2.Http())
 
@@ -747,15 +723,7 @@ class gcalcli:
             else:
                 break
 
-        # gcalcli defined way to order calendars
-        order = {self.ACCESS_OWNER: 1,
-                 self.ACCESS_WRITER: 2,
-                 self.ACCESS_READER: 3,
-                 self.ACCESS_FREEBUSY: 4}
-
-        self.allCals.sort(lambda x, y:
-                          cmp(order[x['accessRole']],
-                              order[y['accessRole']]))
+        self.allCals.sort(key=lambda x: x['accessRole'])
 
         if self.useCache:
             self.cache['allCals'] = self.allCals
@@ -796,7 +764,7 @@ class gcalcli:
 
     def _IsAllDay(self, event):
         return event['s'].hour == 0 and event['s'].minute == 0 and \
-                        event['e'].hour == 0 and event['e'].minute == 0
+            event['e'].hour == 0 and event['e'].minute == 0
 
     def _GetWeekEventStrings(self, cmd, curMonth,
                              startDateTime, endDateTime, eventList):
@@ -819,11 +787,25 @@ class gcalcli:
                 if dayNum < 0:
                     dayNum = 6
 
-            if event['s'] >= startDateTime and event['s'] < endDateTime:
+            allDay = self._IsAllDay(event)
+
+            # NOTE(slawqo): in allDay events end date is always set as day+1 and
+            # hour 0:00 so to not display it one day more, it's necessary to
+            # lower it by one day:
+            if allDay:
+                eventEndDate = event['e'] - timedelta(days=1)
+            else:
+                eventEndDate = event['e']
+
+            # NOTE(slawqo): it's necessary to process events which starts in
+            # current period of time but for all day events also to process
+            # events which was started before current period of time and are
+            # still continue in current period of time
+            if ((event['s'] >= startDateTime and event['s'] < endDateTime) or
+                (allDay and event['s'] < startDateTime and
+                    eventEndDate >= startDateTime)):
 
                 forceEventColorAsMarker = False
-
-                allDay = self._IsAllDay(event)
 
                 if not nowMarkerPrinted:
                     if (DaysSinceEpoch(self.now) <
@@ -846,7 +828,7 @@ class gcalcli:
                     # all day events for specific coloring but not for previous
                     # or next events
                     elif self.now >= event['s'] and \
-                            self.now <= event['e'] and \
+                            self.now <= eventEndDate and \
                             not allDay:
                         # line marker is during the event (recolor event)
                         nowMarkerPrinted = True
@@ -866,13 +848,36 @@ class gcalcli:
                 else:
                     eventColor = self._CalendarColor(event['gcalcli_cal'])
 
-                # newline and empty string are the keys to turn off coloring
-                weekEventStrings[dayNum] += \
-                    "\n" + \
-                    stringToUnicode(str(eventColor)) + \
-                    stringToUnicode(tmpTimeStr.strip()) + \
-                    " " + \
-                    self._ValidTitle(event).strip()
+                # NOTE(slawqo): for all day events it's necessary to add event
+                # to more than one day in weekEventStrings
+                if allDay and event['s'] < eventEndDate:
+                    if eventEndDate > endDateTime:
+                        endDayNum = 6
+                    else:
+                        endDayNum = int(eventEndDate.strftime("%w"))
+                        if self.calMonday:
+                            endDayNum -= 1
+                            if endDayNum < 0:
+                                endDayNum = 6
+                    if dayNum > endDayNum:
+                        dayNum = 0
+                    for day in range(dayNum, endDayNum + 1):
+                        # newline and empty string are the keys to turn off
+                        # coloring
+                        weekEventStrings[day] += \
+                            "\n" + \
+                            _u(eventColor) + \
+                            _u(tmpTimeStr.strip()) + \
+                            " " + \
+                            _u(self._ValidTitle(event).strip())
+                else:
+                    # newline and empty string are the keys to turn off coloring
+                    weekEventStrings[dayNum] += \
+                        "\n" + \
+                        _u(eventColor) + \
+                        _u(tmpTimeStr.strip()) + \
+                        " " + \
+                        _u(self._ValidTitle(event).strip())
 
         return weekEventStrings
 
@@ -881,10 +886,8 @@ class gcalcli:
         # us the info we want.  Date string were coming in as `str` type
         # so we convert them to unicode and then check their size. Fixes
         # the output issues we were seeing around non-US locale strings
-        if not isinstance(string, unicode):
-            string = stringToUnicode(string)
         printLen = 0
-        for tmpChar in string:
+        for tmpChar in _u(string):
             printLen += self.UNIWIDTH[east_asian_width(tmpChar)]
         return printLen
 
@@ -892,15 +895,14 @@ class gcalcli:
     def _NextCut(self, string, curPrintLen):
         idx = 0
         printLen = 0
-        if not isinstance(string, unicode):
-            string = stringToUnicode(string)
-        for tmpChar in string:
-            if (curPrintLen + printLen) >= self.calWidth:
+        for tmpChar in _u(string):
+            printTmpChar = self.UNIWIDTH[east_asian_width(tmpChar)]
+            if (curPrintLen + printLen + printTmpChar) > self.calWidth:
                 return (printLen, idx, True)
             if tmpChar in (' ', '\n'):
                 return (printLen, idx, False)
             idx += 1
-            printLen += self.UNIWIDTH[east_asian_width(tmpChar)]
+            printLen += printTmpChar
         return (printLen, -1, False)
 
     def _GetCutIndex(self, eventString):
@@ -969,19 +971,22 @@ class gcalcli:
 
         dayWidthLine = (self.calWidth * str(ART_HRZ()))
 
+        dayNums = range(7) if self.calWeekend else range(1,6)
+        days = len(dayNums)
+
         topWeekDivider = (str(self.borderColor) +
                           str(ART_ULC()) + dayWidthLine +
-                          (6 * (str(ART_UTE()) + dayWidthLine)) +
+                          ((days - 1) * (str(ART_UTE()) + dayWidthLine)) +
                           str(ART_URC()) + str(CLR_NRM()))
 
         midWeekDivider = (str(self.borderColor) +
                           str(ART_LTE()) + dayWidthLine +
-                          (6 * (str(ART_CRS()) + dayWidthLine)) +
+                          ((days - 1) * (str(ART_CRS()) + dayWidthLine)) +
                           str(ART_RTE()) + str(CLR_NRM()))
 
         botWeekDivider = (str(self.borderColor) +
                           str(ART_LLC()) + dayWidthLine +
-                          (6 * (str(ART_BTE()) + dayWidthLine)) +
+                          ((days - 1) * (str(ART_BTE()) + dayWidthLine)) +
                           str(ART_LRC()) + str(CLR_NRM()))
 
         empty = self.calWidth * ' '
@@ -991,7 +996,7 @@ class gcalcli:
         dayNames = dayNames[6:] + dayNames[:6]
 
         dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
-        for i in xrange(7):
+        for i in dayNums:
             if self.calMonday:
                 if i == 6:
                     dayName = dayNames[0]
@@ -1007,12 +1012,12 @@ class gcalcli:
         if cmd == 'calm':
             topMonthDivider = (str(self.borderColor) +
                                str(ART_ULC()) + dayWidthLine +
-                               (6 * (str(ART_HRZ()) + dayWidthLine)) +
+                               ((days - 1) * (str(ART_HRZ()) + dayWidthLine)) +
                                str(ART_URC()) + str(CLR_NRM()))
             PrintMsg(CLR_NRM(), "\n" + topMonthDivider + "\n")
 
             m = startDateTime.strftime('%B %Y')
-            mw = (self.calWidth * 7) + 6
+            mw = (self.calWidth * days) + (days - 1)
             m += ' ' * (mw - self._PrintLen(m))
             PrintMsg(CLR_NRM(),
                      str(self.borderColor) +
@@ -1028,7 +1033,7 @@ class gcalcli:
 
             botMonthDivider = (str(self.borderColor) +
                                str(ART_LTE()) + dayWidthLine +
-                               (6 * (str(ART_UTE()) + dayWidthLine)) +
+                               ((days - 1) * (str(ART_UTE()) + dayWidthLine)) +
                                str(ART_RTE()) + str(CLR_NRM()))
             PrintMsg(CLR_NRM(), botMonthDivider + "\n")
 
@@ -1051,11 +1056,11 @@ class gcalcli:
         startWeekDateTime = startDateTime
         endWeekDateTime = (startWeekDateTime + timedelta(days=7))
 
-        for i in xrange(count):
+        for i in range(count):
 
             # create/print date line
             line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
-            for j in xrange(7):
+            for j in dayNums:
                 if cmd == 'calw':
                     d = (startWeekDateTime +
                          timedelta(days=j)).strftime("%d %b")
@@ -1096,9 +1101,9 @@ class gcalcli:
                 done = True
                 line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
 
-                for j in xrange(7):
+                for j in dayNums:
 
-                    if weekEventStrings[j] == '':
+                    if not weekEventStrings[j]:
                         weekColorStrings[j] = ''
                         line += (empty +
                                  str(self.borderColor) +
@@ -1158,10 +1163,12 @@ class gcalcli:
         for event in eventList:
             if self.ignoreStarted and (event['s'] < self.now):
                 continue
-            output = "%s\t%s\t%s\t%s" % (event['s'].strftime('%Y-%m-%d'),
-                                         event['s'].strftime('%H:%M'),
-                                         event['e'].strftime('%Y-%m-%d'),
-                                         event['e'].strftime('%H:%M'))
+            if self.ignoreDeclined and self._DeclinedEvent(event):
+                continue
+            output = "%s\t%s\t%s\t%s" % (_u(event['s'].strftime('%Y-%m-%d')),
+                                         _u(event['s'].strftime('%H:%M')),
+                                         _u(event['e'].strftime('%Y-%m-%d')),
+                                         _u(event['e'].strftime('%H:%M')))
 
             if self.detailUrl:
                 output += "\t%s" % (self._ShortenURL(event['htmlLink'])
@@ -1169,25 +1176,25 @@ class gcalcli:
                 output += "\t%s" % (self._ShortenURL(event['hangoutLink'])
                                     if 'hangoutLink' in event else '')
 
-            output += "\t%s" % self._ValidTitle(event).strip()
+            output += "\t%s" % _u(self._ValidTitle(event).strip())
 
             if self.detailLocation:
-                output += "\t%s" % (event['location'].strip()
+                output += "\t%s" % (_u(event['location'].strip())
                                     if 'location' in event else '')
 
             if self.detailDescr:
-                output += "\t%s" % (event['description'].strip()
+                output += "\t%s" % (_u(event['description'].strip())
                                     if 'description' in event else '')
 
             if self.detailCalendar:
-                output += "\t%s" % event['gcalcli_cal']['summary'].strip()
+                output += "\t%s" % _u(event['gcalcli_cal']['summary'].strip())
 
             if self.detailEmail:
                 output += "\t%s" % (event['creator']['email'].strip()
                                     if 'email' in event['creator'] else '')
 
             output = "%s\n" % output.replace('\n', '''\\n''')
-            sys.stdout.write(stringFromUnicode(output))
+            sys.stdout.write(_u(output))
 
     def _PrintEvent(self, event, prefix):
 
@@ -1236,20 +1243,18 @@ class gcalcli:
 
         happeningNow = event['s'] <= self.now <= event['e']
         allDay = self._IsAllDay(event)
-        eventColor = self.nowMarkerColor if happeningNow and not allDay else self._CalendarColor(event['gcalcli_cal'])
+        eventColor = self.nowMarkerColor if happeningNow and not allDay \
+            else self._CalendarColor(event['gcalcli_cal'])
 
         if allDay:
             fmt = '  ' + timeFormat + '  %s\n'
-            PrintMsg(eventColor, fmt % ('', self._ValidTitle(event).strip()))
+            PrintMsg(eventColor, fmt % ('', _u(self._ValidTitle(event).strip())))
         else:
             fmt = '  ' + timeFormat + '  %s\n'
-            PrintMsg(eventColor, fmt % (stringToUnicode(tmpTimeStr), self._ValidTitle(event).strip()))
+            PrintMsg(eventColor, fmt % (_u(tmpTimeStr), _u(self._ValidTitle(event).strip())))
 
         if self.detailCalendar:
-            xstr = "%s  Calendar: %s\n" % (
-                detailsIndent,
-                event['gcalcli_cal']['summary']
-            )
+            xstr = "%s  Calendar: %s\n" % (detailsIndent, event['gcalcli_cal']['summary'])
             PrintMsg(CLR_NRM(), xstr)
 
         if self.detailUrl and 'htmlLink' in event:
@@ -1439,14 +1444,14 @@ class gcalcli:
                 val = raw_input()
                 if val.strip():
                     event['summary'] = \
-                        stringToUnicode(val.strip())
+                        _u(val.strip())
 
             elif val.lower() == 'l':
                 PrintMsg(CLR_MAG(), "Location: ")
                 val = raw_input()
                 if val.strip():
                     event['location'] = \
-                        stringToUnicode(val.strip())
+                        _u(val.strip())
 
             elif val.lower() == 'w':
                 PrintMsg(CLR_MAG(), "When: ")
@@ -1525,7 +1530,7 @@ class gcalcli:
                 val = raw_input()
                 if val.strip():
                     event['description'] = \
-                        stringToUnicode(val.strip())
+                        _u(val.strip())
 
             else:
                 PrintErrMsg('Error: invalid input\n')
@@ -1549,11 +1554,8 @@ class gcalcli:
 
             if self.ignoreStarted and (event['s'] < self.now):
                 continue
-            if self.ignoreDeclined:
-                if 'attendees' in event:
-                    attendee = [a for a in event['attendees'] if a['email'] == event['gcalcli_cal']['id']][0]
-                    if attendee and attendee['responseStatus'] == 'declined':
-                        continue
+            if self.ignoreDeclined and self._DeclinedEvent(event):
+                continue
 
             tmpDayStr = event['s'].strftime(dayFormat)
             prefix = None
@@ -1635,9 +1637,17 @@ class gcalcli:
             events = self._RetryWithBackoff(work)
             eventList.extend(self._GetAllEvents(cal, events, end))
 
-        eventList.sort(lambda x, y: cmp(x['s'], y['s']))
+        eventList.sort(key=lambda x: x['s'])
 
         return eventList
+
+    def _DeclinedEvent(self, event):
+        if 'attendees' in event:
+            attendee = [a for a in event['attendees']
+                        if a['email'] == event['gcalcli_cal']['id']][0]
+            if attendee and attendee['responseStatus'] == 'declined':
+                return True
+        return False
 
     def ListAllCalendars(self):
 
@@ -1660,10 +1670,38 @@ class gcalcli:
             PrintMsg(self._CalendarColor(cal),
                      format % (cal['accessRole'], cal['summary']))
 
+    def _ParseStartEnd(self, startText, endText):
+        start = None
+        end = None
+
+        if not startText:
+            start = self.now if self.ignoreStarted else None
+        else:
+            try:
+                start = self.dateParser.fromString(startText)
+            except:
+                raise Exception('Error: failed to parse start time\n')
+
+        if endText:
+            try:
+                end = self.dateParser.fromString(endText)
+            except:
+                raise Exception('Error: failed to parse end time\n')
+
+        return (start, end)
+
+    def _DisplayQueriedEvents(self, start, end, search=None, yearDate=False):
+        eventList = self._SearchForCalEvents(start, end, search)
+
+        if self.tsv:
+            self._tsv(start, eventList)
+        else:
+            self._IterateEvents(start, eventList, yearDate=yearDate)
+
     def TextQuery(self, searchText='', startText='', endText=''):
 
         # the empty string would get *ALL* events...
-        if searchText == '':
+        if not searchText:
             return
 
         # This is really just an optimization to the gcalendar api
@@ -1672,71 +1710,32 @@ class gcalcli:
         # TODO: Look at moving this into the _SearchForCalEvents
         #       Don't forget to clean up AgendaQuery too!
 
-        if startText == '':
-            start = self.now if self.ignoreStarted else None
-        else:
-            try:
-                start = self.dateParser.fromString(startText)
-            except:
-                PrintErrMsg('Error: failed to parse start time\n')
-                return
+        try:
+            start, end = self._ParseStartEnd(startText, endText)
+        except Exception as e:
+            PrintErrMsg(str(e))
+            return
 
-        if endText == '':
-            end = None
-        else:
-            try:
-                end = self.dateParser.fromString(endText)
-            except:
-                PrintErrMsg('Error: failed to parse end time\n')
-                return
-
-        eventList = self._SearchForCalEvents(start, end, searchText)
-
-        if self.tsv:
-            self._tsv(self.now, eventList)
-        else:
-            self._IterateEvents(self.now, eventList, yearDate=True)
+        self._DisplayQueriedEvents(start, end, searchText, True)
 
     def AgendaQuery(self, startText='', endText=''):
+        try:
+            start, end = self._ParseStartEnd(startText, endText)
+        except Exception as e:
+            PrintErrMsg(str(e))
+            return
 
-        if startText == '':
-            # convert now to midnight this morning and use for default
-            start = self.now.replace(hour=0,
-                                     minute=0,
-                                     second=0,
-                                     microsecond=0)
-        else:
-            try:
-                start = self.dateParser.fromString(startText)
-            except:
-                PrintErrMsg('Error: failed to parse start time\n')
-                return
+        if not start:
+            start = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        # Again optimizing calls to the api.  If we've been told to
-        # ignore started events, then it doesn't make ANY sense to
-        # search for things that may be in the past
-        if self.ignoreStarted and start < self.now:
-            start = self.now
-
-        if endText == '':
+        if not end:
             end = (start + timedelta(days=self.agendaLength))
-        else:
-            try:
-                end = self.dateParser.fromString(endText)
-            except:
-                PrintErrMsg('Error: failed to parse end time\n')
-                return
 
-        eventList = self._SearchForCalEvents(start, end, None)
-
-        if self.tsv:
-            self._tsv(start, eventList)
-        else:
-            self._IterateEvents(start, eventList, yearDate=False)
+        self._DisplayQueriedEvents(start, end)
 
     def CalQuery(self, cmd, startText='', count=1):
 
-        if startText == '':
+        if not startText:
             # convert now to midnight this morning and use for default
             start = self.now.replace(hour=0,
                                      minute=0,
@@ -1775,7 +1774,7 @@ class gcalcli:
                 if offsetDays < 0:
                     offsetDays = 6
             totalDays = (daysInMonth + offsetDays)
-            count = (totalDays / 7)
+            count = int(totalDays / 7)
             if totalDays % 7:
                 count += 1
 
@@ -1785,7 +1784,7 @@ class gcalcli:
 
     def QuickAddEvent(self, eventText, reminder=None):
 
-        if eventText == '':
+        if not eventText:
             return
 
         if len(self.cals) > 1:
@@ -1793,7 +1792,10 @@ class gcalcli:
             return
 
         if len(self.cals) < 1:
-            PrintErrMsg("Calendar not specified or not found.\nIf \"gcalcli list\" doesn't find the calendar you're trying to use,\nyour cache file might be stale and you might need to remove it and try again\n")
+            PrintErrMsg("Calendar not specified or not found.\n"
+                        "If \"gcalcli list\" doesn't find the calendar you're trying to use,\n"
+                        "your cache file might be stale and you might need to remove it and try"
+                        "again\n")
             return
 
         newEvent = self._RetryWithBackoff(
@@ -1826,7 +1828,7 @@ class gcalcli:
             return
 
         event = {}
-        event['summary'] = stringToUnicode(eTitle)
+        event['summary'] = _u(eTitle)
 
         if self.allDay:
             event['start'] = {'date': eStart}
@@ -1839,11 +1841,11 @@ class gcalcli:
                             'timeZone': self.cals[0]['timeZone']}
 
         if eWhere:
-            event['location'] = stringToUnicode(eWhere)
+            event['location'] = _u(eWhere)
         if eDescr:
-            event['description'] = stringToUnicode(eDescr)
+            event['description'] = _u(eDescr)
 
-        event['attendees'] = map(lambda w: {'email': stringToUnicode(w)}, eWho)
+        event['attendees'] = list(map(lambda w: {'email': _u(w)}, eWho))
 
         if reminder or not self.defaultReminders:
             event['reminders'] = {'useDefault': False,
@@ -1864,7 +1866,7 @@ class gcalcli:
     def DeleteEvents(self, searchText='', expert=False, start=None, end=None):
 
         # the empty string would get *ALL* events...
-        if searchText == '':
+        if not searchText:
             return
 
         eventList = self._SearchForCalEvents(start, end, searchText)
@@ -1876,7 +1878,7 @@ class gcalcli:
     def EditEvents(self, searchText=''):
 
         # the empty string would get *ALL* events...
-        if searchText == '':
+        if not searchText:
             return
 
         eventList = self._SearchForCalEvents(None, None, searchText)
@@ -1921,14 +1923,14 @@ class gcalcli:
                     event['s'].strftime('%p').lower()
 
             message += '%s  %s\n' % \
-                       (tmpTimeStr, self._ValidTitle(event).strip())
+                       (tmpTimeStr, _u(self._ValidTitle(event).strip()))
 
-        if message == '':
+        if not message:
             return
 
         cmd = shlex.split(command)
 
-        for i, a in zip(xrange(len(cmd)), cmd):
+        for i, a in zip(range(len(cmd)), cmd):
             if a == '%s':
                 cmd[i] = message
 
@@ -1944,20 +1946,20 @@ class gcalcli:
             event = {}
 
             if verbose:
-                print "+----------------+"
-                print "| Calendar Event |"
-                print "+----------------+"
+                print("+----------------+")
+                print("| Calendar Event |")
+                print("+----------------+")
 
             if hasattr(ve, 'summary'):
                 DebugPrint("SUMMARY: %s\n" % ve.summary.value)
                 if verbose:
-                    print "Event........%s" % ve.summary.value
+                    print("Event........%s" % ve.summary.value)
                 event['summary'] = ve.summary.value
 
             if hasattr(ve, 'location'):
                 DebugPrint("LOCATION: %s\n" % ve.location.value)
                 if verbose:
-                    print "Location.....%s" % ve.location.value
+                    print("Location.....%s" % ve.location.value)
                 event['location'] = ve.location.value
 
             if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
@@ -1971,23 +1973,19 @@ class gcalcli:
                 DebugPrint("DTEND: %s\n" % ve.dtend.value.isoformat())
             if verbose:
                 if ve.dtstart.value:
-                    print "Start........%s" % \
-                        ve.dtstart.value.isoformat()
+                    print("Start........%s" % ve.dtstart.value.isoformat())
                 if ve.dtend.value:
-                    print "End..........%s" % \
-                        ve.dtend.value.isoformat()
+                    print("End..........%s" % ve.dtend.value.isoformat())
                 if ve.dtstart.value:
-                    print "Local Start..%s" % \
-                        self._LocalizeDateTime(ve.dtstart.value)
+                    print("Local Start..%s" % self._LocalizeDateTime(ve.dtstart.value))
                 if ve.dtend.value:
-                    print "Local End....%s" % \
-                        self._LocalizeDateTime(ve.dtend.value)
+                    print("Local End....%s" % self._LocalizeDateTime(ve.dtend.value))
 
             if hasattr(ve, 'rrule'):
 
                 DebugPrint("RRULE: %s\n" % ve.rrule.value)
                 if verbose:
-                    print "Recurrence...%s" % ve.rrule.value
+                    print("Recurrence...%s" % ve.rrule.value)
 
                 event['recurrence'] = ["RRULE:" + ve.rrule.value]
 
@@ -2039,7 +2037,7 @@ class gcalcli:
                 descr = ve.description.value.strip()
                 DebugPrint("DESCRIPTION: %s\n" % descr)
                 if verbose:
-                    print "Description:\n%s" % descr
+                    print("Description:\n%s" % descr)
                 event['description'] = descr
 
             if hasattr(ve, 'organizer'):
@@ -2050,14 +2048,14 @@ class gcalcli:
                 else:
                     email = ve.organizer.value
                 if verbose:
-                    print "organizer:\n %s" % email
+                    print("organizer:\n %s" % email)
                 event['organizer'] = {'displayName': ve.organizer.name,
                                       'email': email}
 
             if hasattr(ve, 'attendee_list'):
                 DebugPrint("ATTENDEE_LIST : %s\n" % ve.attendee_list)
                 if verbose:
-                    print "attendees:"
+                    print("attendees:")
                 event['attendees'] = []
                 for attendee in ve.attendee_list:
                     if attendee.value.upper().startswith("MAILTO:"):
@@ -2065,7 +2063,7 @@ class gcalcli:
                     else:
                         email = attendee.value
                     if verbose:
-                        print " %s" % email
+                        print(" %s" % email)
 
                     event['attendees'].append({'displayName': attendee.name,
                                                'email': email})
@@ -2090,7 +2088,7 @@ class gcalcli:
         if icsFile:
             try:
                 f = file(icsFile)
-            except Exception, e:
+            except Exception as e:
                 PrintErrMsg("Error: " + str(e) + "!\n")
                 sys.exit(1)
 
@@ -2179,144 +2177,189 @@ def GetCalColors(calNames):
     return calColors
 
 
-FLAGS = gflags.FLAGS
-# allow mixing of commands and options
-FLAGS.UseGnuGetOpt()
+def ValidColor(value):
+    if not GetColor(value):
+        raise argparse.ArgumentTypeError("%s is not a valid color" % value)
+    else:
+        return value
 
-gflags.DEFINE_bool("help", None, "Show this help")
-gflags.DEFINE_bool("helpshort", None, "Show command help only")
-gflags.DEFINE_bool("version", False, "Show the version and exit")
 
-gflags.DEFINE_string("client_id", __API_CLIENT_ID__, "API client_id")
-gflags.DEFINE_string("client_secret", __API_CLIENT_SECRET__,
-                     "API client_secret")
+def ValidWidth(value):
+    if type(value) == int and value < 10:
+        raise argparse.ArgumentTypeError("Width must be a number >= 10")
+    else:
+        return int(value)
 
-gflags.DEFINE_string("configFolder", None,
-                     "Optional directory to load/store all configuration "
-                     "information")
-gflags.DEFINE_bool("includeRc", False,
-                   "Whether to include ~/.gcalclirc when using configFolder")
-gflags.DEFINE_multistring("calendar", [], "Which calendars to use")
-gflags.DEFINE_multistring("defaultCalendar", [],
-                          "Optional default calendar to use if no --calendar "
-                          "options are given")
-gflags.DEFINE_bool("military", False, "Use 24 hour display")
 
-# Single --detail that allows you to specify what parts you want
-gflags.DEFINE_multistring("details", [], "Which parts to display, can be: "
-                          "'all', 'calendar', 'location', 'length', "
-                          "'reminders', 'description', 'longurl', 'shorturl', "
-                          "'url', 'attendees', 'email'")
-# old style flags for backwards compatibility
-gflags.DEFINE_bool("detail_all", False, "Display all details")
-gflags.DEFINE_bool("detail_calendar", False, "Display calendar name")
-gflags.DEFINE_bool("detail_location", False, "Display event location")
-gflags.DEFINE_bool("detail_attendees", False, "Display event attendees")
-gflags.DEFINE_bool("detail_attachments", False, "Display event attachments")
-gflags.DEFINE_bool("detail_length", False, "Display length of event")
-gflags.DEFINE_bool("detail_reminders", False, "Display reminders")
-gflags.DEFINE_bool("detail_description", False, "Display description")
-gflags.DEFINE_bool("detail_email", False, "Display creator email")
-gflags.DEFINE_integer("detail_description_width", 80, "Set description width")
-gflags.DEFINE_enum("detail_url", None, ["long", "short"], "Set URL output")
+def ValidReminder(value):
+    if not ParseReminder(value):
+        raise argparse.ArgumentTypeError("Not a valid reminder string: %s" % value)
+    else:
+        return value
 
-gflags.DEFINE_bool("tsv", False, "Use Tab Separated Value output")
-gflags.DEFINE_bool("started", True, "Show events that have started")
-gflags.DEFINE_bool("declined", True, "Show events that have been declined")
-gflags.DEFINE_integer("width", 10, "Set output width", short_name="w")
-gflags.DEFINE_bool("monday", False, "Start the week on Monday")
-gflags.DEFINE_bool("color", True, "Enable/Disable all color output")
-gflags.DEFINE_bool("lineart", True, "Enable/Disable line art")
-gflags.DEFINE_bool("conky", False, "Use Conky color codes")
+FLAGS = {}
+gflags = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter,
+                                 fromfile_prefix_chars="@",
+                                 parents=[tools.argparser])
 
-gflags.DEFINE_string("color_owner", "cyan", "Color for owned calendars")
-gflags.DEFINE_string("color_writer", "green", "Color for writable calendars")
-gflags.DEFINE_string("color_reader", "magenta",
-                     "Color for read-only calendars")
-gflags.DEFINE_string("color_freebusy", "default",
-                     "Color for free/busy calendars")
-gflags.DEFINE_string("color_date", "yellow", "Color for the date")
-gflags.DEFINE_string("color_now_marker", "brightred",
-                     "Color for the now marker")
-gflags.DEFINE_string("color_border", "white", "Color of line borders")
+gflags.add_argument("--version", action="version", version="%%(prog)s %s (%s)" %
+                                                           (__version__, __author__))
 
-gflags.DEFINE_string("locale", None, "System locale")
+# Program level options
+gflags.add_argument("--client_id", default=__API_CLIENT_ID__, type=str, help="API client_id")
+gflags.add_argument("--client_secret", default=__API_CLIENT_SECRET__, type=str,
+                    help="API client_secret")
+gflags.add_argument("--configFolder", default=None, type=str,
+                    help="Optional directory to load/store all configuration "
+                    "information")
+gflags.add_argument("--noincluderc", action="store_false", dest="includeRc",
+                    help="Whether to include ~/.gcalclirc when using configFolder")
+gflags.add_argument("--calendar", default=[], type=str, action="append",
+                    help="Which calendars to use")
+gflags.add_argument("--defaultCalendar", default=[], type=str, action="append",
+                    help="Optional default calendar to use if no --calendar "
+                    "options are given")
+gflags.add_argument("--locale", default=None, type=str, help="System locale")
+gflags.add_argument("--refresh", action="store_true", help="Delete and refresh cached data")
+gflags.add_argument("--nocache", action="store_false", dest="cache",
+                    help="Execute command without using cache")
+gflags.add_argument("--conky", action="store_true", help="Use Conky color codes")
+gflags.add_argument("--nocolor", action="store_false", dest="color",
+                    help="Enable/Disable all color output")
+gflags.add_argument("--nolineart", action="store_false", dest="lineart",
+                    help="Enable/Disable line art")
 
-gflags.DEFINE_multistring("reminder", [],
-                          "Reminders in the form 'TIME METH' or 'TIME'.  TIME "
+detailsParser = argparse.ArgumentParser(add_help=False)
+detailsParser.add_argument("--details", default=[], type=str, action="append",
+                           choices=['all', 'calendar', 'location', 'length',
+                                    'reminders', 'description', 'longurl', 'shorturl',
+                                    'url', 'attendees', 'email', 'attachments'],
+                           help="Which parts to display, can be: "
+                           "'all', 'calendar', 'location', 'length', "
+                           "'reminders', 'description', 'longurl', 'shorturl', "
+                           "'url', 'attendees', 'email'")
+
+outputParser = argparse.ArgumentParser(add_help=False)
+outputParser.add_argument("--tsv", action="store_true", help="Use Tab Separated Value output")
+outputParser.add_argument("--nostarted", action="store_false", dest="started",
+                          help="Hide events that have started")
+outputParser.add_argument("--nodeclined", action="store_false", dest="declined",
+                          help="Hide events that have been declined")
+outputParser.add_argument("--width", "-w", default=10, type=ValidWidth, help="Set output width")
+outputParser.add_argument("--military", action="store_true", help="Use 24 hour display")
+
+colorParser = argparse.ArgumentParser(add_help=False)
+colorParser.add_argument("--color_owner", default="cyan", type=ValidColor,
+                         help="Color for owned calendars")
+colorParser.add_argument("--color_writer", default="green", type=ValidColor,
+                         help="Color for writable calendars")
+colorParser.add_argument("--color_reader", default="magenta", type=ValidColor,
+                         help="Color for read-only calendars")
+colorParser.add_argument("--color_freebusy", default="default", type=ValidColor,
+                         help="Color for free/busy calendars")
+colorParser.add_argument("--color_date", default="yellow", type=ValidColor,
+                         help="Color for the date")
+colorParser.add_argument("--color_now_marker", default="brightred", type=ValidColor,
+                         help="Color for the now marker")
+colorParser.add_argument("--color_border", default="white", type=ValidColor,
+                         help="Color of line borders")
+
+remindParser = argparse.ArgumentParser(add_help=False)
+remindParser.add_argument("--reminder", default=[], type=ValidReminder, action="append",
+                          help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
                           "is a number which may be followed by an optional "
                           "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
                           "minutes) and default to minutes.  METH is a string "
                           "'popup', 'email', or 'sms' and defaults to popup.")
-gflags.DEFINE_string("title", None, "Event title")
-gflags.DEFINE_multistring("who", [], "Event attendees")
-gflags.DEFINE_string("where", None, "Event location")
-gflags.DEFINE_string("when", None, "Event time")
-gflags.DEFINE_integer("duration", None,
-                      "Event duration in minutes or days if --allday is given.")
-gflags.DEFINE_string("description", None, "Event description")
-gflags.DEFINE_bool("allday", False,
-                   "If --allday is given, the event will be an all-day event "
-                   "(possibly multi-day if --duration is greater than 1). The "
-                   "time part of the --when will be ignored.")
-gflags.DEFINE_bool("prompt", True,
-                   "Prompt for missing data when adding events")
-gflags.DEFINE_bool("default_reminders", True,
-                   "If no --reminder is given, use the defaults.  If this is "
-                   "false, do not create any reminders.")
+remindParser.add_argument("--default_reminders", action="store_true",
+                          help="If no --reminder is given, use the defaults.  If this is "
+                          "false, do not create any reminders.")
 
-gflags.DEFINE_bool("iamaexpert", False, "Probably not")
-gflags.DEFINE_bool("refresh", False, "Delete and refresh cached data")
-gflags.DEFINE_bool("cache", True, "Execute command without using cache")
+sub = gflags.add_subparsers(help="Sub command help?", dest="command")
+sub.required = True
 
-gflags.DEFINE_bool("verbose", False, "Be verbose on imports",
-                   short_name="v")
-gflags.DEFINE_bool("dump", False, "Print events and don't import",
-                   short_name="d")
+sub.add_parser("list", parents=[colorParser])
 
-gflags.DEFINE_bool("use_reminders", False, "Honour the remind time when running remind command")
+search = sub.add_parser("search", parents=[detailsParser, outputParser, colorParser])
+search.add_argument("text", nargs=1)
+search.add_argument("start", type=str, nargs="?")
+search.add_argument("end", type=str, nargs="?")
 
-gflags.RegisterValidator("details",
-                         lambda value: all(x in ["all", "calendar",
-                                                 "location", "length",
-                                                 "reminders", "description",
-                                                 "longurl", "shorturl", "url",
-                                                 "attendees", "attachments", "email"]
-                                           for x in value))
-gflags.RegisterValidator("reminder",
-                         lambda value: all(ParseReminder(x) for x in value))
-gflags.RegisterValidator("color_owner",
-                         lambda value: GetColor(value) is not None)
-gflags.RegisterValidator("color_writer",
-                         lambda value: GetColor(value) is not None)
-gflags.RegisterValidator("color_reader",
-                         lambda value: GetColor(value) is not None)
-gflags.RegisterValidator("color_freebusy",
-                         lambda value: GetColor(value) is not None)
-gflags.RegisterValidator("color_date",
-                         lambda value: GetColor(value) is not None)
-gflags.RegisterValidator("color_now_marker",
-                         lambda value: GetColor(value) is not None)
-gflags.RegisterValidator("color_border",
-                         lambda value: GetColor(value) is not None)
+agenda = sub.add_parser("agenda", parents=[detailsParser, outputParser, colorParser])
+agenda.add_argument("start", type=str, nargs="?")
+agenda.add_argument("end", type=str, nargs="?")
 
-gflags.ADOPT_module_key_flags(gflags)
+calw = sub.add_parser("calw", parents=[detailsParser, outputParser, colorParser])
+calw.add_argument("weeks", type=int, default=1, nargs="?")
+calw.add_argument("start", type=str, nargs="?")
+calw.add_argument("--monday", action="store_true", help="Start the week on Monday")
+calw.add_argument("--noweekend", action="store_false", help="Hide Saturday and Sunday")
+
+calm = sub.add_parser("calm", parents=[detailsParser, outputParser, colorParser])
+calm.add_argument("start", type=str, nargs="?")
+calm.add_argument("--monday", action="store_true", help="Start the week on Monday")
+calm.add_argument("--noweekend", action="store_false", help="Hide Saturday and Sunday")
+
+quick = sub.add_parser("quick", parents=[detailsParser, remindParser])
+quick.add_argument("text")
+
+add = sub.add_parser("add", parents=[detailsParser, remindParser])
+add.add_argument("--title", default=None, type=str, help="Event title")
+add.add_argument("--who", default=[], type=str, action="append",
+                 help="Event title")
+add.add_argument("--where", default=None, type=str, help="Event location")
+add.add_argument("--when", default=None, type=str, help="Event time")
+add.add_argument("--duration", default=None, type=int,
+                 help="Event duration in minutes or days if --allday is given.")
+add.add_argument("--description", default=None, type=str, help="Event description")
+add.add_argument("--allday", action="store_true",
+                 help="If --allday is given, the event will be an all-day event "
+                      "(possibly multi-day if --duration is greater than 1). The "
+                      "time part of the --when will be ignored.")
+add.add_argument("--prompt", action="store_true",
+                 help="Prompt for missing data when adding events")
+
+# TODO: Fix this it doesn't work this way as nothing ever goes into [start] or [end]
+delete = sub.add_parser("delete")
+delete.add_argument("text", nargs=1)
+delete.add_argument("start", type=str, nargs="?")
+delete.add_argument("end", type=str, nargs="?")
+delete.add_argument("--iamaexpert", action="store_true", help="Probably not")
+
+edit = sub.add_parser("edit", parents=[detailsParser, outputParser])
+edit.add_argument("text")
+
+_import = sub.add_parser("import", parents=[remindParser])
+_import.add_argument("file", type=argparse.FileType('r'), nargs="?")
+_import.add_argument("--verbose", "-v", action="count", help="Be verbose on imports")
+_import.add_argument("--dump", "-d", action="store_true", help="Print events and don't import")
+
+remind = sub.add_parser("remind")
+remind.add_argument("minutes", type=int)
+remind.add_argument("cmd", type=str)
+remind.add_argument("--use_reminders", action="store_true",
+                    help="Honour the remind time when running remind command")
 
 
 def BowChickaWowWow():
+    global FLAGS
     try:
-        argv = sys.argv
-        if os.path.exists(os.path.expanduser('~/.gcalclirc')):
+        argv = sys.argv[1:]
+        gcalclirc = os.path.expanduser('~/.gcalclirc')
+        if os.path.exists(gcalclirc):
             # We want .gcalclirc to be sourced before any other --flagfile
             # params since we may be told to use a specific config folder, we
             # need to store generated argv in temp variable
-            tmpArgv = [argv[0], "--flagfile=~/.gcalclirc"] + argv[1:]
+            tmpArgv = ["@%s" % gcalclirc, ] + argv
         else:
             tmpArgv = argv
-        args = FLAGS(tmpArgv)
-    except gflags.FlagsError, e:
+        # TODO: In 4.1 change this to just parse_args
+        (FLAGS, junk) = gflags.parse_known_args(tmpArgv)
+    except Exception as e:
         PrintErrMsg(str(e))
-        Usage(True)
+        print()
+        gflags.print_usage()
         sys.exit(1)
 
     if FLAGS.configFolder:
@@ -2325,26 +2368,16 @@ def BowChickaWowWow():
         if os.path.exists(os.path.expanduser("%s/gcalclirc" %
                                              FLAGS.configFolder)):
             if not FLAGS.includeRc:
-                tmpArgv = argv + ["--flagfile=%s/gcalclirc" %
-                                  FLAGS.configFolder, ]
+                tmpArgv = ["@%s/gcalclirc" % FLAGS.configFolder, ] + argv
             else:
-                tmpArgv += ["--flagfile=%s/gcalclirc" % FLAGS.configFolder, ]
+                tmpArgv = ["@%s/gcalclirc" % FLAGS.configFolder, ] + tmpArgv
 
-        FLAGS.Reset()
-        args = FLAGS(tmpArgv)
+        # TODO: In 4.1 change this to just parse_args
+        (FLAGS, junk) = gflags.parse_known_args(tmpArgv)
 
-    argv = tmpArgv
-
-    if FLAGS.version:
-        Version()
-
-    if FLAGS.help:
-        Usage(True)
-        sys.exit()
-
-    if FLAGS.helpshort:
-        Usage()
-        sys.exit()
+    if junk:
+        PrintErrMsg("The following options are either no longer valid globally "
+                    "or just plain invalid:\n  %s\n" % "\n  ".join(junk))
 
     if not FLAGS.color:
         CLR.useColor = False
@@ -2358,27 +2391,10 @@ def BowChickaWowWow():
     if FLAGS.locale:
         try:
             locale.setlocale(locale.LC_ALL, FLAGS.locale)
-        except Exception, e:
+        except Exception as e:
             PrintErrMsg("Error: " + str(e) + "!\n"
                         "Check supported locales of your system.\n")
             sys.exit(1)
-
-    # pop executable off the stack
-    args = args[1:]
-    if len(args) == 0:
-        PrintErrMsg('Error: no command\n')
-        sys.exit(1)
-
-    # No sense instaniating gcalcli for nothing
-    if not args[0] in ['list', 'search', 'agenda', 'calw', 'calm', 'quick',
-                       'add', 'delete', 'edit', 'remind', 'import', 'help']:
-        PrintErrMsg('Error: %s is an invalid command' % args[0])
-        sys.exit(1)
-
-    # all other commands require gcalcli be brought up
-    if args[0] == 'help':
-        Usage()
-        sys.exit(0)
 
     if len(FLAGS.calendar) == 0:
         FLAGS.calendar = FLAGS.defaultCalendar
@@ -2389,169 +2405,58 @@ def BowChickaWowWow():
     calNamesFiltered = []
     for calName in FLAGS.calendar:
         calNameSimple = calName.split("#")[0]
-        calNamesFiltered.append(stringToUnicode(calNameSimple))
+        calNamesFiltered.append(_u(calNameSimple))
         calNameColors.append(calColors[calNameSimple])
     calNames = calNamesFiltered
 
-    if 'all' in FLAGS.details or FLAGS.detail_all:
-        if not FLAGS['detail_calendar'].present:
-            FLAGS['detail_calendar'].value = True
-        if not FLAGS['detail_location'].present:
-            FLAGS['detail_location'].value = True
-        if not FLAGS['detail_length'].present:
-            FLAGS['detail_length'].value = True
-        if not FLAGS['detail_reminders'].present:
-            FLAGS['detail_reminders'].value = True
-        if not FLAGS['detail_description'].present:
-            FLAGS['detail_description'].value = True
-        if not FLAGS['detail_url'].present:
-            FLAGS['detail_url'].value = "long"
-        if not FLAGS['detail_attendees'].present:
-            FLAGS['detail_attendees'].value = True
-        if not FLAGS['detail_attachments'].present:
-            FLAGS['detail_attachments'].value = True
-        if not FLAGS['detail_email'].present:
-            FLAGS['detail_email'].value = True
-    else:
-        if 'calendar' in FLAGS.details:
-            FLAGS['detail_calendar'].value = True
-        if 'location' in FLAGS.details:
-            FLAGS['detail_location'].value = True
-        if 'attendees' in FLAGS.details:
-            FLAGS['detail_attendees'].value = True
-        if 'attachments' in FLAGS.details:
-            FLAGS['detail_attachments'].value = True
-        if 'length' in FLAGS.details:
-            FLAGS['detail_length'].value = True
-        if 'reminders' in FLAGS.details:
-            FLAGS['detail_reminders'].value = True
-        if 'description' in FLAGS.details:
-            FLAGS['detail_description'].value = True
-        if 'longurl' in FLAGS.details or 'url' in FLAGS.details:
-            FLAGS['detail_url'].value = 'long'
-        elif 'shorturl' in FLAGS.details:
-            FLAGS['detail_url'].value = 'short'
-        if 'attendees' in FLAGS.details:
-            FLAGS['detail_attendees'].value = True
-        if 'email' in FLAGS.details:
-            FLAGS['detail_email'].value = True
+    def hasDetail(option):
+        if 'all' in FLAGS.details or option in FLAGS.details:
+            return True
+        else:
+            return False
 
     gcal = gcalcli(calNames=calNames,
                    calNameColors=calNameColors,
-                   military=FLAGS.military,
-                   detailCalendar=FLAGS.detail_calendar,
-                   detailLocation=FLAGS.detail_location,
-                   detailAttendees=FLAGS.detail_attendees,
-                   detailAttachments=FLAGS.detail_attachments,
-                   detailLength=FLAGS.detail_length,
-                   detailReminders=FLAGS.detail_reminders,
-                   detailDescr=FLAGS.detail_description,
-                   detailDescrWidth=FLAGS.detail_description_width,
-                   detailUrl=FLAGS.detail_url,
-                   detailEmail=FLAGS.detail_email,
-                   ignoreStarted=not FLAGS.started,
-                   ignoreDeclined=not FLAGS.declined,
-                   calWidth=FLAGS.width,
-                   calMonday=FLAGS.monday,
-                   calOwnerColor=GetColor(FLAGS.color_owner),
-                   calWriterColor=GetColor(FLAGS.color_writer),
-                   calReaderColor=GetColor(FLAGS.color_reader),
-                   calFreeBusyColor=GetColor(FLAGS.color_freebusy),
-                   dateColor=GetColor(FLAGS.color_date),
-                   nowMarkerColor=GetColor(FLAGS.color_now_marker),
-                   borderColor=GetColor(FLAGS.color_border),
-                   tsv=FLAGS.tsv,
-                   refreshCache=FLAGS.refresh,
-                   useCache=FLAGS.cache,
-                   configFolder=FLAGS.configFolder,
-                   client_id=FLAGS.client_id,
-                   client_secret=FLAGS.client_secret,
-                   defaultReminders=FLAGS.default_reminders,
-                   allDay=FLAGS.allday
-                   )
+                   options=FLAGS)
 
-    if args[0] == 'list':
+    if FLAGS.command == 'list':
         gcal.ListAllCalendars()
 
-    elif args[0] == 'search':
-
-        if len(args) == 4: # start and end
-            gcal.TextQuery(stringToUnicode(args[1]), startText=args[2], endText=args[3])
-        elif len(args) == 3: # start
-            gcal.TextQuery(stringToUnicode(args[1]), startText=args[2])
-        elif len(args) == 2: # defaults
-            gcal.TextQuery(stringToUnicode(args[1]))
-        else:
+    elif FLAGS.command == 'search':
+        if not FLAGS.text:
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
 
-        if not FLAGS.tsv:
-            sys.stdout.write('\n')
-
-    elif args[0] == 'agenda':
-        if len(args) == 3:  # start and end
-            gcal.AgendaQuery(startText=args[1], endText=args[2])
-        elif len(args) == 2:  # start
-            gcal.AgendaQuery(startText=args[1])
-        elif len(args) == 1:  # defaults
-            gcal.AgendaQuery()
-        else:
-            PrintErrMsg('Error: invalid agenda arguments\n')
-            sys.exit(1)
+        gcal.TextQuery(_u(FLAGS.text[0]), startText=FLAGS.start, endText=FLAGS.end)
 
         if not FLAGS.tsv:
             sys.stdout.write('\n')
 
-    elif args[0] == 'calw':
-        if not FLAGS.width:
-            PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
-            sys.exit(1)
+    elif FLAGS.command == 'agenda':
+        gcal.AgendaQuery(startText=FLAGS.start, endText=FLAGS.end)
 
-        if len(args) >= 2:
-            try:
-                # Test to make sure args[1] is a number
-                int(args[1])
-            except:
-                PrintErrMsg('Error: invalid calw arguments\n')
-                sys.exit(1)
+        if not FLAGS.tsv:
+            sys.stdout.write('\n')
 
-        if len(args) == 3:  # weeks and start
-            gcal.CalQuery(args[0], count=int(args[1]), startText=args[2])
-        elif len(args) == 2:  # weeks
-            gcal.CalQuery(args[0], count=int(args[1]))
-        elif len(args) == 1:  # defaults
-            gcal.CalQuery(args[0])
-        else:
-            PrintErrMsg('Error: invalid calw arguments\n')
-            sys.exit(1)
+    elif FLAGS.command == 'calw':
 
+        gcal.CalQuery(FLAGS.command, count=FLAGS.weeks, startText=FLAGS.start)
         sys.stdout.write('\n')
 
-    elif args[0] == 'calm':
-        if not FLAGS.width:
-            PrintErrMsg('Error: invalid width, don\'t be an idiot!\n')
-            sys.exit(1)
-
-        if len(args) == 2:  # start
-            gcal.CalQuery(args[0], startText=args[1])
-        elif len(args) == 1:  # defaults
-            gcal.CalQuery(args[0])
-        else:
-            PrintErrMsg('Error: invalid calm arguments\n')
-            sys.exit(1)
-
+    elif FLAGS.command == 'calm':
+        gcal.CalQuery(FLAGS.command, startText=FLAGS.start)
         sys.stdout.write('\n')
 
-    elif args[0] == 'quick':
-        if len(args) != 2:
+    elif FLAGS.command == 'quick':
+        if not FLAGS.text:
             PrintErrMsg('Error: invalid event text\n')
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.QuickAddEvent(stringToUnicode(args[1]),
+        gcal.QuickAddEvent(_u(FLAGS.text),
                            reminder=FLAGS.reminder)
 
-    elif (args[0] == 'add'):
+    elif FLAGS.command == 'add':
         if FLAGS.prompt:
             if FLAGS.title is None:
                 PrintMsg(CLR_MAG(), "Title: ")
@@ -2588,53 +2493,39 @@ def BowChickaWowWow():
                       FLAGS.description, FLAGS.who,
                       FLAGS.reminder)
 
-    elif args[0] == 'delete':
+    elif FLAGS.command == 'delete':
         eStart = None
         eEnd = None
-        if len(args) < 2:
+        if not FLAGS.text:
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
-        elif len(args) == 4:  # search, start, end
-            eStart = gcal.dateParser.fromString(args[2])
-            eEnd = gcal.dateParser.fromString(args[3])
-        elif len(args) == 3:  # search, start (default end)
-            eStart = gcal.dateParser.fromString(args[2])
+
+        if FLAGS.start:
+            eStart = gcal.dateParser.fromString(FLAGS.start)
+        if FLAGS.end:
+            eEnd = gcal.dateParser.fromString(FLAGS.end)
 
         # allow unicode strings for input
-        gcal.DeleteEvents(stringToUnicode(args[1]),
+        gcal.DeleteEvents(_u(FLAGS.text[0]),
                           FLAGS.iamaexpert, eStart, eEnd)
 
         sys.stdout.write('\n')
 
-    elif args[0] == 'edit':
-        if len(args) != 2:
+    elif FLAGS.command == 'edit':
+        if not FLAGS.text:
             PrintErrMsg('Error: invalid search string\n')
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.EditEvents(stringToUnicode(args[1]))
+        gcal.EditEvents(_u(FLAGS.text))
 
         sys.stdout.write('\n')
 
-    elif args[0] == 'remind':
-        if len(args) == 3:  # minutes and command
-            gcal.Remind(int(args[1]), args[2], use_reminders=FLAGS.use_reminders)
-        elif len(args) == 2:  # minutes
-            gcal.Remind(int(args[1]), use_reminders=FLAGS.use_reminders)
-        elif len(args) == 1:  # defaults
-            gcal.Remind(use_reminders=FLAGS.use_reminders)
-        else:
-            PrintErrMsg('Error: invalid remind arguments\n')
-            sys.exit(1)
+    elif FLAGS.command == 'remind':
+        gcal.Remind(FLAGS.minutes, FLAGS.cmd, use_reminders=FLAGS.use_reminders)
 
-    elif args[0] == 'import':
-        if len(args) == 1:  # stdin
-            gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder)
-        elif len(args) == 2:  # ics file
-            gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, args[1])
-        else:
-            PrintErrMsg('Error: invalid import arguments\n')
-            sys.exit(1)
+    elif FLAGS.command == 'import':
+        gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file.name)
 
 
 def SIGINT_handler(signum, frame):
