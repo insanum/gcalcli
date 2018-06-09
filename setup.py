@@ -9,7 +9,7 @@ try:
     long_description = pypandoc.convert('README.md', 'rst',
                                         format='markdown_github',
                                         extra_args=("--wrap=none",))
-except:
+except ImportError:
     long_description = ''
 
 setup(name='gcalcli',
@@ -20,7 +20,7 @@ setup(name='gcalcli',
       long_description=long_description,
       url='https://github.com/insanum/gcalcli',
       license='MIT',
-      scripts=['gcalcli'],
+      packages=['gcalcli'],
       install_requires=[
           'python-dateutil',
           'google-api-python-client>=1.4',
@@ -32,13 +32,15 @@ setup(name='gcalcli',
           'vobject': ["vobject"],
           'parsedatetime': ["parsedatetime"],
       },
+      entry_points={
+          'console_scripts':
+              ['gcalcli=gcalcli.py:main'],
+      },
       classifiers=[
           "Development Status :: 5 - Production/Stable",
           "Environment :: Console",
           "Intended Audience :: End Users/Desktop",
           "License :: OSI Approved :: MIT License",
-          "Programming Language :: Python :: 2",
-          "Programming Language :: Python :: 2.6",
           "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3",
       ])
