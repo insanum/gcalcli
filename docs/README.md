@@ -15,7 +15,7 @@ gcalcli uses the [Google Calendar API version 3](https://developers.google.com/g
 Requirements
 ------------
 
-* [Python](http://www.python.org) (2.6+, 3+)
+* [Python](http://www.python.org) (2.7, 3+)
 * [dateutil](http://www.labix.org/python-dateutil)
 * [Google API Client](https://developers.google.com/api-client-library/python)
 * [httplib2](https://github.com/httplib2/httplib2)
