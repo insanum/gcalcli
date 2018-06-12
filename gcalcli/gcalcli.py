@@ -504,6 +504,10 @@ def ParseReminder(rem):
     return n, m
 
 
+DETAILS = ['all', 'calendar', 'location', 'length', 'reminders', 'description',
+           'longurl', 'shorturl', 'url', 'attendees', 'email', 'attachments']
+
+
 class GoogleCalendarInterface:
 
     cache = {}
@@ -538,20 +542,18 @@ class GoogleCalendarInterface:
         self.useCache = options.get('cache', True)
         self.defaultReminders = options.get('default_reminders', False)
         self.allDay = options.get('allday', False)
+
+        self.details = {}
+        chosen_details = options.get('details', [])
+        for choice in DETAILS:
+            self.details[choice] = \
+                    'all' in chosen_details or choice in chosen_details
+        self.details['url'] = ('short' if 'shorturl' in chosen_details else
+                               'long' if 'longurl' in chosen_details else
+                               None)
         # stored as detail, but provided as option
-        self.detailDescrWidth = options.get('width', 80)
-        details = options.get('details', [])
-        self.detailCalendar = 'calendar' in details
-        self.detailLocation = 'location' in details
-        self.detailLength = 'length' in details
-        self.detailReminders = 'reminders' in details
-        self.detailDescr = 'description' in details
-        self.detailAttendees = 'attendees' in details
-        self.detailEmail = 'email' in details
-        self.detailAttachments = 'attachements' in details
-        self.detailUrl = ('short' if 'shorturl' in details else
-                          'long' if 'longurl' in details else
-                          None)
+        self.details['width'] = options.get('width', 80)
+
         self.calOwnerColor = GetColor(options.get('color_owner', 'cyan'))
         self.calWriterColor = GetColor(options.get('color_writer', 'green'))
         self.calReaderColor = GetColor(options.get('color_reader', 'magenta'))
@@ -714,7 +716,7 @@ class GoogleCalendarInterface:
                 pickle.dump(self.cache, _cache_)
 
     def _ShortenURL(self, url):
-        if self.detailUrl != "short":
+        if self.details['url'] != "short":
             return url
         # Note that when authenticated to a google account different shortUrls
         # can be returned for the same longUrl. See: http://goo.gl/Ya0A9
@@ -1154,7 +1156,7 @@ class GoogleCalendarInterface:
                                          _u(event['e'].strftime('%Y-%m-%d')),
                                          _u(event['e'].strftime('%H:%M')))
 
-            if self.detailUrl:
+            if self.details['url']:
                 output += "\t%s" % (self._ShortenURL(event['htmlLink'])
                                     if 'htmlLink' in event else '')
                 output += "\t%s" % (self._ShortenURL(event['hangoutLink'])
@@ -1162,18 +1164,18 @@ class GoogleCalendarInterface:
 
             output += "\t%s" % _u(self._ValidTitle(event).strip())
 
-            if self.detailLocation:
+            if self.details['location']:
                 output += "\t%s" % (_u(event['location'].strip())
                                     if 'location' in event else '')
 
-            if self.detailDescr:
+            if self.details['description']:
                 output += "\t%s" % (_u(event['description'].strip())
                                     if 'description' in event else '')
 
-            if self.detailCalendar:
+            if self.details['calendar']:
                 output += "\t%s" % _u(event['gcalcli_cal']['summary'].strip())
 
-            if self.detailEmail:
+            if self.details['email']:
                 output += "\t%s" % (event['creator']['email'].strip()
                                     if 'email' in event['creator'] else '')
 
@@ -1187,22 +1189,22 @@ class GoogleCalendarInterface:
             if box:
                 wrapper.initial_indent = (indent + '  ')
                 wrapper.subsequent_indent = (indent + '  ')
-                wrapper.width = (self.detailDescrWidth - 2)
+                wrapper.width = (self.details['width'] - 2)
             else:
                 wrapper.initial_indent = indent
                 wrapper.subsequent_indent = indent
-                wrapper.width = self.detailDescrWidth
+                wrapper.width = self.details['width']
             new_descr = ""
             for line in descr.split("\n"):
                 if box:
                     tmpLine = wrapper.fill(line)
                     for singleLine in tmpLine.split("\n"):
-                        singleLine = singleLine.ljust(self.detailDescrWidth,
+                        singleLine = singleLine.ljust(self.details['width'],
                                                       ' ')
                         new_descr += singleLine[:len(indent)] + \
                             str(ART_VRT()) + \
                             singleLine[(len(indent) + 1):
-                                       (self.detailDescrWidth - 1)] + \
+                                       (self.details['width'] - 1)] + \
                             str(ART_VRT()) + '\n'
                 else:
                     new_descr += wrapper.fill(line) + "\n"
@@ -1240,22 +1242,22 @@ class GoogleCalendarInterface:
                 eventColor, fmt % (
                     _u(tmpTimeStr), _u(self._ValidTitle(event).strip())))
 
-        if self.detailCalendar:
+        if self.details['calendar']:
             xstr = "%s  Calendar: %s\n" % (
                     detailsIndent, event['gcalcli_cal']['summary'])
             PrintMsg(CLR_NRM(), xstr)
 
-        if self.detailUrl and 'htmlLink' in event:
+        if self.details['url'] and 'htmlLink' in event:
             hLink = self._ShortenURL(event['htmlLink'])
             xstr = "%s  Link: %s\n" % (detailsIndent, hLink)
             PrintMsg(CLR_NRM(), xstr)
 
-        if self.detailUrl and 'hangoutLink' in event:
+        if self.details['url'] and 'hangoutLink' in event:
             hLink = self._ShortenURL(event['hangoutLink'])
             xstr = "%s  Hangout Link: %s\n" % (detailsIndent, hLink)
             PrintMsg(CLR_NRM(), xstr)
 
-        if self.detailLocation and \
+        if self.details['location'] and \
            'location' in event and \
            event['location'].strip():
             xstr = "%s  Location: %s\n" % (
@@ -1264,7 +1266,7 @@ class GoogleCalendarInterface:
             )
             PrintMsg(CLR_NRM(), xstr)
 
-        if self.detailAttendees and 'attendees' in event:
+        if self.details['attendees'] and 'attendees' in event:
             xstr = "%s  Attendees:\n" % (detailsIndent)
             PrintMsg(CLR_NRM(), xstr)
 
@@ -1286,7 +1288,7 @@ class GoogleCalendarInterface:
                     )
                     PrintMsg(CLR_NRM(), xstr)
 
-        if self.detailAttachments and 'attachments' in event:
+        if self.details['attachments'] and 'attachments' in event:
             xstr = "%s  Attachments:\n" % (detailsIndent)
             PrintMsg(CLR_NRM(), xstr)
 
@@ -1299,12 +1301,12 @@ class GoogleCalendarInterface:
                 )
                 PrintMsg(CLR_NRM(), xstr)
 
-        if self.detailLength:
+        if self.details['length']:
             diffDateTime = (event['e'] - event['s'])
             xstr = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
             PrintMsg(CLR_NRM(), xstr)
 
-        if self.detailReminders and 'reminders' in event:
+        if self.details['reminders'] and 'reminders' in event:
             if event['reminders']['useDefault'] is True:
                 xstr = "%s  Reminder: (default)\n" % (detailsIndent)
                 PrintMsg(CLR_NRM(), xstr)
@@ -1314,7 +1316,7 @@ class GoogleCalendarInterface:
                            (detailsIndent, rem['method'], rem['minutes'])
                     PrintMsg(CLR_NRM(), xstr)
 
-        if self.detailEmail and \
+        if self.details['email'] and \
            'email' in event['creator'] and \
            event['creator']['email'].strip():
             xstr = "%s  Email: %s\n" % (
@@ -1323,7 +1325,7 @@ class GoogleCalendarInterface:
             )
             PrintMsg(CLR_NRM(), xstr)
 
-        if self.detailDescr and \
+        if self.details['description'] and \
            'description' in event and \
            event['description'].strip():
             descrIndent = detailsIndent + '  '
@@ -1332,13 +1334,13 @@ class GoogleCalendarInterface:
                 topMarker = (descrIndent +
                              str(ART_ULC()) +
                              (str(ART_HRZ()) *
-                              ((self.detailDescrWidth - len(descrIndent)) -
+                              ((self.details['width'] - len(descrIndent)) -
                                2)) +
                              str(ART_URC()))
                 botMarker = (descrIndent +
                              str(ART_LLC()) +
                              (str(ART_HRZ()) *
-                              ((self.detailDescrWidth - len(descrIndent)) -
+                              ((self.details['width'] - len(descrIndent)) -
                                2)) +
                              str(ART_LRC()))
                 xstr = "%s  Description:\n%s\n%s\n%s\n" % (
@@ -1350,7 +1352,7 @@ class GoogleCalendarInterface:
                 )
             else:
                 marker = descrIndent + '-' * \
-                    (self.detailDescrWidth - len(descrIndent))
+                    (self.details['width'] - len(descrIndent))
                 xstr = "%s  Description:\n%s\n%s\n%s\n" % (
                     detailsIndent,
                     marker,
@@ -1790,7 +1792,7 @@ class GoogleCalendarInterface:
                       eventId=newEvent['id'],
                       body=rem))
 
-        if self.detailUrl:
+        if self.details['url']:
             hLink = self._ShortenURL(newEvent['htmlLink'])
             PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
 
@@ -1832,7 +1834,7 @@ class GoogleCalendarInterface:
             self._CalService().events().
             insert(calendarId=self.cals[0]['id'], body=event))
 
-        if self.detailUrl:
+        if self.details['url']:
             hLink = self._ShortenURL(newEvent['htmlLink'])
             PrintMsg(CLR_GRN(), 'New event added: %s\n' % hLink)
 
@@ -2225,13 +2227,8 @@ gflags.add_argument(
 detailsParser = argparse.ArgumentParser(add_help=False)
 detailsParser.add_argument(
         "--details", default=[], type=str, action="append",
-        choices=['all', 'calendar', 'location', 'length',
-                 'reminders', 'description', 'longurl', 'shorturl',
-                 'url', 'attendees', 'email', 'attachments'],
-        help="Which parts to display, can be: "
-        "'all', 'calendar', 'location', 'length', "
-        "'reminders', 'description', 'longurl', 'shorturl', "
-        "'url', 'attendees', 'email'")
+        choices=DETAILS,
+        help="Which parts to display, can be: " + ", ".join(DETAILS))
 
 outputParser = argparse.ArgumentParser(add_help=False)
 outputParser.add_argument(
@@ -2433,12 +2430,6 @@ def main():
         calNamesFiltered.append(_u(calNameSimple))
         calNameColors.append(calColors[calNameSimple])
     calNames = calNamesFiltered
-
-    def hasDetail(option):
-        if 'all' in FLAGS.details or option in FLAGS.details:
-            return True
-        else:
-            return False
 
     gcal = GoogleCalendarInterface(calNames=calNames,
                                    calNameColors=calNameColors,
