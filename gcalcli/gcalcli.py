@@ -504,7 +504,7 @@ def ParseReminder(rem):
     return n, m
 
 
-class gcalcli:
+class GoogleCalendarInterface:
 
     cache = {}
     allCals = []
@@ -526,64 +526,45 @@ class gcalcli:
 
     UNIWIDTH = {'W': 2, 'F': 2, 'N': 1, 'Na': 1, 'H': 1, 'A': 1}
 
-    def __init__(self,
-                 calNames=[],
-                 calNameColors=[],
-                 options={}):
-
-        def hasOption(option, default):
-            return vars(options)[option] if option in options else default
-
-        def hasColor(option, default):
-            color = hasOption(option, False)
-            if not color:
-                return default
-            return GetColor(color)
-
-        def hasDetail(option):
-            if 'details' in options and (option in options.details
-                                         or 'all' in options.details):
-                return True
-            else:
-                return False
-
-        self.military = hasOption('military', False)
-        self.ignoreStarted = not hasOption('started', True)
-        self.ignoreDeclined = not hasOption('declined', True)
-        self.calWidth = hasOption('width', 10)
-        self.calMonday = hasOption('monday', False)
-        self.calWeekend = hasOption('noweekend', True)
-        self.tsv = hasOption('tsv', False)
-        self.refreshCache = hasOption('refresh', False)
-        self.useCache = hasOption('cache', True)
-        self.defaultReminders = hasOption('default_reminders', False)
-        self.allDay = hasOption('allday', False)
-
-        self.detailCalendar = hasDetail('calendar')
-        self.detailLocation = hasDetail('location')
-        self.detailLength = hasDetail('length')
-        self.detailReminders = hasDetail('reminders')
-        self.detailDescr = hasDetail('description')
-        self.detailDescrWidth = hasOption('width', 80)
-        self.detailUrl = 'short' if hasDetail('shorturl') else \
-                         'long' if hasDetail('longurl') or hasDetail('url') \
-                         else None
-        self.detailAttendees = hasDetail('attendees')
-        self.detailEmail = hasDetail('email')
-        self.detailAttachments = hasDetail('attachements')
-
-        self.calOwnerColor = hasColor('color_owner', CLR_CYN())
-        self.calWriterColor = hasColor('color_writer', CLR_GRN())
-        self.calReaderColor = hasColor('color_reader', CLR_MAG())
-        self.calFreeBusyColor = hasColor('color_freebusy', CLR_NRM())
-        self.dateColor = hasColor('color_date', CLR_YLW())
-        self.nowMarkerColor = hasColor('color_now_marker', CLR_BRRED())
-        self.borderColor = hasColor('color_border', CLR_WHT())
-
-        self.configFolder = hasOption('configFolder', None)
-
-        self.client_id = hasOption('client_id', __API_CLIENT_ID__)
-        self.client_secret = hasOption('client_secret', __API_CLIENT_SECRET__)
+    def __init__(self, calNames=[], calNameColors=[], **options):
+        self.military = options.get('military', False)
+        self.ignoreStarted = not options.get('started', True)
+        self.ignoreDeclined = not options.get('declined', True)
+        self.calWidth = options.get('width', 10)
+        self.calMonday = options.get('monday', False)
+        self.calWeekend = options.get('noweekend', True)
+        self.tsv = options.get('tsv', False)
+        self.refreshCache = options.get('refresh', False)
+        self.useCache = options.get('cache', True)
+        self.defaultReminders = options.get('default_reminders', False)
+        self.allDay = options.get('allday', False)
+        # stored as detail, but provided as option
+        self.detailDescrWidth = options.get('width', 80)
+        details = options.get('details', [])
+        self.detailCalendar = 'calendar' in details
+        self.detailLocation = 'location' in details
+        self.detailLength = 'length' in details
+        self.detailReminders = 'reminders' in details
+        self.detailDescr = 'description' in details
+        self.detailAttendees = 'attendees' in details
+        self.detailEmail = 'email' in details
+        self.detailAttachments = 'attachements' in details
+        self.detailUrl = ('short' if 'shorturl' in details else
+                          'long' if 'longurl' in details else
+                          None)
+        self.calOwnerColor = GetColor(options.get('color_owner', 'cyan'))
+        self.calWriterColor = GetColor(options.get('color_writer', 'green'))
+        self.calReaderColor = GetColor(options.get('color_reader', 'magenta'))
+        self.calFreeBusyColor = GetColor(
+                options.get('color_freebusy', 'default'))
+        self.dateColor = GetColor(options.get('color_date', 'yellow'))
+        self.nowMarkerColor = GetColor(
+                options.get('color_now_marker', 'bright_red'))
+        self.borderColor = GetColor(options.get('color_border', 'white'))
+        self.configFolder = options.get('configFolder', None)
+        self.client_id = options.get('client_id', __API_CLIENT_ID__)
+        self.client_secret = options.get(
+                'client_secret', __API_CLIENT_SECRET__)
 
         self._GetCached()
 
@@ -2459,9 +2440,9 @@ def main():
         else:
             return False
 
-    gcal = gcalcli(calNames=calNames,
-                   calNameColors=calNameColors,
-                   options=FLAGS)
+    gcal = GoogleCalendarInterface(calNames=calNames,
+                                   calNameColors=calNameColors,
+                                   **vars(FLAGS))
 
     if FLAGS.command == 'list':
         gcal.ListAllCalendars()

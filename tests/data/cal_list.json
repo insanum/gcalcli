@@ -1,0 +1,147 @@
+{
+  "nextSyncToken": "somebase64text==",
+  "items": [
+    {
+      "summary": "jcrowgey@uw.edu",
+      "accessRole": "owner",
+      "etag": "\"etag0\"",
+      "location": "Seattle",
+      "defaultReminders": [],
+      "colorId": "15",
+      "timeZone": "America/Los_Angeles",
+      "foregroundColor": "#000000",
+      "id": "jcrowgey@uw.edu",
+      "selected": true,
+      "backgroundColor": "#9fc6e7",
+      "conferenceProperties": {
+        "allowedConferenceSolutionTypes": [
+          "eventNamedHangout"
+        ]
+      },
+      "kind": "calendar#calendarListEntry"
+    },
+    {
+      "summary": "Google Code Jam",
+      "accessRole": "reader",
+      "etag": "\"1522646459661000\"",
+      "description": "Public calendar of important dates and events for Google Code Jam competitions.",
+      "colorId": "18",
+      "timeZone": "UTC",
+      "foregroundColor": "#000000",
+      "defaultReminders": [],
+      "id": "google.com_jqv7qt9iifsaj94cuknckrabd8@group.calendar.google.com",
+      "selected": true,
+      "backgroundColor": "#b99aff",
+      "conferenceProperties": {
+        "allowedConferenceSolutionTypes": [
+          "eventNamedHangout"
+        ]
+      },
+      "kind": "calendar#calendarListEntry"
+    },
+    {
+      "notificationSettings": {
+        "notifications": [
+          {
+            "method": "email",
+            "type": "eventCreation"
+          },
+          {
+            "method": "email",
+            "type": "eventChange"
+          },
+          {
+            "method": "email",
+            "type": "eventCancellation"
+          },
+          {
+            "method": "email",
+            "type": "eventResponse"
+          }
+        ]
+      },
+      "summary": "joshuacrowgey@gmail.com",
+      "accessRole": "owner",
+      "etag": "\"etag1\"",
+      "defaultReminders": [
+        {
+          "method": "email",
+          "minutes": 10
+        },
+        {
+          "method": "popup",
+          "minutes": 30
+        }
+      ],
+      "colorId": "2",
+      "timeZone": "America/Los_Angeles",
+      "foregroundColor": "#000000",
+      "id": "joshuacrowgey@gmail.com",
+      "primary": true,
+      "selected": true,
+      "backgroundColor": "#d06b64",
+      "conferenceProperties": {
+        "allowedConferenceSolutionTypes": [
+          "eventHangout"
+        ]
+      },
+      "kind": "calendar#calendarListEntry"
+    },
+    {
+      "summary": "Contacts",
+      "accessRole": "reader",
+      "etag": "\"etag2\"",
+      "defaultReminders": [],
+      "colorId": "13",
+      "timeZone": "America/Los_Angeles",
+      "foregroundColor": "#000000",
+      "id": "#contacts@group.v.calendar.google.com",
+      "selected": true,
+      "backgroundColor": "#92e1c0",
+      "conferenceProperties": {
+        "allowedConferenceSolutionTypes": [
+          "eventHangout"
+        ]
+      },
+      "kind": "calendar#calendarListEntry"
+    },
+    {
+      "summary": "Holidays in United States",
+      "accessRole": "reader",
+      "etag": "\"0\"",
+      "defaultReminders": [],
+      "colorId": "15",
+      "timeZone": "America/Los_Angeles",
+      "foregroundColor": "#000000",
+      "id": "en.usa#holiday@group.v.calendar.google.com",
+      "selected": true,
+      "backgroundColor": "#9fc6e7",
+      "conferenceProperties": {
+        "allowedConferenceSolutionTypes": [
+          "eventHangout"
+        ]
+      },
+      "kind": "calendar#calendarListEntry"
+    },
+    {
+      "summary": "Sunrise/Sunset: Seattle",
+      "accessRole": "reader",
+      "etag": "\"0\"",
+      "defaultReminders": [],
+      "colorId": "6",
+      "timeZone": "America/Los_Angeles",
+      "foregroundColor": "#000000",
+      "id": "i_71.23.40.78#sunrise@group.v.calendar.google.com",
+      "selected": true,
+      "backgroundColor": "#ffad46",
+      "conferenceProperties": {
+        "allowedConferenceSolutionTypes": [
+          "eventHangout"
+        ]
+      },
+      "kind": "calendar#calendarListEntry"
+    }
+  ],
+  "etag": "\"etag3\"",
+  "kind": "calendar#calendarList"
+}
