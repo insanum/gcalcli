@@ -70,103 +70,6 @@ from __future__ import print_function
 __program__ = 'gcalcli'
 __version__ = 'v4.0.0a4'
 __author__ = 'Eric Davis, Brian Hartvigsen'
-__doc__ = '''
-Usage:
-
-%s [options] command [command args or options]
-
- Commands:
-
-  list                     list all calendars
-
-  search <text> [start] [end]
-                           search for events within an optional time period
-                           - case insensitive search terms to find events that
-                             match these terms in any field, like traditional
-                             Google search with quotes, exclusion, etc.
-                           - for example to get just games: "soccer -practice"
-                           - [start] and [end] use the same formats as agenda
-
-  agenda [start] [end]     get an agenda for a time period
-                           - start time default is 12am today
-                           - end time default is 5 days from start
-                           - example time strings:
-                              '9/24/2007'
-                              '24/09/2007'
-                              '24/9/07'
-                              'Sep 24 2007 3:30pm'
-                              '2007-09-24T15:30'
-                              '2007-09-24T15:30-8:00'
-                              '20070924T15'
-                              '8am'
-
-  calw <weeks> [start]     get a week based agenda in a nice calendar format
-                           - weeks is the number of weeks to display
-                           - start time default is beginning of this week
-                           - note that all events for the week(s) are displayed
-
-  calm [start]             get a month agenda in a nice calendar format
-                           - start time default is the beginning of this month
-                           - note that all events for the month are displayed
-                             and only one month will be displayed
-
-  quick <text>             quick add an event to a calendar
-                           - a single --calendar must specified
-                           - the "--details url" option will show the event url
-                           - example text:
-                              'Dinner with Eric 7pm tomorrow'
-                              '5pm 10/31 Trick or Treat'
-
-  add                      add a detailed event to a calendar
-                           - a single --calendar must specified
-                           - the "--details url" option will show the event url
-                           - example:
-                              gcalcli --calendar 'Eric Davis'
-                                      --title 'Analysis of Algorithms Final'
-                                      --where UCI
-                                      --when '12/14/2012 10:00'
-                                      --who 'foo@bar.com'
-                                      --who 'baz@bar.com'
-                                      --duration 60
-                                      --description 'It is going to be hard!'
-                                      --reminder 30
-                                      add
-
-  delete <text> [start] [end]
-                           delete event(s) within the optional time period
-                           - case insensitive search terms to find and delete
-                             events, just like the 'search' command
-                           - deleting is interactive
-                             use the --iamaexpert option to auto delete
-                             THINK YOU'RE AN EXPERT? USE AT YOUR OWN RISK!!!
-                           - use the --details options to show event details
-                           - [start] and [end] use the same formats as agenda
-
-  edit <text>              edit event(s)
-                           - case insensitive search terms to find and edit
-                             events, just like the 'search' command
-                           - editing is interactive
-
-  import [file]            import an ics/vcal file to a calendar
-                           - a single --calendar must specified
-                           - if a file is not specified then the data is read
-                             from standard input
-                           - if -v is given then each event in the file is
-                             displayed and you're given the option to import
-                             or skip it, by default everything is imported
-                             quietly without any interaction
-                           - if -d is given then each event in the file is
-                             displayed and is not imported, a --calendar does
-                             not need to be specified for this option
-
-  remind <mins> <command>  execute command if event occurs within <mins>
-                           minutes time ('%%s' in <command> is replaced with
-                           event start time and title text)
-                           - <mins> default is 10
-                           - default command:
-                              'notify-send -u critical -a gcalcli %%s'
-'''
-
 __API_CLIENT_ID__ = '232867676714.apps.googleusercontent.com'
 __API_CLIENT_SECRET__ = '3tZSxItw6_VnZMezQwC8lUqy'
 
@@ -2175,196 +2078,201 @@ def ValidReminder(value):
     else:
         return value
 
+def setup_parser():
+    FLAGS = {}
+    parser = argparse.ArgumentParser(
+            description='Google Calendar Command Line Interface',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            fromfile_prefix_chars="@",
+            parents=[tools.argparser])
 
-FLAGS = {}
-gflags = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        fromfile_prefix_chars="@",
-        parents=[tools.argparser])
+    parser.add_argument(
+            "--version", action="version", version="%%(prog)s %s (%s)" %
+            (__version__, __author__))
 
-gflags.add_argument(
-        "--version", action="version", version="%%(prog)s %s (%s)" %
-        (__version__, __author__))
+    # Program level options
+    parser.add_argument(
+            "--client_id", default=__API_CLIENT_ID__, type=str,
+            help="API client_id")
+    parser.add_argument(
+            "--client_secret", default=__API_CLIENT_SECRET__, type=str,
+            help="API client_secret")
+    parser.add_argument(
+            "--configFolder", default=None, type=str,
+            help="Optional directory to load/store all configuration information")
+    parser.add_argument(
+            "--noincluderc", action="store_false", dest="includeRc",
+            help="Whether to include ~/.gcalclirc when using configFolder")
+    parser.add_argument(
+            "--calendar", default=[], type=str, action="append",
+            help="Which calendars to use")
+    parser.add_argument(
+            "--defaultCalendar", default=[], type=str, action="append",
+            help="Optional default calendar to use if no --calendar options" +
+            "are given")
+    parser.add_argument(
+            "--locale", default=None, type=str, help="System locale")
+    parser.add_argument(
+            "--refresh", action="store_true",
+            help="Delete and refresh cached data")
+    parser.add_argument(
+            "--nocache", action="store_false", dest="cache",
+            help="Execute command without using cache")
+    parser.add_argument(
+            "--conky", action="store_true", help="Use Conky color codes")
+    parser.add_argument(
+            "--nocolor", action="store_false", dest="color",
+            help="Enable/Disable all color output")
+    parser.add_argument(
+            "--nolineart", action="store_false", dest="lineart",
+            help="Enable/Disable line art")
 
-# Program level options
-gflags.add_argument(
-        "--client_id", default=__API_CLIENT_ID__, type=str,
-        help="API client_id")
-gflags.add_argument(
-        "--client_secret", default=__API_CLIENT_SECRET__, type=str,
-        help="API client_secret")
-gflags.add_argument(
-        "--configFolder", default=None, type=str,
-        help="Optional directory to load/store all configuration information")
-gflags.add_argument(
-        "--noincluderc", action="store_false", dest="includeRc",
-        help="Whether to include ~/.gcalclirc when using configFolder")
-gflags.add_argument(
-        "--calendar", default=[], type=str, action="append",
-        help="Which calendars to use")
-gflags.add_argument(
-        "--defaultCalendar", default=[], type=str, action="append",
-        help="Optional default calendar to use if no --calendar options" +
-        "are given")
-gflags.add_argument(
-        "--locale", default=None, type=str, help="System locale")
-gflags.add_argument(
-        "--refresh", action="store_true",
-        help="Delete and refresh cached data")
-gflags.add_argument(
-        "--nocache", action="store_false", dest="cache",
-        help="Execute command without using cache")
-gflags.add_argument(
-        "--conky", action="store_true", help="Use Conky color codes")
-gflags.add_argument(
-        "--nocolor", action="store_false", dest="color",
-        help="Enable/Disable all color output")
-gflags.add_argument(
-        "--nolineart", action="store_false", dest="lineart",
-        help="Enable/Disable line art")
+    details_parser = argparse.ArgumentParser(add_help=False)
+    details_parser.add_argument(
+            "--details", default=[], type=str, action="append",
+            choices=DETAILS,
+            help="Which parts to display, can be: " + ", ".join(DETAILS))
 
-detailsParser = argparse.ArgumentParser(add_help=False)
-detailsParser.add_argument(
-        "--details", default=[], type=str, action="append",
-        choices=DETAILS,
-        help="Which parts to display, can be: " + ", ".join(DETAILS))
+    output_parser = argparse.ArgumentParser(add_help=False)
+    output_parser.add_argument(
+            "--tsv", action="store_true", help="Use Tab Separated Value output")
+    output_parser.add_argument(
+            "--nostarted", action="store_false", dest="started",
+            help="Hide events that have started")
+    output_parser.add_argument(
+            "--nodeclined", action="store_false", dest="declined",
+            help="Hide events that have been declined")
+    output_parser.add_argument(
+            "--width", "-w", default=10, type=ValidWidth, help="Set output width")
+    output_parser.add_argument(
+            "--military", action="store_true", help="Use 24 hour display")
 
-outputParser = argparse.ArgumentParser(add_help=False)
-outputParser.add_argument(
-        "--tsv", action="store_true", help="Use Tab Separated Value output")
-outputParser.add_argument(
-        "--nostarted", action="store_false", dest="started",
-        help="Hide events that have started")
-outputParser.add_argument(
-        "--nodeclined", action="store_false", dest="declined",
-        help="Hide events that have been declined")
-outputParser.add_argument(
-        "--width", "-w", default=10, type=ValidWidth, help="Set output width")
-outputParser.add_argument(
-        "--military", action="store_true", help="Use 24 hour display")
+    color_parser = argparse.ArgumentParser(add_help=False)
+    color_parser.add_argument(
+            "--color_owner", default="cyan", type=ValidColor,
+            help="Color for owned calendars")
+    color_parser.add_argument(
+            "--color_writer", default="green", type=ValidColor,
+            help="Color for writable calendars")
+    color_parser.add_argument(
+            "--color_reader", default="magenta", type=ValidColor,
+            help="Color for read-only calendars")
+    color_parser.add_argument(
+            "--color_freebusy", default="default", type=ValidColor,
+            help="Color for free/busy calendars")
+    color_parser.add_argument(
+            "--color_date", default="yellow", type=ValidColor,
+            help="Color for the date")
+    color_parser.add_argument(
+            "--color_now_marker", default="brightred", type=ValidColor,
+            help="Color for the now marker")
+    color_parser.add_argument(
+            "--color_border", default="white", type=ValidColor,
+            help="Color of line borders")
 
-colorParser = argparse.ArgumentParser(add_help=False)
-colorParser.add_argument(
-        "--color_owner", default="cyan", type=ValidColor,
-        help="Color for owned calendars")
-colorParser.add_argument(
-        "--color_writer", default="green", type=ValidColor,
-        help="Color for writable calendars")
-colorParser.add_argument(
-        "--color_reader", default="magenta", type=ValidColor,
-        help="Color for read-only calendars")
-colorParser.add_argument(
-        "--color_freebusy", default="default", type=ValidColor,
-        help="Color for free/busy calendars")
-colorParser.add_argument(
-        "--color_date", default="yellow", type=ValidColor,
-        help="Color for the date")
-colorParser.add_argument(
-        "--color_now_marker", default="brightred", type=ValidColor,
-        help="Color for the now marker")
-colorParser.add_argument(
-        "--color_border", default="white", type=ValidColor,
-        help="Color of line borders")
+    remind_parser = argparse.ArgumentParser(add_help=False)
+    remind_parser.add_argument(
+            "--reminder", default=[], type=ValidReminder, action="append",
+            help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
+            "is a number which may be followed by an optional "
+            "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
+            "minutes) and default to minutes.  METH is a string "
+            "'popup', 'email', or 'sms' and defaults to popup.")
+    remind_parser.add_argument(
+            "--default_reminders", action="store_true",
+            help="If no --reminder is given, use the defaults.  If this is "
+            "false, do not create any reminders.")
 
-remindParser = argparse.ArgumentParser(add_help=False)
-remindParser.add_argument(
-        "--reminder", default=[], type=ValidReminder, action="append",
-        help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
-        "is a number which may be followed by an optional "
-        "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
-        "minutes) and default to minutes.  METH is a string "
-        "'popup', 'email', or 'sms' and defaults to popup.")
-remindParser.add_argument(
-        "--default_reminders", action="store_true",
-        help="If no --reminder is given, use the defaults.  If this is "
-        "false, do not create any reminders.")
+    sub = parser.add_subparsers( help='Invoking a subcommand with --help prints subcommand usage.' , dest="command")
+    sub.required = True
 
-sub = gflags.add_subparsers(help="Sub command help?", dest="command")
-sub.required = True
+    sub.add_parser("list", parents=[color_parser])
 
-sub.add_parser("list", parents=[colorParser])
+    search = sub.add_parser(
+            "search", parents=[details_parser, output_parser, color_parser])
+    search.add_argument("text", nargs=1)
+    search.add_argument("start", type=str, nargs="?")
+    search.add_argument("end", type=str, nargs="?")
 
-search = sub.add_parser(
-        "search", parents=[detailsParser, outputParser, colorParser])
-search.add_argument("text", nargs=1)
-search.add_argument("start", type=str, nargs="?")
-search.add_argument("end", type=str, nargs="?")
+    agenda = sub.add_parser(
+            "agenda", parents=[details_parser, output_parser, color_parser])
+    agenda.add_argument("start", type=str, nargs="?")
+    agenda.add_argument("end", type=str, nargs="?")
 
-agenda = sub.add_parser(
-        "agenda", parents=[detailsParser, outputParser, colorParser])
-agenda.add_argument("start", type=str, nargs="?")
-agenda.add_argument("end", type=str, nargs="?")
+    calw = sub.add_parser(
+            "calw", parents=[details_parser, output_parser, color_parser])
+    calw.add_argument("weeks", type=int, default=1, nargs="?")
+    calw.add_argument("start", type=str, nargs="?")
+    calw.add_argument(
+            "--monday", action="store_true", help="Start the week on Monday")
+    calw.add_argument(
+            "--noweekend", action="store_false", help="Hide Saturday and Sunday")
 
-calw = sub.add_parser(
-        "calw", parents=[detailsParser, outputParser, colorParser])
-calw.add_argument("weeks", type=int, default=1, nargs="?")
-calw.add_argument("start", type=str, nargs="?")
-calw.add_argument(
-        "--monday", action="store_true", help="Start the week on Monday")
-calw.add_argument(
-        "--noweekend", action="store_false", help="Hide Saturday and Sunday")
+    calm = sub.add_parser(
+            "calm", parents=[details_parser, output_parser, color_parser])
+    calm.add_argument("start", type=str, nargs="?")
+    calm.add_argument(
+            "--monday", action="store_true", help="Start the week on Monday")
+    calm.add_argument(
+            "--noweekend", action="store_false", help="Hide Saturday and Sunday")
 
-calm = sub.add_parser(
-        "calm", parents=[detailsParser, outputParser, colorParser])
-calm.add_argument("start", type=str, nargs="?")
-calm.add_argument(
-        "--monday", action="store_true", help="Start the week on Monday")
-calm.add_argument(
-        "--noweekend", action="store_false", help="Hide Saturday and Sunday")
+    quick = sub.add_parser("quick", parents=[details_parser, remind_parser])
+    quick.add_argument("text")
 
-quick = sub.add_parser("quick", parents=[detailsParser, remindParser])
-quick.add_argument("text")
+    add = sub.add_parser("add", parents=[details_parser, remind_parser])
+    add.add_argument("--title", default=None, type=str, help="Event title")
+    add.add_argument(
+            "--who", default=[], type=str, action="append", help="Event title")
+    add.add_argument("--where", default=None, type=str, help="Event location")
+    add.add_argument("--when", default=None, type=str, help="Event time")
+    add.add_argument(
+            "--duration", default=None, type=int,
+            help="Event duration in minutes or days if --allday is given.")
+    add.add_argument(
+            "--description", default=None, type=str, help="Event description")
+    add.add_argument(
+            "--allday", action="store_true",
+            help="If --allday is given, the event will be an all-day event "
+            "(possibly multi-day if --duration is greater than 1). The "
+            "time part of the --when will be ignored.")
+    add.add_argument(
+            "--prompt", action="store_true",
+            help="Prompt for missing data when adding events")
 
-add = sub.add_parser("add", parents=[detailsParser, remindParser])
-add.add_argument("--title", default=None, type=str, help="Event title")
-add.add_argument(
-        "--who", default=[], type=str, action="append", help="Event title")
-add.add_argument("--where", default=None, type=str, help="Event location")
-add.add_argument("--when", default=None, type=str, help="Event time")
-add.add_argument(
-        "--duration", default=None, type=int,
-        help="Event duration in minutes or days if --allday is given.")
-add.add_argument(
-        "--description", default=None, type=str, help="Event description")
-add.add_argument(
-        "--allday", action="store_true",
-        help="If --allday is given, the event will be an all-day event "
-        "(possibly multi-day if --duration is greater than 1). The "
-        "time part of the --when will be ignored.")
-add.add_argument(
-        "--prompt", action="store_true",
-        help="Prompt for missing data when adding events")
+    # TODO: Fix this it doesn't work this way as nothing ever goes into [start] or
+    # [end]
+    delete = sub.add_parser("delete")
+    delete.add_argument("text", nargs=1)
+    delete.add_argument("start", type=str, nargs="?")
+    delete.add_argument("end", type=str, nargs="?")
+    delete.add_argument("--iamaexpert", action="store_true", help="Probably not")
 
-# TODO: Fix this it doesn't work this way as nothing ever goes into [start] or
-# [end]
-delete = sub.add_parser("delete")
-delete.add_argument("text", nargs=1)
-delete.add_argument("start", type=str, nargs="?")
-delete.add_argument("end", type=str, nargs="?")
-delete.add_argument("--iamaexpert", action="store_true", help="Probably not")
+    edit = sub.add_parser("edit", parents=[details_parser, output_parser])
+    edit.add_argument("text")
 
-edit = sub.add_parser("edit", parents=[detailsParser, outputParser])
-edit.add_argument("text")
+    _import = sub.add_parser("import", parents=[remind_parser])
+    _import.add_argument("file", type=argparse.FileType('r'), nargs="?")
+    _import.add_argument(
+            "--verbose", "-v", action="count", help="Be verbose on imports")
+    _import.add_argument(
+            "--dump", "-d", action="store_true",
+            help="Print events and don't import")
 
-_import = sub.add_parser("import", parents=[remindParser])
-_import.add_argument("file", type=argparse.FileType('r'), nargs="?")
-_import.add_argument(
-        "--verbose", "-v", action="count", help="Be verbose on imports")
-_import.add_argument(
-        "--dump", "-d", action="store_true",
-        help="Print events and don't import")
+    remind = sub.add_parser("remind")
+    remind.add_argument("minutes", type=int)
+    remind.add_argument("cmd", type=str)
+    remind.add_argument(
+            "--use_reminders", action="store_true",
+            help="Honour the remind time when running remind command")
 
-remind = sub.add_parser("remind")
-remind.add_argument("minutes", type=int)
-remind.add_argument("cmd", type=str)
-remind.add_argument(
-        "--use_reminders", action="store_true",
-        help="Honour the remind time when running remind command")
+    return parser
 
 
 def main():
     global FLAGS
+
+    parser = setup_parser()
+
     try:
         argv = sys.argv[1:]
         gcalclirc = os.path.expanduser('~/.gcalclirc')
@@ -2376,11 +2284,11 @@ def main():
         else:
             tmpArgv = argv
         # TODO: In 4.1 change this to just parse_args
-        (FLAGS, junk) = gflags.parse_known_args(tmpArgv)
+        (FLAGS, junk) = parser.parse_known_args(tmpArgv)
     except Exception as e:
         PrintErrMsg(str(e))
         print()
-        gflags.print_usage()
+        parser.print_usage()
         sys.exit(1)
 
     if FLAGS.configFolder:
@@ -2394,7 +2302,7 @@ def main():
                 tmpArgv = ["@%s/gcalclirc" % FLAGS.configFolder, ] + tmpArgv
 
         # TODO: In 4.1 change this to just parse_args
-        (FLAGS, junk) = gflags.parse_known_args(tmpArgv)
+        (FLAGS, junk) = parser.parse_known_args(tmpArgv)
 
     if junk:
         PrintErrMsg(
