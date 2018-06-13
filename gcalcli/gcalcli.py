@@ -434,18 +434,7 @@ class GoogleCalendarInterface:
     UNIWIDTH = {'W': 2, 'F': 2, 'N': 1, 'Na': 1, 'H': 1, 'A': 1}
 
     def __init__(self, calNames=[], calNameColors=[], **options):
-        self.options = options  # _GoogleAuth apparently can use this
-        self.military = options.get('military', False)
-        self.ignoreStarted = not options.get('started', True)
-        self.ignoreDeclined = not options.get('declined', True)
-        self.calWidth = options.get('width', 10)
-        self.calMonday = options.get('monday', False)
-        self.calWeekend = options.get('noweekend', True)
-        self.tsv = options.get('tsv', False)
-        self.refreshCache = options.get('refresh', False)
-        self.useCache = options.get('cache', True)
-        self.defaultReminders = options.get('default_reminders', False)
-        self.allDay = options.get('allday', False)
+        self.options = options
 
         self.details = {}
         chosen_details = options.get('details', [])
@@ -575,7 +564,7 @@ class GoogleCalendarInterface:
         else:
             cacheFile = os.path.expanduser('~/.gcalcli_cache')
 
-        if self.refreshCache:
+        if self.options['refresh_cache']:
             try:
                 os.remove(cacheFile)
             except OSError:
@@ -585,7 +574,7 @@ class GoogleCalendarInterface:
         self.cache = {}
         self.allCals = []
 
-        if self.useCache:
+        if self.options['use_cache']:
             # note that we need to use pickle for cache data since we stuff
             # various non-JSON data in the runtime storage structures
             try:
@@ -614,7 +603,7 @@ class GoogleCalendarInterface:
 
         self.allCals.sort(key=lambda x: x['accessRole'])
 
-        if self.useCache:
+        if self.options['use_cache']:
             self.cache['allCals'] = self.allCals
             with open(cacheFile, 'wb') as _cache_:
                 pickle.dump(self.cache, _cache_)
@@ -671,7 +660,7 @@ class GoogleCalendarInterface:
                 continue
 
             dayNum = int(event['s'].strftime("%w"))
-            if self.calMonday:
+            if self.options['cal_monday']:
                 dayNum -= 1
                 if dayNum < 0:
                     dayNum = 6
@@ -703,14 +692,14 @@ class GoogleCalendarInterface:
                         weekEventStrings[dayNum - 1] += \
                             ("\n" +
                              str(self.nowMarkerColor) +
-                             (self.calWidth * '-'))
+                             (self.options['cal_width'] * '-'))
                     elif self.now <= event['s']:
                         # add a line marker before next event
                         nowMarkerPrinted = True
                         weekEventStrings[dayNum] += \
                             ("\n" +
                              str(self.nowMarkerColor) +
-                             (self.calWidth * '-'))
+                             (self.options['cal_width'] * '-'))
                     # We don't want to recolor all day events, but ignoring
                     # them leads to issues where the "now" marker misprints
                     # into the wrong day.  This resolves the issue by skipping
@@ -725,7 +714,7 @@ class GoogleCalendarInterface:
 
                 if allDay:
                     tmpTimeStr = ''
-                elif self.military:
+                elif self.options['military']:
                     tmpTimeStr = event['s'].strftime("%H:%M")
                 else:
                     tmpTimeStr = \
@@ -744,7 +733,7 @@ class GoogleCalendarInterface:
                         endDayNum = 6
                     else:
                         endDayNum = int(eventEndDate.strftime("%w"))
-                        if self.calMonday:
+                        if self.options['cal_monday']:
                             endDayNum -= 1
                             if endDayNum < 0:
                                 endDayNum = 6
@@ -787,7 +776,8 @@ class GoogleCalendarInterface:
         printLen = 0
         for tmpChar in _u(string):
             printTmpChar = self.UNIWIDTH[east_asian_width(tmpChar)]
-            if (curPrintLen + printLen + printTmpChar) > self.calWidth:
+            if (curPrintLen + printLen + printTmpChar) > \
+                    self.options['cal_width']:
                 return (printLen, idx, True)
             if tmpChar in (' ', '\n'):
                 return (printLen, idx, False)
@@ -799,7 +789,7 @@ class GoogleCalendarInterface:
 
         printLen = self._PrintLen(eventString)
 
-        if printLen <= self.calWidth:
+        if printLen <= self.options['cal_width']:
             if '\n' in eventString:
                 idx = eventString.find('\n')
                 printLen = self._PrintLen(eventString[:idx])
@@ -819,12 +809,12 @@ class GoogleCalendarInterface:
 
         DebugPrint("--- looping\n")
 
-        while cutWidth < self.calWidth:
+        while cutWidth < self.options['cal_width']:
 
             DebugPrint("--- cutWidth=%d cut=%d \"%s\"\n" %
                        (cutWidth, cut, eventString[cut:]))
 
-            while cut < self.calWidth and \
+            while cut < self.options['cal_width'] and \
                     cut < printLen and \
                     eventString[cut] == ' ':
                 DebugPrint("-> skipping space <-\n")
@@ -859,9 +849,9 @@ class GoogleCalendarInterface:
         while (len(eventList) and eventList[0]['s'] < startDateTime):
             eventList = eventList[1:]
 
-        dayWidthLine = (self.calWidth * str(ART_HRZ()))
+        dayWidthLine = (self.options['cal_width'] * str(ART_HRZ()))
 
-        dayNums = range(7) if self.calWeekend else range(1, 6)
+        dayNums = range(7) if self.options['cal_weekend'] else range(1, 6)
         days = len(dayNums)
 
         topWeekDivider = (str(self.borderColor) +
@@ -879,7 +869,7 @@ class GoogleCalendarInterface:
                           ((days - 1) * (str(ART_BTE()) + dayWidthLine)) +
                           str(ART_LRC()) + str(CLR_NRM()))
 
-        empty = self.calWidth * ' '
+        empty = self.options['cal_width'] * ' '
 
         # Get the localized day names... January 1, 2001 was a Monday
         dayNames = [date(2001, 1, i + 1).strftime('%A') for i in range(7)]
@@ -887,14 +877,15 @@ class GoogleCalendarInterface:
 
         dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
         for i in dayNums:
-            if self.calMonday:
+            if self.options['cal_monday']:
                 if i == 6:
                     dayName = dayNames[0]
                 else:
                     dayName = dayNames[i + 1]
             else:
                 dayName = dayNames[i]
-            dayName += ' ' * (self.calWidth - self._PrintLen(dayName))
+            dayName += ' ' * (
+                    self.options['cal_width'] - self._PrintLen(dayName))
             dayHeader += str(self.dateColor) + dayName + str(CLR_NRM())
             dayHeader += str(self.borderColor) + str(ART_VRT()) + \
                 str(CLR_NRM())
@@ -907,7 +898,7 @@ class GoogleCalendarInterface:
             PrintMsg(CLR_NRM(), "\n" + topMonthDivider + "\n")
 
             m = startDateTime.strftime('%B %Y')
-            mw = (self.calWidth * days) + (days - 1)
+            mw = (self.options['cal_width'] * days) + (days - 1)
             m += ' ' * (mw - self._PrintLen(m))
             PrintMsg(CLR_NRM(),
                      str(self.borderColor) +
@@ -938,7 +929,7 @@ class GoogleCalendarInterface:
         # get date range objects for the first week
         if cmd == 'calm':
             dayNum = int(startDateTime.strftime("%w"))
-            if self.calMonday:
+            if self.options['cal_monday']:
                 dayNum -= 1
                 if dayNum < 0:
                     dayNum = 6
@@ -967,7 +958,7 @@ class GoogleCalendarInterface:
                     tmpDateColor = self.nowMarkerColor
                     d += " **"
 
-                d += ' ' * (self.calWidth - self._PrintLen(d))
+                d += ' ' * (self.options['cal_width'] - self._PrintLen(d))
                 line += str(tmpDateColor) + \
                     d + \
                     str(CLR_NRM()) + \
@@ -1026,7 +1017,7 @@ class GoogleCalendarInterface:
                     weekEventStrings[j] = weekEventStrings[j].lstrip()
 
                     printLen, cut = self._GetCutIndex(weekEventStrings[j])
-                    padding = ' ' * (self.calWidth - printLen)
+                    padding = ' ' * (self.options['cal_width'] - printLen)
 
                     line += (weekColorStrings[j] +
                              weekEventStrings[j][:cut] +
@@ -1051,9 +1042,9 @@ class GoogleCalendarInterface:
 
     def _tsv(self, startDateTime, eventList):
         for event in eventList:
-            if self.ignoreStarted and (event['s'] < self.now):
+            if self.options['ignore_started'] and (event['s'] < self.now):
                 continue
-            if self.ignoreDeclined and self._DeclinedEvent(event):
+            if self.options['ignore_declined'] and self._DeclinedEvent(event):
                 continue
             output = "%s\t%s\t%s\t%s" % (_u(event['s'].strftime('%Y-%m-%d')),
                                          _u(event['s'].strftime('%H:%M')),
@@ -1117,7 +1108,7 @@ class GoogleCalendarInterface:
         indent = 10 * ' '
         detailsIndent = 19 * ' '
 
-        if self.military:
+        if self.options['military']:
             timeFormat = '%-5s'
             tmpTimeStr = event['s'].strftime("%H:%M")
         else:
@@ -1302,7 +1293,7 @@ class GoogleCalendarInterface:
         event['s'] = parse(start)
         event['e'] - parse(end)
 
-        if self.allDay:
+        if self.options['all_day']:
             event['start'] = {'date': start,
                               'dateTime': None,
                               'timeZone': None}
@@ -1373,7 +1364,8 @@ class GoogleCalendarInterface:
                 if val:
                     td = (event['e'] - event['s'])
                     length = ((td.days * 1440) + (td.seconds / 60))
-                    newStart, newEnd = GetTimeFromStr(val, length, self.allDay)
+                    newStart, newEnd = GetTimeFromStr(
+                            val, length, self.options['all_day'])
                     event = self._SetEventStartEnd(newStart, newEnd, event)
 
             elif val.lower() == 'g':
@@ -1381,7 +1373,8 @@ class GoogleCalendarInterface:
                 val = six.moves.input().strip()
                 if val:
                     newStart, newEnd = GetTimeFromStr(
-                            event['start']['dateTime'], val, self.allDay)
+                            event['start']['dateTime'], val,
+                            self.options['all_day'])
 
             elif val.lower() == 'r':
                 rem = []
@@ -1393,7 +1386,7 @@ class GoogleCalendarInterface:
                         break
                     rem.append(r)
 
-                if rem or not self.defaultReminders:
+                if rem or not self.options['default_reminders']:
                     event['reminders'] = {'useDefault': False,
                                           'overrides': []}
                     for r in rem:
@@ -1431,9 +1424,9 @@ class GoogleCalendarInterface:
 
         for event in eventList:
 
-            if self.ignoreStarted and (event['s'] < self.now):
+            if self.options['ignore_started'] and (event['s'] < self.now):
                 continue
-            if self.ignoreDeclined and self._DeclinedEvent(event):
+            if self.options['ignore_declined'] and self._DeclinedEvent(event):
                 continue
 
             tmpDayStr = event['s'].strftime(dayFormat)
@@ -1554,7 +1547,7 @@ class GoogleCalendarInterface:
         end = None
 
         if not startText:
-            start = self.now if self.ignoreStarted else None
+            start = self.now if self.options['ignore_started'] else None
         else:
             try:
                 start = self.dateParser.fromString(startText)
@@ -1572,7 +1565,7 @@ class GoogleCalendarInterface:
     def _DisplayQueriedEvents(self, start, end, search=None, yearDate=False):
         eventList = self._SearchForCalEvents(start, end, search)
 
-        if self.tsv:
+        if self.options['tsv']:
             self._tsv(start, eventList)
         else:
             self._IterateEvents(start, eventList, yearDate=yearDate)
@@ -1632,7 +1625,7 @@ class GoogleCalendarInterface:
         # convert start date to the beginning of the week or month
         if cmd == 'calw':
             dayNum = int(start.strftime("%w"))
-            if self.calMonday:
+            if self.options['cal_monday']:
                 dayNum -= 1
                 if dayNum < 0:
                     dayNum = 6
@@ -1648,7 +1641,7 @@ class GoogleCalendarInterface:
             end = start.replace(month=endMonth, year=endYear)
             daysInMonth = (end - start).days
             offsetDays = int(start.strftime('%w'))
-            if self.calMonday:
+            if self.options['cal_monday']:
                 offsetDays -= 1
                 if offsetDays < 0:
                     offsetDays = 6
@@ -1681,7 +1674,7 @@ class GoogleCalendarInterface:
             self._CalService().events().quickAdd(calendarId=self.cals[0]['id'],
                                                  text=eventText))
 
-        if reminder or not self.defaultReminders:
+        if reminder or not self.options['default_reminders']:
             rem = {}
             rem['reminders'] = {'useDefault': False,
                                 'overrides': []}
@@ -1709,7 +1702,7 @@ class GoogleCalendarInterface:
         event = {}
         event['summary'] = _u(eTitle)
 
-        if self.allDay:
+        if self.options['all_day']:
             event['start'] = {'date': eStart}
             event['end'] = {'date': eEnd}
 
@@ -1726,7 +1719,7 @@ class GoogleCalendarInterface:
 
         event['attendees'] = list(map(lambda w: {'email': _u(w)}, eWho))
 
-        if reminder or not self.defaultReminders:
+        if reminder or not self.options['default_reminders']:
             event['reminders'] = {'useDefault': False,
                                   'overrides': []}
             for r in reminder:
@@ -1795,7 +1788,7 @@ class GoogleCalendarInterface:
                     # don't remind if all reminders haven't arrived yet
                     continue
 
-            if self.military:
+            if self.options['military']:
                 tmpTimeStr = event['s'].strftime('%H:%M')
             else:
                 tmpTimeStr = \
@@ -1894,7 +1887,7 @@ class GoogleCalendarInterface:
                 else:
                     event['start'] = {'date': start}
 
-                if reminder or not self.defaultReminders:
+                if reminder or not self.options['default_reminders']:
                     event['reminders'] = {'useDefault': False,
                                           'overrides': []}
                     for r in reminder:
@@ -2115,10 +2108,10 @@ def setup_parser():
     parser.add_argument(
             "--locale", default=None, type=str, help="System locale")
     parser.add_argument(
-            "--refresh", action="store_true",
-            help="Delete and refresh cached data")
+            "--refresh", action="store_true", dest="refresh_cache",
+            default=False, help="Delete and refresh cached data")
     parser.add_argument(
-            "--nocache", action="store_false", dest="cache",
+            "--nocache", action="store_false", dest="use_cache", default=True,
             help="Execute command without using cache")
     parser.add_argument(
             "--conky", action="store_true", help="Use Conky color codes")
@@ -2137,19 +2130,20 @@ def setup_parser():
 
     output_parser = argparse.ArgumentParser(add_help=False)
     output_parser.add_argument(
-            "--tsv", action="store_true", help="Use Tab Separated Value " +
-            "output")
+            "--tsv", action="store_true", dest="tsv", default=False,
+            help="Use Tab Separated Value output")
     output_parser.add_argument(
-            "--nostarted", action="store_false", dest="started",
-            help="Hide events that have started")
+            "--nostarted", action="store_true", dest="ignore_started",
+            default=False, help="Hide events that have started")
     output_parser.add_argument(
-            "--nodeclined", action="store_false", dest="declined",
-            help="Hide events that have been declined")
+            "--nodeclined", action="store_true", dest="ignore_declined",
+            default=False, help="Hide events that have been declined")
     output_parser.add_argument(
-            "--width", "-w", default=10, type=ValidWidth, help="Set output " +
-            "width")
+            "--width", "-w", default=10, dest='cal_width', type=ValidWidth,
+            help="Set output width")
     output_parser.add_argument(
-            "--military", action="store_true", help="Use 24 hour display")
+            "--military", action="store_true", default=False,
+            help="Use 24 hour display")
 
     color_parser = argparse.ArgumentParser(add_help=False)
     color_parser.add_argument(
@@ -2184,6 +2178,7 @@ def setup_parser():
             "'popup', 'email', or 'sms' and defaults to popup.")
     remind_parser.add_argument(
             "--default_reminders", action="store_true",
+            dest="default_reminders", default=False,
             help="If no --reminder is given, use the defaults.  If this is "
             "false, do not create any reminders.")
 
@@ -2210,19 +2205,21 @@ def setup_parser():
     calw.add_argument("weeks", type=int, default=1, nargs="?")
     calw.add_argument("start", type=str, nargs="?")
     calw.add_argument(
-            "--monday", action="store_true", help="Start the week on Monday")
+            "--monday", action="store_true", dest='cal_monday', default=False,
+            help="Start the week on Monday")
     calw.add_argument(
-            "--noweekend", action="store_false", help="Hide Saturday and " +
-            "Sunday")
+            "--noweekend", action="store_false", dest='cal_weekend',
+            default=True,  help="Hide Saturday and Sunday")
 
     calm = sub.add_parser(
             "calm", parents=[details_parser, output_parser, color_parser])
     calm.add_argument("start", type=str, nargs="?")
     calm.add_argument(
-            "--monday", action="store_true", help="Start the week on Monday")
+            "--monday", action="store_true", dest='cal_monday', default=False,
+            help="Start the week on Monday")
     calm.add_argument(
-            "--noweekend", action="store_false", help="Hide Saturday and " +
-            "Sunday")
+            "--noweekend", action="store_false", dest='cal_weekend',
+            default=True,  help="Hide Saturday and Sunday")
 
     quick = sub.add_parser("quick", parents=[details_parser, remind_parser])
     quick.add_argument("text")
@@ -2239,7 +2236,7 @@ def setup_parser():
     add.add_argument(
             "--description", default=None, type=str, help="Event description")
     add.add_argument(
-            "--allday", action="store_true",
+            "--allday", action="store_true", dest="all_day", default=False,
             help="If --allday is given, the event will be an all-day event "
             "(possibly multi-day if --duration is greater than 1). The "
             "time part of the --when will be ignored.")
