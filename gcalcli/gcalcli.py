@@ -1373,7 +1373,7 @@ class GoogleCalendarInterface:
             return
 
         PrintMsg(CLR_MAG(), "Delete? [N]o [y]es [q]uit: ")
-        val = six.raw_input()
+        val = six.moves.input()
 
         if not val or val.lower() == 'n':
             return
@@ -1423,7 +1423,7 @@ class GoogleCalendarInterface:
                                 "[t]itle [l]ocation " +
                                 "[w]hen len[g]th " +
                                 "[r]eminder [d]escr: ")
-            val = six.raw_input()
+            val = six.moves.input()
 
             if not val or val.lower() == 'n':
                 return
@@ -1451,21 +1451,21 @@ class GoogleCalendarInterface:
 
             elif val.lower() == 't':
                 PrintMsg(CLR_MAG(), "Title: ")
-                val = six.raw_input()
+                val = six.moves.input()
                 if val.strip():
                     event['summary'] = \
                         _u(val.strip())
 
             elif val.lower() == 'l':
                 PrintMsg(CLR_MAG(), "Location: ")
-                val = six.raw_input()
+                val = six.moves.input()
                 if val.strip():
                     event['location'] = \
                         _u(val.strip())
 
             elif val.lower() == 'w':
                 PrintMsg(CLR_MAG(), "When: ")
-                val = six.raw_input()
+                val = six.moves.input()
                 if val.strip():
                     td = (event['e'] - event['s'])
                     length = ((td.days * 1440) + (td.seconds / 60))
@@ -1474,7 +1474,7 @@ class GoogleCalendarInterface:
 
             elif val.lower() == 'g':
                 PrintMsg(CLR_MAG(), "Length (mins): ")
-                val = six.raw_input()
+                val = six.moves.input()
                 if val.strip():
                     newStart, newEnd = \
                         GetTimeFromStr(event['start']['dateTime'], val.strip())
@@ -1484,7 +1484,7 @@ class GoogleCalendarInterface:
                 while 1:
                     PrintMsg(CLR_MAG(),
                              "Enter a valid reminder or '.' to end: ")
-                    r = six.raw_input()
+                    r = six.moves.input()
                     if r == '.':
                         break
                     rem.append(r)
@@ -1502,7 +1502,7 @@ class GoogleCalendarInterface:
 
             elif val.lower() == 'd':
                 PrintMsg(CLR_MAG(), "Description: ")
-                val = six.raw_input()
+                val = six.moves.input()
                 if val.strip():
                     event['description'] = \
                         _u(val.strip())
@@ -2096,7 +2096,7 @@ class GoogleCalendarInterface:
                     continue
 
                 PrintMsg(CLR_MAG(), "\n[S]kip [i]mport [q]uit: ")
-                val = six.raw_input()
+                val = six.moves.input()
                 if not val or val.lower() == 's':
                     continue
                 if val.lower() == 'i':
@@ -2477,27 +2477,27 @@ def main():
         if FLAGS.prompt:
             if FLAGS.title is None:
                 PrintMsg(CLR_MAG(), "Title: ")
-                FLAGS.title = six.raw_input()
+                FLAGS.title = six.moves.input()
             if FLAGS.where is None:
                 PrintMsg(CLR_MAG(), "Location: ")
-                FLAGS.where = six.raw_input()
+                FLAGS.where = six.moves.input()
             if FLAGS.when is None:
                 PrintMsg(CLR_MAG(), "When: ")
-                FLAGS.when = six.raw_input()
+                FLAGS.when = six.moves.input()
             if FLAGS.duration is None:
                 if FLAGS.allday:
                     PrintMsg(CLR_MAG(), "Duration (days): ")
                 else:
                     PrintMsg(CLR_MAG(), "Duration (mins): ")
-                FLAGS.duration = six.raw_input()
+                FLAGS.duration = six.moves.input()
             if FLAGS.description is None:
                 PrintMsg(CLR_MAG(), "Description: ")
-                FLAGS.description = six.raw_input()
+                FLAGS.description = six.moves.input()
             if not FLAGS.reminder:
                 while 1:
                     PrintMsg(CLR_MAG(),
                              "Enter a valid reminder or '.' to end: ")
-                    r = six.raw_input()
+                    r = six.moves.input()
                     if r == '.':
                         break
                     n, m = ParseReminder(str(r))
