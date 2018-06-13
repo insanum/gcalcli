@@ -354,7 +354,7 @@ def DaysSinceEpoch(dt):
     return calendar.timegm(dt.timetuple()) / __DAYS_IN_SECONDS__
 
 
-def GetTimeFromStr(eWhen, eDuration=0):
+def GetTimeFromStr(eWhen, eDuration=0, allday=False):
     dtp = DateTimeParser()
 
     try:
@@ -363,7 +363,7 @@ def GetTimeFromStr(eWhen, eDuration=0):
         PrintErrMsg('Date and time is invalid!\n')
         sys.exit(1)
 
-    if 'allday' in FLAGS and FLAGS.allday:
+    if allday:
         try:
             eTimeStop = eTimeStart + timedelta(days=float(eDuration))
         except Exception:
@@ -434,6 +434,7 @@ class GoogleCalendarInterface:
     UNIWIDTH = {'W': 2, 'F': 2, 'N': 1, 'Na': 1, 'H': 1, 'A': 1}
 
     def __init__(self, calNames=[], calNameColors=[], **options):
+        self.options = options  # _GoogleAuth apparently can use this
         self.military = options.get('military', False)
         self.ignoreStarted = not options.get('started', True)
         self.ignoreDeclined = not options.get('declined', True)
@@ -543,7 +544,7 @@ class GoogleCalendarInterface:
                                'https://www.googleapis.com/auth/urlshortener'],
                         user_agent=__program__ + '/' + __version__),
                     storage,
-                    FLAGS)
+                    self.options)
 
             self.authHttp = credentials.authorize(httplib2.Http())
 
@@ -1368,19 +1369,19 @@ class GoogleCalendarInterface:
 
             elif val.lower() == 'w':
                 PrintMsg(CLR_MAG(), "When: ")
-                val = six.moves.input()
-                if val.strip():
+                val = six.moves.input().strip()
+                if val:
                     td = (event['e'] - event['s'])
                     length = ((td.days * 1440) + (td.seconds / 60))
-                    newStart, newEnd = GetTimeFromStr(val.strip(), length)
+                    newStart, newEnd = GetTimeFromStr(val, length, self.allDay)
                     event = self._SetEventStartEnd(newStart, newEnd, event)
 
             elif val.lower() == 'g':
                 PrintMsg(CLR_MAG(), "Length (mins): ")
-                val = six.moves.input()
-                if val.strip():
-                    newStart, newEnd = \
-                        GetTimeFromStr(event['start']['dateTime'], val.strip())
+                val = six.moves.input().strip()
+                if val:
+                    newStart, newEnd = GetTimeFromStr(
+                            event['start']['dateTime'], val, self.allDay)
 
             elif val.lower() == 'r':
                 rem = []
@@ -2078,8 +2079,8 @@ def ValidReminder(value):
     else:
         return value
 
+
 def setup_parser():
-    FLAGS = {}
     parser = argparse.ArgumentParser(
             description='Google Calendar Command Line Interface',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -2099,7 +2100,8 @@ def setup_parser():
             help="API client_secret")
     parser.add_argument(
             "--configFolder", default=None, type=str,
-            help="Optional directory to load/store all configuration information")
+            help="Optional directory to load/store all configuration " +
+            "information")
     parser.add_argument(
             "--noincluderc", action="store_false", dest="includeRc",
             help="Whether to include ~/.gcalclirc when using configFolder")
@@ -2135,7 +2137,8 @@ def setup_parser():
 
     output_parser = argparse.ArgumentParser(add_help=False)
     output_parser.add_argument(
-            "--tsv", action="store_true", help="Use Tab Separated Value output")
+            "--tsv", action="store_true", help="Use Tab Separated Value " +
+            "output")
     output_parser.add_argument(
             "--nostarted", action="store_false", dest="started",
             help="Hide events that have started")
@@ -2143,7 +2146,8 @@ def setup_parser():
             "--nodeclined", action="store_false", dest="declined",
             help="Hide events that have been declined")
     output_parser.add_argument(
-            "--width", "-w", default=10, type=ValidWidth, help="Set output width")
+            "--width", "-w", default=10, type=ValidWidth, help="Set output " +
+            "width")
     output_parser.add_argument(
             "--military", action="store_true", help="Use 24 hour display")
 
@@ -2183,7 +2187,9 @@ def setup_parser():
             help="If no --reminder is given, use the defaults.  If this is "
             "false, do not create any reminders.")
 
-    sub = parser.add_subparsers( help='Invoking a subcommand with --help prints subcommand usage.' , dest="command")
+    sub = parser.add_subparsers(
+            help="Invoking a subcommand with --help prints subcommand usage.",
+            dest="command")
     sub.required = True
 
     sub.add_parser("list", parents=[color_parser])
@@ -2206,7 +2212,8 @@ def setup_parser():
     calw.add_argument(
             "--monday", action="store_true", help="Start the week on Monday")
     calw.add_argument(
-            "--noweekend", action="store_false", help="Hide Saturday and Sunday")
+            "--noweekend", action="store_false", help="Hide Saturday and " +
+            "Sunday")
 
     calm = sub.add_parser(
             "calm", parents=[details_parser, output_parser, color_parser])
@@ -2214,7 +2221,8 @@ def setup_parser():
     calm.add_argument(
             "--monday", action="store_true", help="Start the week on Monday")
     calm.add_argument(
-            "--noweekend", action="store_false", help="Hide Saturday and Sunday")
+            "--noweekend", action="store_false", help="Hide Saturday and " +
+            "Sunday")
 
     quick = sub.add_parser("quick", parents=[details_parser, remind_parser])
     quick.add_argument("text")
@@ -2239,13 +2247,14 @@ def setup_parser():
             "--prompt", action="store_true",
             help="Prompt for missing data when adding events")
 
-    # TODO: Fix this it doesn't work this way as nothing ever goes into [start] or
-    # [end]
+    # TODO: Fix this it doesn't work this way as nothing ever goes into [start]
+    # or [end]
     delete = sub.add_parser("delete")
     delete.add_argument("text", nargs=1)
     delete.add_argument("start", type=str, nargs="?")
     delete.add_argument("end", type=str, nargs="?")
-    delete.add_argument("--iamaexpert", action="store_true", help="Probably not")
+    delete.add_argument(
+            "--iamaexpert", action="store_true", help="Probably not")
 
     edit = sub.add_parser("edit", parents=[details_parser, output_parser])
     edit.add_argument("text")
@@ -2269,8 +2278,6 @@ def setup_parser():
 
 
 def main():
-    global FLAGS
-
     parser = setup_parser()
 
     try:
@@ -2412,7 +2419,7 @@ def main():
                     FLAGS.reminder.append(str(n) + ' ' + m)
 
         # calculate "when" time:
-        eStart, eEnd = GetTimeFromStr(FLAGS.when, FLAGS.duration)
+        eStart, eEnd = GetTimeFromStr(FLAGS.when, FLAGS.duration, FLAGS.allday)
 
         gcal.AddEvent(FLAGS.title, FLAGS.where, eStart, eEnd,
                       FLAGS.description, FLAGS.who,
