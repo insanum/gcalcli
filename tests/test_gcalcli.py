@@ -1,6 +1,7 @@
 from gcalcli import gcalcli
 from gcalcli.gcalcli import GoogleCalendarInterface
 from gcalcli.gcalcli import CLR
+from gcalcli.gcalcli import get_color_parser
 from apiclient.discovery import HttpMock, build
 import pytest
 import os
@@ -31,12 +32,17 @@ def mocked_calendar_list(self):
 
 
 @pytest.fixture
-def gcal(monkeypatch):
+def color_options():
+    return get_color_parser().parse_args([])
+
+
+@pytest.fixture
+def gcal(monkeypatch, color_options):
     monkeypatch.setattr(
             GoogleCalendarInterface, '_CalService', mocked_calendar_service)
     monkeypatch.setattr(
             GoogleCalendarInterface, '_GetCached', mocked_calendar_list)
-    return GoogleCalendarInterface(cache=False)
+    return GoogleCalendarInterface(**vars(color_options))
 
 
 # TODO: These are more like placeholders for proper unit tests

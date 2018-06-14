@@ -446,21 +446,6 @@ class GoogleCalendarInterface:
                                None)
         # stored as detail, but provided as option
         self.details['width'] = options.get('width', 80)
-
-        self.calOwnerColor = GetColor(options.get('color_owner', 'cyan'))
-        self.calWriterColor = GetColor(options.get('color_writer', 'green'))
-        self.calReaderColor = GetColor(options.get('color_reader', 'magenta'))
-        self.calFreeBusyColor = GetColor(
-                options.get('color_freebusy', 'default'))
-        self.dateColor = GetColor(options.get('color_date', 'yellow'))
-        self.nowMarkerColor = GetColor(
-                options.get('color_now_marker', 'bright_red'))
-        self.borderColor = GetColor(options.get('color_border', 'white'))
-        self.configFolder = options.get('configFolder', None)
-        self.client_id = options.get('client_id', __API_CLIENT_ID__)
-        self.client_secret = options.get(
-                'client_secret', __API_CLIENT_SECRET__)
-
         self._GetCached()
 
         if len(calNames):
@@ -517,9 +502,10 @@ class GoogleCalendarInterface:
 
     def _GoogleAuth(self):
         if not self.authHttp:
-            if self.configFolder:
-                storage = Storage(os.path.expanduser("%s/oauth" %
-                                                     self.configFolder))
+            if self.options['configFolder']:
+                storage = Storage(
+                        os.path.expanduser(
+                            "%s/oauth" % self.options['configFolder']))
             else:
                 storage = Storage(os.path.expanduser('~/.gcalcli_oauth'))
             credentials = storage.get()
@@ -527,8 +513,8 @@ class GoogleCalendarInterface:
             if credentials is None or credentials.invalid:
                 credentials = tools.run_flow(
                     OAuth2WebServerFlow(
-                        client_id=self.client_id,
-                        client_secret=self.client_secret,
+                        client_id=self.options['client_id'],
+                        client_secret=self.options['client_secret'],
                         scope=['https://www.googleapis.com/auth/calendar',
                                'https://www.googleapis.com/auth/urlshortener'],
                         user_agent=__program__ + '/' + __version__),
@@ -559,8 +545,9 @@ class GoogleCalendarInterface:
         return self.urlService
 
     def _GetCached(self):
-        if self.configFolder:
-            cacheFile = os.path.expanduser("%s/cache" % self.configFolder)
+        if self.options['configFolder']:
+            cacheFile = os.path.expanduser(
+                    "%s/cache" % self.options['configFolder'])
         else:
             cacheFile = os.path.expanduser('~/.gcalcli_cache')
 
@@ -624,13 +611,13 @@ class GoogleCalendarInterface:
         elif 'colorSpec' in cal and cal['colorSpec'] is not None:
             return cal['colorSpec']
         elif cal['accessRole'] == self.ACCESS_OWNER:
-            return self.calOwnerColor
+            return self.options['color_owner']
         elif cal['accessRole'] == self.ACCESS_WRITER:
-            return self.calWriterColor
+            return self.options['color_writer']
         elif cal['accessRole'] == self.ACCESS_READER:
-            return self.calReaderColor
+            return self.options['color_reader']
         elif cal['accessRole'] == self.ACCESS_FREEBUSY:
-            return self.calFreeBusyColor
+            return self.options['color_freebusy']
         else:
             return CLR_NRM()
 
@@ -691,14 +678,14 @@ class GoogleCalendarInterface:
                         nowMarkerPrinted = True
                         weekEventStrings[dayNum - 1] += \
                             ("\n" +
-                             str(self.nowMarkerColor) +
+                             str(self.options['color_now_marker']) +
                              (self.options['cal_width'] * '-'))
                     elif self.now <= event['s']:
                         # add a line marker before next event
                         nowMarkerPrinted = True
                         weekEventStrings[dayNum] += \
                             ("\n" +
-                             str(self.nowMarkerColor) +
+                             str(self.options['color_now_marker']) +
                              (self.options['cal_width'] * '-'))
                     # We don't want to recolor all day events, but ignoring
                     # them leads to issues where the "now" marker misprints
@@ -722,7 +709,7 @@ class GoogleCalendarInterface:
                         event['s'].strftime('%p').lower()
 
                 if forceEventColorAsMarker:
-                    eventColor = self.nowMarkerColor
+                    eventColor = self.options['color_now_marker']
                 else:
                     eventColor = self._CalendarColor(event['gcalcli_cal'])
 
@@ -854,17 +841,17 @@ class GoogleCalendarInterface:
         dayNums = range(7) if self.options['cal_weekend'] else range(1, 6)
         days = len(dayNums)
 
-        topWeekDivider = (str(self.borderColor) +
+        topWeekDivider = (str(self.options['color_border']) +
                           str(ART_ULC()) + dayWidthLine +
                           ((days - 1) * (str(ART_UTE()) + dayWidthLine)) +
                           str(ART_URC()) + str(CLR_NRM()))
 
-        midWeekDivider = (str(self.borderColor) +
+        midWeekDivider = (str(self.options['color_border']) +
                           str(ART_LTE()) + dayWidthLine +
                           ((days - 1) * (str(ART_CRS()) + dayWidthLine)) +
                           str(ART_RTE()) + str(CLR_NRM()))
 
-        botWeekDivider = (str(self.borderColor) +
+        botWeekDivider = (str(self.options['color_border']) +
                           str(ART_LLC()) + dayWidthLine +
                           ((days - 1) * (str(ART_BTE()) + dayWidthLine)) +
                           str(ART_LRC()) + str(CLR_NRM()))
@@ -875,7 +862,9 @@ class GoogleCalendarInterface:
         dayNames = [date(2001, 1, i + 1).strftime('%A') for i in range(7)]
         dayNames = dayNames[6:] + dayNames[:6]
 
-        dayHeader = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
+        dayHeader = (
+                str(self.options['color_border']) + str(ART_VRT()) +
+                str(CLR_NRM()))
         for i in dayNums:
             if self.options['cal_monday']:
                 if i == 6:
@@ -886,12 +875,14 @@ class GoogleCalendarInterface:
                 dayName = dayNames[i]
             dayName += ' ' * (
                     self.options['cal_width'] - self._PrintLen(dayName))
-            dayHeader += str(self.dateColor) + dayName + str(CLR_NRM())
-            dayHeader += str(self.borderColor) + str(ART_VRT()) + \
-                str(CLR_NRM())
+            dayHeader += str(
+                    self.options['color_date']) + dayName + str(CLR_NRM())
+            dayHeader += (
+                    str(self.options['color_border']) + str(ART_VRT()) +
+                    str(CLR_NRM()))
 
         if cmd == 'calm':
-            topMonthDivider = (str(self.borderColor) +
+            topMonthDivider = (str(self.options['color_border']) +
                                str(ART_ULC()) + dayWidthLine +
                                ((days - 1) * (str(ART_HRZ()) + dayWidthLine)) +
                                str(ART_URC()) + str(CLR_NRM()))
@@ -901,18 +892,18 @@ class GoogleCalendarInterface:
             mw = (self.options['cal_width'] * days) + (days - 1)
             m += ' ' * (mw - self._PrintLen(m))
             PrintMsg(CLR_NRM(),
-                     str(self.borderColor) +
+                     str(self.options['color_border']) +
                      str(ART_VRT()) +
                      str(CLR_NRM()) +
-                     str(self.dateColor) +
+                     str(self.options['color_date']) +
                      m +
                      str(CLR_NRM()) +
-                     str(self.borderColor) +
+                     str(self.options['color_border']) +
                      str(ART_VRT()) +
                      str(CLR_NRM()) +
                      '\n')
 
-            botMonthDivider = (str(self.borderColor) +
+            botMonthDivider = (str(self.options['color_border']) +
                                str(ART_LTE()) + dayWidthLine +
                                ((days - 1) * (str(ART_UTE()) + dayWidthLine)) +
                                str(ART_RTE()) + str(CLR_NRM()))
@@ -940,7 +931,9 @@ class GoogleCalendarInterface:
         for i in range(count):
 
             # create/print date line
-            line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
+            line = (
+                    str(self.options['color_border']) + str(ART_VRT()) +
+                    str(CLR_NRM()))
             for j in dayNums:
                 if cmd == 'calw':
                     d = (startWeekDateTime +
@@ -951,18 +944,18 @@ class GoogleCalendarInterface:
                     if curMonth != (startWeekDateTime +
                                     timedelta(days=j)).strftime("%b"):
                         d = ''
-                tmpDateColor = self.dateColor
+                tmpDateColor = self.options['color_date']
 
                 if self.now.strftime("%d%b%Y") == \
                    (startWeekDateTime + timedelta(days=j)).strftime("%d%b%Y"):
-                    tmpDateColor = self.nowMarkerColor
+                    tmpDateColor = self.options['color_now_marker']
                     d += " **"
 
                 d += ' ' * (self.options['cal_width'] - self._PrintLen(d))
                 line += str(tmpDateColor) + \
                     d + \
                     str(CLR_NRM()) + \
-                    str(self.borderColor) + \
+                    str(self.options['color_border']) + \
                     str(ART_VRT()) + \
                     str(CLR_NRM())
             PrintMsg(CLR_NRM(), line + "\n")
@@ -980,14 +973,16 @@ class GoogleCalendarInterface:
             while 1:
 
                 done = True
-                line = str(self.borderColor) + str(ART_VRT()) + str(CLR_NRM())
+                line = (
+                        str(self.options['color_border']) + str(ART_VRT()) +
+                        str(CLR_NRM()))
 
                 for j in dayNums:
 
                     if not weekEventStrings[j]:
                         weekColorStrings[j] = ''
                         line += (empty +
-                                 str(self.borderColor) +
+                                 str(self.options['color_border']) +
                                  str(ART_VRT()) +
                                  str(CLR_NRM()))
                         continue
@@ -1008,7 +1003,7 @@ class GoogleCalendarInterface:
                         weekColorStrings[j] = ''
                         weekEventStrings[j] = weekEventStrings[j][1:]
                         line += (empty +
-                                 str(self.borderColor) +
+                                 str(self.options['color_border']) +
                                  str(ART_VRT()) +
                                  str(CLR_NRM()))
                         done = False
@@ -1026,7 +1021,7 @@ class GoogleCalendarInterface:
                     weekEventStrings[j] = weekEventStrings[j][cut:]
 
                     done = False
-                    line += (str(self.borderColor) +
+                    line += (str(self.options['color_border']) +
                              str(ART_VRT()) +
                              str(CLR_NRM()))
 
@@ -1120,11 +1115,12 @@ class GoogleCalendarInterface:
         if not prefix:
             prefix = indent
 
-        PrintMsg(self.dateColor, prefix)
+        PrintMsg(self.options['color_date'], prefix)
 
         happeningNow = event['s'] <= self.now <= event['e']
         allDay = self._IsAllDay(event)
-        eventColor = self.nowMarkerColor if happeningNow and not allDay \
+        eventColor = self.options['color_now_marker'] \
+            if happeningNow and not allDay \
             else self._CalendarColor(event['gcalcli_cal'])
 
         if allDay:
@@ -2052,10 +2048,10 @@ def GetCalColors(calNames):
 
 
 def ValidColor(value):
-    if not GetColor(value):
+    color_val = GetColor(value)
+    if not color_val:
         raise argparse.ArgumentTypeError("%s is not a valid color" % value)
-    else:
-        return value
+    return color_val
 
 
 def ValidWidth(value):
@@ -2073,7 +2069,79 @@ def ValidReminder(value):
         return value
 
 
-def setup_parser():
+def get_details_parser():
+    details_parser = argparse.ArgumentParser(add_help=False)
+    details_parser.add_argument(
+            "--details", default=[], type=str, action="append",
+            choices=DETAILS,
+            help="Which parts to display, can be: " + ", ".join(DETAILS))
+    return details_parser
+
+
+def get_output_parser():
+    output_parser = argparse.ArgumentParser(add_help=False)
+    output_parser.add_argument(
+            "--tsv", action="store_true", dest="tsv", default=False,
+            help="Use Tab Separated Value output")
+    output_parser.add_argument(
+            "--nostarted", action="store_true", dest="ignore_started",
+            default=False, help="Hide events that have started")
+    output_parser.add_argument(
+            "--nodeclined", action="store_true", dest="ignore_declined",
+            default=False, help="Hide events that have been declined")
+    output_parser.add_argument(
+            "--width", "-w", default=10, dest='cal_width', type=ValidWidth,
+            help="Set output width")
+    output_parser.add_argument(
+            "--military", action="store_true", default=False,
+            help="Use 24 hour display")
+    return output_parser
+
+
+def get_color_parser():
+    color_parser = argparse.ArgumentParser(add_help=False)
+    color_parser.add_argument(
+            "--color_owner", default="cyan", type=ValidColor,
+            help="Color for owned calendars")
+    color_parser.add_argument(
+            "--color_writer", default="green", type=ValidColor,
+            help="Color for writable calendars")
+    color_parser.add_argument(
+            "--color_reader", default="magenta", type=ValidColor,
+            help="Color for read-only calendars")
+    color_parser.add_argument(
+            "--color_freebusy", default="default", type=ValidColor,
+            help="Color for free/busy calendars")
+    color_parser.add_argument(
+            "--color_date", default="yellow", type=ValidColor,
+            help="Color for the date")
+    color_parser.add_argument(
+            "--color_now_marker", default="brightred", type=ValidColor,
+            help="Color for the now marker")
+    color_parser.add_argument(
+            "--color_border", default="white", type=ValidColor,
+            help="Color of line borders")
+    return color_parser
+
+
+def get_remind_parser():
+    remind_parser = argparse.ArgumentParser(add_help=False)
+    remind_parser.add_argument(
+            "--reminder", default=[], type=ValidReminder, action="append",
+            help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
+            "is a number which may be followed by an optional "
+            "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
+            "minutes) and default to minutes.  METH is a string "
+            "'popup', 'email', or 'sms' and defaults to popup.")
+    remind_parser.add_argument(
+            "--default_reminders", action="store_true",
+            dest="default_reminders", default=False,
+            help="If no --reminder is given, use the defaults.  If this is "
+            "false, do not create any reminders.")
+    return remind_parser
+
+
+def get_argument_parser():
     parser = argparse.ArgumentParser(
             description='Google Calendar Command Line Interface',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -2122,65 +2190,11 @@ def setup_parser():
             "--nolineart", action="store_false", dest="lineart",
             help="Enable/Disable line art")
 
-    details_parser = argparse.ArgumentParser(add_help=False)
-    details_parser.add_argument(
-            "--details", default=[], type=str, action="append",
-            choices=DETAILS,
-            help="Which parts to display, can be: " + ", ".join(DETAILS))
-
-    output_parser = argparse.ArgumentParser(add_help=False)
-    output_parser.add_argument(
-            "--tsv", action="store_true", dest="tsv", default=False,
-            help="Use Tab Separated Value output")
-    output_parser.add_argument(
-            "--nostarted", action="store_true", dest="ignore_started",
-            default=False, help="Hide events that have started")
-    output_parser.add_argument(
-            "--nodeclined", action="store_true", dest="ignore_declined",
-            default=False, help="Hide events that have been declined")
-    output_parser.add_argument(
-            "--width", "-w", default=10, dest='cal_width', type=ValidWidth,
-            help="Set output width")
-    output_parser.add_argument(
-            "--military", action="store_true", default=False,
-            help="Use 24 hour display")
-
-    color_parser = argparse.ArgumentParser(add_help=False)
-    color_parser.add_argument(
-            "--color_owner", default="cyan", type=ValidColor,
-            help="Color for owned calendars")
-    color_parser.add_argument(
-            "--color_writer", default="green", type=ValidColor,
-            help="Color for writable calendars")
-    color_parser.add_argument(
-            "--color_reader", default="magenta", type=ValidColor,
-            help="Color for read-only calendars")
-    color_parser.add_argument(
-            "--color_freebusy", default="default", type=ValidColor,
-            help="Color for free/busy calendars")
-    color_parser.add_argument(
-            "--color_date", default="yellow", type=ValidColor,
-            help="Color for the date")
-    color_parser.add_argument(
-            "--color_now_marker", default="brightred", type=ValidColor,
-            help="Color for the now marker")
-    color_parser.add_argument(
-            "--color_border", default="white", type=ValidColor,
-            help="Color of line borders")
-
-    remind_parser = argparse.ArgumentParser(add_help=False)
-    remind_parser.add_argument(
-            "--reminder", default=[], type=ValidReminder, action="append",
-            help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
-            "is a number which may be followed by an optional "
-            "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
-            "minutes) and default to minutes.  METH is a string "
-            "'popup', 'email', or 'sms' and defaults to popup.")
-    remind_parser.add_argument(
-            "--default_reminders", action="store_true",
-            dest="default_reminders", default=False,
-            help="If no --reminder is given, use the defaults.  If this is "
-            "false, do not create any reminders.")
+    # parent parser types used for subcommands
+    details_parser = get_details_parser()
+    output_parser = get_output_parser()
+    color_parser = get_color_parser()
+    remind_parser = get_remind_parser()
 
     sub = parser.add_subparsers(
             help="Invoking a subcommand with --help prints subcommand usage.",
@@ -2275,7 +2289,7 @@ def setup_parser():
 
 
 def main():
-    parser = setup_parser()
+    parser = get_argument_parser()
 
     try:
         argv = sys.argv[1:]
