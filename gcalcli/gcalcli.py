@@ -1151,7 +1151,7 @@ class GoogleCalendarInterface:
         event['s'] = parse(start)
         event['e'] - parse(end)
 
-        if self.options['all_day']:
+        if self.options['allday']:
             event['start'] = {'date': start,
                               'dateTime': None,
                               'timeZone': None}
@@ -1222,7 +1222,7 @@ class GoogleCalendarInterface:
                     length = ((td.days * 1440) + (td.seconds / 60))
                     try:
                         newStart, newEnd = GetTimeFromStr(
-                                val, length, self.options['all_day'])
+                                val, length, self.options['allday'])
                     except ValueError as exc:
                         self.color_printer.err_msg(str(exc))
                         sys.exit(1)
@@ -1235,7 +1235,7 @@ class GoogleCalendarInterface:
                     try:
                         newStart, newEnd = GetTimeFromStr(
                                 event['start']['dateTime'], val,
-                                self.options['all_day'])
+                                self.options['allday'])
                     except ValueError as exc:
                         self.color_printer.err_msg(str(exc))
 
@@ -1570,7 +1570,7 @@ class GoogleCalendarInterface:
         event = {}
         event['summary'] = _u(eTitle)
 
-        if self.options['all_day']:
+        if self.options['allday']:
             event['start'] = {'date': eStart}
             event['end'] = {'date': eEnd}
 
@@ -2081,7 +2081,7 @@ def get_argument_parser():
     add.add_argument(
             "--description", default=None, type=str, help="Event description")
     add.add_argument(
-            "--allday", action="store_true", dest="all_day", default=False,
+            "--allday", action="store_true", dest="allday", default=False,
             help="If --allday is given, the event will be an all-day event "
             "(possibly multi-day if --duration is greater than 1). The "
             "time part of the --when will be ignored.")
