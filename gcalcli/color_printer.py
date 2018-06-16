@@ -16,6 +16,7 @@ class ColorPrinter(object):
 
     def __init__(self, conky=False, use_color=True):
         self.use_color = use_color
+        self.conky = conky
         self.colors = {
                 'default': '' if conky else '\033[0m',
                 'black': '${color black}' if conky else '\033[0;30m',
@@ -35,14 +36,49 @@ class ColorPrinter(object):
                 'white': '${color white}' if conky else '\033[0;37m',
                 'brightwhite': '${color white}' if conky else '\033[37;1m',
                  None: '' if conky else '\033[0m'}
+        self.colorset = set(self.colors.keys())
+
+    def get_colorcode(self, colorname):
+        return self.colors.get(colorname, '')
 
     def msg(self, msg, colorname, file=sys.stdout):
         if self.use_color:
             msg = self.colors[colorname] + msg + self.colors['default']
-        file.write(msg)
+
+        try:
+            file.write(msg)
+        except TypeError:
+            # attempt to decode unicode
+            # XXX don't I just want get this from the LOCALE?
+            encodings = ['utf-8', 'utf-16-le', 'utf-16-be', 'utf-32']
+            for enc in encodings:
+                try:
+                    file.write(msg.encode(enc))
+                except UnicodeEncodeError:
+                    continue
+                else:
+                    return
 
     def err_msg(self, msg):
         self.msg(msg, 'brightred', file=sys.stderr)
 
     def debug_msg(self, msg):
         self.msg(msg, 'yellow', file=sys.stderr)
+
+    def remove_colorcodes(self, event_string, color_string):
+        """Extract any color code which preceeds an event string and copy it
+        over to color_string.  This is a temporary measure.  In the near
+        future, I'd like to avoid putting these things in just to have to pull
+        them back out."""
+
+        stop_char = '}' if self.conky else 'm'
+
+        if event_string:
+            if event_string[0] == '$' or event_string[0] == '\033':
+                color_string = ''
+                while event_string[0] != stop_char:
+                    color_string += event_string[0]
+                    event_string = event_string[1:]
+                color_string += event_string[0]
+                event_string = event_string[1:]
+        return event_string, color_string

@@ -533,7 +533,6 @@ class GoogleCalendarInterface:
             nowMarkerPrinted = True
 
         for event in eventList:
-
             if cmd == 'calm' and curMonth != event['s'].strftime("%b"):
                 continue
 
@@ -569,14 +568,14 @@ class GoogleCalendarInterface:
                         nowMarkerPrinted = True
                         weekEventStrings[dayNum - 1] += \
                             ("\n" +
-                             str(self.options['color_now_marker']) +
+                             self.color_printer.get_colorcode(self.options['color_now_marker']) +
                              (self.options['cal_width'] * '-'))
                     elif self.now <= event['s']:
                         # add a line marker before next event
                         nowMarkerPrinted = True
                         weekEventStrings[dayNum] += \
                             ("\n" +
-                             str(self.options['color_now_marker']) +
+                             self.color_printer.get_colorcode(self.options['color_now_marker']) +
                              (self.options['cal_width'] * '-'))
                     # We don't want to recolor all day events, but ignoring
                     # them leads to issues where the "now" marker misprints
@@ -622,7 +621,7 @@ class GoogleCalendarInterface:
                         # coloring
                         weekEventStrings[day] += \
                             "\n" + \
-                            _u(eventColor) + \
+                            _u(self.color_printer.get_colorcode(eventColor)) + \
                             _u(tmpTimeStr.strip()) + \
                             " " + \
                             _u(self._ValidTitle(event).strip())
@@ -631,7 +630,7 @@ class GoogleCalendarInterface:
                     # coloring
                     weekEventStrings[dayNum] += \
                         "\n" + \
-                        _u(eventColor) + \
+                        _u(self.color_printer.get_colorcode(eventColor)) + \
                         _u(tmpTimeStr.strip()) + \
                         " " + \
                         _u(self._ValidTitle(event).strip())
@@ -708,7 +707,7 @@ class GoogleCalendarInterface:
         # start day)
 
         # Build up a buffer of bytes to flush
-        out = BytesIO()
+        buf = BytesIO()
 
 
         while (len(eventList) and eventList[0]['s'] < startDateTime):
@@ -737,6 +736,9 @@ class GoogleCalendarInterface:
         dayNames = [date(2001, 1, i + 1).strftime('%A') for i in range(7)]
         dayNames = dayNames[6:] + dayNames[:6]
 
+        self.color_printer.msg(str(ART_VRT()), self.options['color_border'],
+                file=buf)
+
         for i in dayNums:
             if self.options['cal_monday']:
                 if i == 6:
@@ -749,10 +751,10 @@ class GoogleCalendarInterface:
             dayName += ' ' * (
                     self.options['cal_width'] - self._PrintLen(dayName))
 
-
-            self.color_printer.msg(str(ART_VRT()), self.options['color_border'])
-            self.color_printer.msg(dayName, self.options['color_date'])
-            self.color_printer.msg(str(ART_VRT()), self.options['color_border'])
+            self.color_printer.msg(dayName, self.options['color_date'],
+                    file=buf)
+            self.color_printer.msg(str(ART_VRT()),
+                    self.options['color_border'], file=buf)
 
         if cmd == 'calm':
             # top of month
@@ -777,11 +779,14 @@ class GoogleCalendarInterface:
                               self.options['color_border'])
 
         else:  # calw
+            # top of week
             self.color_printer.msg('\n' + topWeekDivider + '\n',
                               self.options['color_border'])
 
-        self.color_printer.msg(str(ART_VRT) + '\n', 'default')
-        self.color_printer.msg(midWeekDivider + '\n', 'default')
+        buf.seek(0)
+        print(buf.read())
+        self.color_printer.msg(midWeekDivider + '\n',
+                self.options['color_border'])
 
         curMonth = startDateTime.strftime("%b")
 
@@ -797,6 +802,8 @@ class GoogleCalendarInterface:
         endWeekDateTime = (startWeekDateTime + timedelta(days=7))
 
         for i in range(count):
+
+            # create and print the date line for a week
             for j in dayNums:
                 if cmd == 'calw':
                     d = (startWeekDateTime +
@@ -816,9 +823,10 @@ class GoogleCalendarInterface:
 
                 d += ' ' * (self.options['cal_width'] - self._PrintLen(d))
 
-            # print date line
-            self.color_printer.msg(str(ART_VRT()), self.options['color_border'])
-            self.color_printer.msg(d, tmpDateColor)
+                # print dates 
+                self.color_printer.msg(str(ART_VRT()), self.options['color_border'])
+                self.color_printer.msg(d, tmpDateColor)
+
             self.color_printer.msg(str(ART_VRT()) + '\n',
                               self.options['color_border'])
 
@@ -832,70 +840,59 @@ class GoogleCalendarInterface:
             startWeekDateTime = endWeekDateTime
             endWeekDateTime = (endWeekDateTime + timedelta(days=7))
 
-#            while 1:
-#
-#                done = True
-#                line = (
-#                        str(self.options['color_border']) + str(ART_VRT()) +
-#                        GetColor('default'))
-#
-#                for j in dayNums:
-#
-#                    if not weekEventStrings[j]:
-#                        weekColorStrings[j] = ''
-#                        line += (empty +
-#                                 str(self.options['color_border']) +
-#                                 str(ART_VRT()) +
-#                                 GetColor('default'))
-#                        continue
-#
-#                    # get/skip over a color sequence
-#                    if ((not CONKY and weekEventStrings[j][0] == '\033') or
-#                            (CONKY and weekEventStrings[j][0] == '$')):
-#                        weekColorStrings[j] = ''
-#                        while ((not CONKY and
-#                                weekEventStrings[j][0] != 'm') or
-#                                (CONKY and weekEventStrings[j][0] != '}')):
-#                            weekColorStrings[j] += weekEventStrings[j][0]
-#                            weekEventStrings[j] = weekEventStrings[j][1:]
-#                        weekColorStrings[j] += weekEventStrings[j][0]
-#                        weekEventStrings[j] = weekEventStrings[j][1:]
-#
-#                    if weekEventStrings[j][0] == '\n':
-#                        weekColorStrings[j] = ''
-#                        weekEventStrings[j] = weekEventStrings[j][1:]
-#                        line += (empty +
-#                                 str(self.options['color_border']) +
-#                                 str(ART_VRT()) +
-#                                 GetColor('default'))
-#                        done = False
-#                        continue
-#
-#                    weekEventStrings[j] = weekEventStrings[j].lstrip()
-#
-#                    printLen, cut = self._GetCutIndex(weekEventStrings[j])
-#                    padding = ' ' * (self.options['cal_width'] - printLen)
-#
-#                    line += (weekColorStrings[j] +
-#                             weekEventStrings[j][:cut] +
-#                             padding +
-#                             GetColor('default'))
-#                    weekEventStrings[j] = weekEventStrings[j][cut:]
-#
-#                    done = False
-#                    line += (str(self.options['color_border']) +
-#                             str(ART_VRT()) +
-#                             GetColor('default'))
-#
-#                if done:
-#                    break
-#
-#                PrintMsg(COLORS['default'], line + "\n")
-#
-#            if i < range(count)[len(range(count)) - 1]:
-#                PrintMsg(COLORS['default'], midWeekDivider + "\n")
-#            else:
-#                PrintMsg(COLORS['default'], botWeekDivider + "\n")
+            while 1:
+                done = True
+                buf = BytesIO()
+                self.color_printer.msg(str(ART_VRT()),
+                        self.options['color_border'], file=buf)
+                for j in dayNums:
+                    if not weekEventStrings[j]:
+                        # no events today
+                        weekColorStrings[j] = ''
+                        self.color_printer.msg(empty + str(ART_VRT()),
+                                self.options['color_border'], file=buf)
+
+                        continue
+
+                    # get/skip over a color sequence
+                    weekEventStrings[j], weekColorStrings[j] = \
+                            self.color_printer.remove_colorcodes(
+                                    weekEventStrings[j], weekColorStrings[j])
+
+                    if weekEventStrings[j][0] == '\n':
+                        weekColorStrings[j] = ''
+                        weekEventStrings[j] = weekEventStrings[j][1:]
+                        self.color_printer.msg(
+                                empty + str(ART_VRT()),
+                                self.options['color_border'], file=buf)
+                        done = False
+                        continue
+
+                    weekEventStrings[j] = weekEventStrings[j].lstrip()
+
+                    printLen, cut = self._GetCutIndex(weekEventStrings[j])
+                    padding = ' ' * (self.options['cal_width'] - printLen)
+
+                    self.color_printer.msg(weekColorStrings[j] +
+                                           weekEventStrings[j][:cut] +
+                                           padding, 'default', file=buf)
+
+                    weekEventStrings[j] = weekEventStrings[j][cut:]
+
+                    done = False
+                    self.color_printer.msg(str(ART_VRT()),
+                            self.options['color_border'], file=buf)
+
+                if done:
+                    break
+
+                buf.seek(0)
+                print(buf.read())
+
+            if i < range(count)[len(range(count)) - 1]:
+                self.color_printer.msg(midWeekDivider + '\n', self.options['color_border'])
+            else:
+                self.color_printer.msg(botWeekDivider + '\n', self.options['color_border'])
 
     def _tsv(self, startDateTime, eventList):
         for event in eventList:
