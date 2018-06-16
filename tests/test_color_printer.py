@@ -1,5 +1,5 @@
 from gcalcli.color_printer import ColorPrinter, COLOR_NAMES
-from io import BytesIO
+from io import StringIO
 import sys
 import pytest
 
@@ -12,7 +12,7 @@ def test_all_colors():
     """Makes sure the COLOR_NAMES is in sync with the colors in the printer"""
     cp = ColorPrinter()
     for color_name in COLOR_NAMES:
-        out = BytesIO()
+        out = StringIO()
         cp.msg('msg', color_name, file=out)
         out.seek(0)
         assert out.read() == cp.colors[color_name] + 'msg' + '\033[0m'
@@ -20,14 +20,14 @@ def test_all_colors():
 
 def test_red_msg():
     cp = ColorPrinter()
-    out = BytesIO()
+    out = StringIO()
     cp.msg('msg', 'red', file=out)
     out.seek(0)
-    assert out.read() == '\033[31;1mmsg\033[0m'
+    assert out.read() == '\033[0;31mmsg\033[0m'
 
 
 def test_err_msg(monkeypatch):
-    err = BytesIO()
+    err = StringIO()
     monkeypatch.setattr(sys, 'stderr', err)
     cp = ColorPrinter()
     cp.err_msg('error')
@@ -36,7 +36,7 @@ def test_err_msg(monkeypatch):
 
 
 def test_debug_msg(monkeypatch):
-    err = BytesIO()
+    err = StringIO()
     monkeypatch.setattr(sys, 'stderr', err)
     cp = ColorPrinter()
     cp.debug_msg('debug')
@@ -46,14 +46,14 @@ def test_debug_msg(monkeypatch):
 
 def test_conky_red_msg():
     cp = ColorPrinter(conky=True)
-    out = BytesIO()
+    out = StringIO()
     cp.msg('msg', 'red', file=out)
     out.seek(0)
     assert out.read() == '${color red}msg'
 
 
 def test_conky_err_msg(monkeypatch):
-    err = BytesIO()
+    err = StringIO()
     monkeypatch.setattr(sys, 'stderr', err)
     cp = ColorPrinter(conky=True)
     cp.err_msg('error')
@@ -62,7 +62,7 @@ def test_conky_err_msg(monkeypatch):
 
 
 def test_conky_err_msg(monkeypatch):
-    err = BytesIO()
+    err = StringIO()
     monkeypatch.setattr(sys, 'stderr', err)
     cp = ColorPrinter(conky=True)
     cp.debug_msg('debug')
@@ -72,7 +72,7 @@ def test_conky_err_msg(monkeypatch):
 
 def test_no_color():
     cp = ColorPrinter(use_color=False)
-    out = BytesIO()
+    out = StringIO()
     cp.msg('msg', 'red', file=out)
     out.seek(0)
     assert out.read() == 'msg'

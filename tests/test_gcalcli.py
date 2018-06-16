@@ -1,6 +1,5 @@
 from gcalcli import gcalcli
 from gcalcli.gcalcli import GoogleCalendarInterface
-from gcalcli.gcalcli import CLR
 from gcalcli.gcalcli import get_color_parser
 from apiclient.discovery import HttpMock, build
 import pytest
@@ -32,32 +31,31 @@ def mocked_calendar_list(self):
 
 
 @pytest.fixture
-def color_options():
+def default_color_options():
     return get_color_parser().parse_args([])
 
 
 @pytest.fixture
-def gcal(monkeypatch, color_options):
+def gcal(monkeypatch, default_color_options):
     monkeypatch.setattr(
             GoogleCalendarInterface, '_CalService', mocked_calendar_service)
     monkeypatch.setattr(
             GoogleCalendarInterface, '_GetCached', mocked_calendar_list)
-    return GoogleCalendarInterface(**vars(color_options))
+    return GoogleCalendarInterface(
+            use_cache=False, **vars(default_color_options))
 
 
 # TODO: These are more like placeholders for proper unit tests
 #       We just try the commands and make sure no errors occur.
 def test_list(gcal, capsys):
+    print(gcal.options['use_cache'])
     with open(TEST_DATA_DIR + '/cal_list.json') as cl:
         cal_count = len(load(cl)['items'])
 
     # test data has 6 cals
     assert cal_count == len(gcal.allCals)
-
-    # color state is being stored in the colors class.
-    # ugh, is this java?!
-    CLR.useColor = False
-    expected_header = ''' Access  Title\n'''
+    expected_header = gcal.color_printer.get_colorcode(
+            gcal.options['color_title']) + ' Access  Title\n'
 
     gcal.ListAllCalendars()
     captured = capsys.readouterr()

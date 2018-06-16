@@ -1396,8 +1396,8 @@ class GoogleCalendarInterface:
 
         format = ' %0' + str(accessLen) + 's  %s\n'
 
-        self.color_printer.msg(format % ('Access', 'Title'), 'brightyellow')
-        self.color_printer.msg(format % ('------', '-----'), 'brightyellow')
+        self.color_printer.msg(format % ('Access', 'Title'), self.options['color_title'])
+        self.color_printer.msg(format % ('------', '-----'), self.options['color_title'])
 
         for cal in self.allCals:
             self.color_printer.msg(
@@ -1455,7 +1455,7 @@ class GoogleCalendarInterface:
     def AgendaQuery(self, startText='', endText=''):
         try:
             start, end = self._ParseStartEnd(startText, endText)
-        except Exception as e:
+        except Exception as exc:
             self.color_printer.err_msg(str(exc))
             return
 
@@ -1948,6 +1948,9 @@ def get_color_parser():
     color_parser.add_argument(
             "--color_border", default="white", type=valid_color_name,
             help="Color of line borders")
+    color_parser.add_argument(
+            "--color_title", default="brightyellow", type=valid_color_name,
+            help="Color of the agenda column titles")
     return color_parser
 
 
