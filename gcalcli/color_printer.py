@@ -1,3 +1,4 @@
+import argparse
 import sys
 COLOR_NAMES = set(('default', 'black', 'red', 'green', 'yellow', 'blue',
                    'magenta', 'cyan', 'white', 'brightblack', 'brightred',
@@ -6,7 +7,7 @@ COLOR_NAMES = set(('default', 'black', 'red', 'green', 'yellow', 'blue',
 
 
 def valid_color_name(value):
-    if not value in COLOR_NAMES:
+    if value not in COLOR_NAMES:
         raise argparse.ArgumentTypeError("%s is not a valid color" % value)
     return value
 
@@ -35,7 +36,7 @@ class ColorPrinter(object):
                 'brightcyan': '${color cyan}' if conky else '\033[36;1m',
                 'white': '${color white}' if conky else '\033[0;37m',
                 'brightwhite': '${color white}' if conky else '\033[37;1m',
-                 None: '' if conky else '\033[0m'}
+                None: '' if conky else '\033[0m'}
         self.colorset = set(self.colors.keys())
 
     def get_colorcode(self, colorname):
@@ -44,20 +45,7 @@ class ColorPrinter(object):
     def msg(self, msg, colorname, file=sys.stdout):
         if self.use_color:
             msg = self.colors[colorname] + msg + self.colors['default']
-
-        try:
-            file.write(msg)
-        except TypeError:
-            # attempt to decode unicode
-            # XXX don't I just want get this from the LOCALE?
-            encodings = ['utf-8', 'utf-16-le', 'utf-16-be', 'utf-32']
-            for enc in encodings:
-                try:
-                    file.write(msg.encode(enc))
-                except UnicodeEncodeError:
-                    continue
-                else:
-                    return
+        file.write(msg)
 
     def err_msg(self, msg):
         self.msg(msg, 'brightred', file=sys.stderr)

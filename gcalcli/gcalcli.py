@@ -65,16 +65,13 @@
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
 #                                                                           #
 #############################################################################
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 __program__ = 'gcalcli'
 __version__ = 'v4.0.0a4'
 __author__ = 'Eric Davis, Brian Hartvigsen'
 __API_CLIENT_ID__ = '232867676714.apps.googleusercontent.com'
 __API_CLIENT_SECRET__ = '3tZSxItw6_VnZMezQwC8lUqy'
-
-# Package local imports
-from color_printer import ColorPrinter, valid_color_name
 
 # These are standard libraries and should never fail
 import sys
@@ -118,6 +115,9 @@ except ImportError:
         class Calendar:
             def parse(self, string):
                 return ([], 0)
+
+# Package local imports
+from gcalcli.color_printer import ColorPrinter, valid_color_name
 
 locale.setlocale(locale.LC_ALL, "")
 
@@ -780,13 +780,13 @@ class GoogleCalendarInterface:
 
         else:  # calw
             # top of week
-            self.color_printer.msg('\n' + topWeekDivider + '\n',
-                              self.options['color_border'])
+            self.color_printer.msg(
+                    '\n' + topWeekDivider + '\n', self.options['color_border'])
 
         buf.seek(0)
         print(buf.read())
-        self.color_printer.msg(midWeekDivider + '\n',
-                self.options['color_border'])
+        self.color_printer.msg(
+                midWeekDivider + '\n', self.options['color_border'])
 
         curMonth = startDateTime.strftime("%b")
 
@@ -843,21 +843,22 @@ class GoogleCalendarInterface:
             while 1:
                 done = True
                 buf = BytesIO()
-                self.color_printer.msg(str(ART_VRT()),
-                        self.options['color_border'], file=buf)
+                self.color_printer.msg(
+                        str(ART_VRT()), self.options['color_border'], file=buf)
                 for j in dayNums:
                     if not weekEventStrings[j]:
                         # no events today
                         weekColorStrings[j] = ''
-                        self.color_printer.msg(empty + str(ART_VRT()),
+                        self.color_printer.msg(
+                                empty + str(ART_VRT()),
                                 self.options['color_border'], file=buf)
 
                         continue
 
                     # get/skip over a color sequence
                     weekEventStrings[j], weekColorStrings[j] = \
-                            self.color_printer.remove_colorcodes(
-                                    weekEventStrings[j], weekColorStrings[j])
+                        self.color_printer.remove_colorcodes(
+                                weekEventStrings[j], weekColorStrings[j])
 
                     if weekEventStrings[j][0] == '\n':
                         weekColorStrings[j] = ''
