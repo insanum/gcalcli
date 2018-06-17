@@ -1,4 +1,5 @@
-from gcalcli import gcalcli
+import gcalcli
+import gcalcli.gcalcli
 from gcalcli.gcalcli import GoogleCalendarInterface
 from gcalcli.gcalcli import get_color_parser
 from apiclient.discovery import HttpMock, build
@@ -48,7 +49,6 @@ def gcal(monkeypatch, default_color_options):
 # TODO: These are more like placeholders for proper unit tests
 #       We just try the commands and make sure no errors occur.
 def test_list(gcal, capsys):
-    print(gcal.options['use_cache'])
     with open(TEST_DATA_DIR + '/cal_list.json') as cl:
         cal_count = len(load(cl)['items'])
 
