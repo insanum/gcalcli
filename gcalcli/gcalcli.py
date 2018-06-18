@@ -88,7 +88,7 @@ import random
 import argparse
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
-from io import BytesIO
+from io import StringIO
 
 # Required 3rd party libraries
 try:
@@ -705,7 +705,7 @@ class GoogleCalendarInterface:
         # start day)
 
         # Build up a buffer of bytes to flush
-        buf = BytesIO()
+        buf = StringIO()
 
         while (len(eventList) and eventList[0]['s'] < startDateTime):
             eventList = eventList[1:]
@@ -734,7 +734,7 @@ class GoogleCalendarInterface:
         dayNames = dayNames[6:] + dayNames[:6]
 
         self.color_printer.msg(
-                str(ART_VRT()), self.options['color_border'], file=buf)
+                _u(ART_VRT()), self.options['color_border'], file=buf)
 
         for i in dayNums:
             if self.options['cal_monday']:
@@ -749,9 +749,9 @@ class GoogleCalendarInterface:
                     self.options['cal_width'] - self._PrintLen(dayName))
 
             self.color_printer.msg(
-                    dayName, self.options['color_date'], file=buf)
+                    _u(dayName), self.options['color_date'], file=buf)
             self.color_printer.msg(
-                    str(ART_VRT()), self.options['color_border'], file=buf)
+                    _u(ART_VRT()), self.options['color_border'], file=buf)
 
         if cmd == 'calm':
             # top of month
@@ -842,15 +842,15 @@ class GoogleCalendarInterface:
 
             while 1:
                 done = True
-                buf = BytesIO()
+                buf = StringIO()
                 self.color_printer.msg(
-                        str(ART_VRT()), self.options['color_border'], file=buf)
+                        _u(ART_VRT()), self.options['color_border'], file=buf)
                 for j in dayNums:
                     if not weekEventStrings[j]:
                         # no events today
                         weekColorStrings[j] = ''
                         self.color_printer.msg(
-                                empty + str(ART_VRT()),
+                                empty + _u(ART_VRT()),
                                 self.options['color_border'], file=buf)
 
                         continue
@@ -864,7 +864,7 @@ class GoogleCalendarInterface:
                         weekColorStrings[j] = ''
                         weekEventStrings[j] = weekEventStrings[j][1:]
                         self.color_printer.msg(
-                                empty + str(ART_VRT()),
+                                empty + _u(ART_VRT()),
                                 self.options['color_border'], file=buf)
                         done = False
                         continue
@@ -874,15 +874,15 @@ class GoogleCalendarInterface:
                     printLen, cut = self._GetCutIndex(weekEventStrings[j])
                     padding = ' ' * (self.options['cal_width'] - printLen)
 
-                    self.color_printer.msg(weekColorStrings[j] +
+                    self.color_printer.msg(_u(weekColorStrings[j] +
                                            weekEventStrings[j][:cut] +
-                                           padding, 'default', file=buf)
+                                           padding), 'default', file=buf)
 
                     weekEventStrings[j] = weekEventStrings[j][cut:]
 
                     done = False
                     self.color_printer.msg(
-                            str(ART_VRT()), self.options['color_border'],
+                            _u(ART_VRT()), self.options['color_border'],
                             file=buf)
 
                 if done:
