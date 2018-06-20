@@ -79,7 +79,6 @@ import os
 import re
 import shlex
 import time
-import calendar
 import locale
 import textwrap
 import signal
@@ -96,7 +95,7 @@ try:
     from dateutil.parser import parse
     import httplib2
     import six
-    from six.moves import range, zip, map, cPickle as pickle
+    from six.moves import input, range, zip, map, cPickle as pickle
     from apiclient.discovery import build
     from apiclient.errors import HttpError
     from oauth2client.file import Storage
@@ -106,18 +105,10 @@ except ImportError as e:
     print("ERROR: Missing module - %s" % e.args[0])
     sys.exit(1)
 
-# If they have parsedatetime, we'll use it for fuzzy datetime comparison.  If
-# not, we just return a fake failure every time and use only dateutil.
-try:
-    from parsedatetime import parsedatetime
-except ImportError:
-    class parsedatetime:
-        class Calendar:
-            def parse(self, string):
-                return ([], 0)
 
 # Package local imports
 from gcalcli.color_printer import ColorPrinter, valid_color_name
+from gcalcli.utils import DateTimeParser, get_time_from_str, days_since_epoch
 
 locale.setlocale(locale.LC_ALL, "")
 
@@ -204,70 +195,6 @@ class ART_BTE(ART):
 class ART_UTE(ART):
     fancy = '\033(0\x77\033(B'
     plain = '+'
-
-
-def dprint(obj):
-    try:
-        from pprint import pprint
-        pprint(obj)
-    except ImportError:
-        print(obj)
-
-
-class DateTimeParser:
-    def __init__(self):
-        self.pdtCalendar = parsedatetime.Calendar()
-
-    def fromString(self, eWhen):
-        defaultDateTime = datetime.now(tzlocal()).replace(hour=0,
-                                                          minute=0,
-                                                          second=0,
-                                                          microsecond=0)
-
-        try:
-            eTimeStart = parse(eWhen, default=defaultDateTime)
-        except Exception:
-            struct, result = self.pdtCalendar.parse(eWhen)
-            if not result:
-                raise ValueError("Date and time is invalid")
-            eTimeStart = datetime.fromtimestamp(time.mktime(struct), tzlocal())
-
-        return eTimeStart
-
-
-def DaysSinceEpoch(dt):
-    # Because I hate magic numbers
-    __DAYS_IN_SECONDS__ = 24 * 60 * 60
-    return calendar.timegm(dt.timetuple()) / __DAYS_IN_SECONDS__
-
-
-def GetTimeFromStr(eWhen, eDuration=0, allday=False):
-    dtp = DateTimeParser()
-
-    try:
-        eTimeStart = dtp.fromString(eWhen)
-    except Exception:
-        raise ValueError('Date and time is invalid!\n')
-
-    if allday:
-        try:
-            eTimeStop = eTimeStart + timedelta(days=float(eDuration))
-        except Exception:
-            raise ValueError('Duration time (days) is invalid\n')
-
-        sTimeStart = eTimeStart.date().isoformat()
-        sTimeStop = eTimeStop.date().isoformat()
-
-    else:
-        try:
-            eTimeStop = eTimeStart + timedelta(minutes=float(eDuration))
-        except Exception:
-            raise ValueError('Duration time (minutes) is invalid\n')
-
-        sTimeStart = eTimeStart.isoformat()
-        sTimeStop = eTimeStop.isoformat()
-
-    return sTimeStart, sTimeStop
 
 
 def ParseReminder(rem):
@@ -559,8 +486,8 @@ class GoogleCalendarInterface:
                 forceEventColorAsMarker = False
 
                 if not nowMarkerPrinted:
-                    if (DaysSinceEpoch(self.now) <
-                            DaysSinceEpoch(event['s'])):
+                    if (days_since_epoch(self.now) <
+                            days_since_epoch(event['s'])):
                         nowMarkerPrinted = True
                         weekEventStrings[dayNum - 1] += \
                             ("\n" +
@@ -1130,7 +1057,7 @@ class GoogleCalendarInterface:
             return
 
         self.color_printer('Delete? [N]o [y]es [q]uit: ', 'magenta')
-        val = six.moves.input()
+        val = input()
 
         if not val or val.lower() == 'n':
             return
@@ -1178,7 +1105,7 @@ class GoogleCalendarInterface:
             self.color_printer.msg(
                     'Edit?\n[N]o [s]ave [q]uit [t]itle [l]ocation [w]hen ' +
                     'len[g]th [r]eminder [d]escr: ', 'magenta')
-            val = six.moves.input()
+            val = input()
 
             if not val or val.lower() == 'n':
                 return
@@ -1206,24 +1133,24 @@ class GoogleCalendarInterface:
 
             elif val.lower() == 't':
                 self.color_printer.msg('Title: ', 'magenta')
-                val = six.moves.input()
+                val = input()
                 if val.strip():
                     event['summary'] = _u(val.strip())
 
             elif val.lower() == 'l':
                 self.color_printer.msg('Location: ', 'magenta')
-                val = six.moves.input()
+                val = input()
                 if val.strip():
                     event['location'] = _u(val.strip())
 
             elif val.lower() == 'w':
                 self.color_printer.msg('When: ', 'magenta')
-                val = six.moves.input().strip()
+                val = input().strip()
                 if val:
                     td = (event['e'] - event['s'])
                     length = ((td.days * 1440) + (td.seconds / 60))
                     try:
-                        newStart, newEnd = GetTimeFromStr(
+                        newStart, newEnd = get_time_from_str(
                                 val, length, self.options['allday'])
                     except ValueError as exc:
                         self.color_printer.err_msg(str(exc))
@@ -1232,10 +1159,10 @@ class GoogleCalendarInterface:
 
             elif val.lower() == 'g':
                 self.color_printer.msg('Length (mins): ', 'magenta')
-                val = six.moves.input().strip()
+                val = input().strip()
                 if val:
                     try:
-                        newStart, newEnd = GetTimeFromStr(
+                        newStart, newEnd = get_time_from_str(
                                 event['start']['dateTime'], val,
                                 self.options['allday'])
                     except ValueError as exc:
@@ -1247,7 +1174,7 @@ class GoogleCalendarInterface:
                     self.color_printer.msg(
                             'Enter a valid reminder or \'.\' to end: ',
                             'magenta')
-                    r = six.moves.input()
+                    r = input()
                     if r == '.':
                         break
                     rem.append(r)
@@ -1265,7 +1192,7 @@ class GoogleCalendarInterface:
 
             elif val.lower() == 'd':
                 self.color_printer.msg('Description: ', 'magenta')
-                val = six.moves.input()
+                val = input()
                 if val.strip():
                     event['description'] = _u(val.strip())
 
@@ -1856,7 +1783,7 @@ class GoogleCalendarInterface:
                     continue
 
                 self.color_printer.msg('\n[S]kip [i]mport [q]uit: ', 'magenta')
-                val = six.moves.input()
+                val = input()
                 if not val or val.lower() == 's':
                     continue
                 if val.lower() == 'i':
@@ -2238,29 +2165,29 @@ def main():
         if FLAGS.prompt:
             if FLAGS.title is None:
                 color_printer.msg('Title: ', 'magenta')
-                FLAGS.title = six.moves.input()
+                FLAGS.title = input()
             if FLAGS.where is None:
                 color_printer.msg('Location: ', 'magenta')
-                FLAGS.where = six.moves.input()
+                FLAGS.where = input()
             if FLAGS.when is None:
                 color_printer.msg('When: ', 'magenta')
-                FLAGS.where = six.moves.input()
+                FLAGS.where = input()
             if FLAGS.duration is None:
                 if FLAGS.allday:
                     prompt = 'Duration (days): '
                 else:
                     prompt = 'Duration (days): '
                 color_printer.msg(prompt, 'magenta')
-                FLAGS.duration = six.moves.input()
+                FLAGS.duration = input()
             if FLAGS.description is None:
                 color_printer.msg('Description: ', 'magenta')
-                FLAGS.description = six.moves.input()
+                FLAGS.description = input()
             if not FLAGS.reminder:
                 while 1:
                     color_printer.msg(
                             'Enter a valid reminder or \'.\' to end: ',
                             'magenta')
-                    r = six.moves.input()
+                    r = input()
                     if r == '.':
                         break
                     n, m = ParseReminder(str(r))
@@ -2268,7 +2195,7 @@ def main():
 
         # calculate "when" time:
         try:
-            eStart, eEnd = GetTimeFromStr(
+            eStart, eEnd = get_time_from_str(
                     FLAGS.when, FLAGS.duration, FLAGS.allday)
         except ValueError as exc:
             color_printer.err_msg(str(exc))
