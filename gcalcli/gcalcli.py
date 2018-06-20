@@ -841,6 +841,8 @@ class GoogleCalendarInterface:
             endWeekDateTime = (endWeekDateTime + timedelta(days=7))
 
             while 1:
+                # keep looping over events by day, printing one line at a time
+                # stop when everything has been printed
                 done = True
                 buf = StringIO()
                 self.color_printer.msg(
@@ -855,9 +857,9 @@ class GoogleCalendarInterface:
 
                         continue
 
-                    # get/skip over a color sequence
+                    # get any color code, and store it for successive loops
                     weekEventStrings[j], weekColorStrings[j] = \
-                        self.color_printer.remove_colorcodes(
+                        self.color_printer.extract_colorcodes(
                                 weekEventStrings[j], weekColorStrings[j])
 
                     if weekEventStrings[j][0] == '\n':
@@ -1977,6 +1979,18 @@ def get_remind_parser():
     return remind_parser
 
 
+def get_cal_query_parser():
+    cal_query_parser = argparse.ArgumentParser(add_help=False)
+    cal_query_parser.add_argument("start", type=str, nargs="?")
+    cal_query_parser.add_argument(
+            "--monday", action="store_true", dest='cal_monday', default=False,
+            help="Start the week on Monday")
+    cal_query_parser.add_argument(
+            "--noweekend", action="store_false", dest='cal_weekend',
+            default=True,  help="Hide Saturday and Sunday")
+    return cal_query_parser
+
+
 def get_argument_parser():
     parser = argparse.ArgumentParser(
             description='Google Calendar Command Line Interface',
@@ -2032,6 +2046,7 @@ def get_argument_parser():
     output_parser = get_output_parser()
     color_parser = get_color_parser()
     remind_parser = get_remind_parser()
+    cal_query_parser = get_cal_query_parser()
 
     sub = parser.add_subparsers(
             help="Invoking a subcommand with --help prints subcommand usage.",
@@ -2052,25 +2067,13 @@ def get_argument_parser():
     agenda.add_argument("end", type=str, nargs="?")
 
     calw = sub.add_parser(
-            "calw", parents=[details_parser, output_parser, color_parser])
+            "calw", parents=[details_parser, output_parser, color_parser,
+                             cal_query_parser])
     calw.add_argument("weeks", type=int, default=1, nargs="?")
-    calw.add_argument("start", type=str, nargs="?")
-    calw.add_argument(
-            "--monday", action="store_true", dest='cal_monday', default=False,
-            help="Start the week on Monday")
-    calw.add_argument(
-            "--noweekend", action="store_false", dest='cal_weekend',
-            default=True,  help="Hide Saturday and Sunday")
 
-    calm = sub.add_parser(
-            "calm", parents=[details_parser, output_parser, color_parser])
-    calm.add_argument("start", type=str, nargs="?")
-    calm.add_argument(
-            "--monday", action="store_true", dest='cal_monday', default=False,
-            help="Start the week on Monday")
-    calm.add_argument(
-            "--noweekend", action="store_false", dest='cal_weekend',
-            default=True,  help="Hide Saturday and Sunday")
+    sub.add_parser(
+            "calm", parents=[details_parser, output_parser, color_parser,
+                             cal_query_parser])
 
     quick = sub.add_parser("quick", parents=[details_parser, remind_parser])
     quick.add_argument("text")

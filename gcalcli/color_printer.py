@@ -53,7 +53,7 @@ class ColorPrinter(object):
     def debug_msg(self, msg):
         self.msg(msg, 'yellow', file=sys.stderr)
 
-    def remove_colorcodes(self, event_string, color_string):
+    def extract_colorcodes(self, event_string, color_string):
         """Extract any color code which preceeds an event string and copy it
         over to color_string.  This is a temporary measure.  In the near
         future, I'd like to avoid putting these things in just to have to pull
@@ -69,4 +69,5 @@ class ColorPrinter(object):
                     event_string = event_string[1:]
                 color_string += event_string[0]
                 event_string = event_string[1:]
+
         return event_string, color_string

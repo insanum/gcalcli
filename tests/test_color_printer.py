@@ -1,12 +1,20 @@
-from gcalcli.color_printer import ColorPrinter, COLOR_NAMES
-from gcalcli.gcalcli import _u  # handles py2/py3 text compatibility
-from io import StringIO
 import sys
+from argparse import ArgumentTypeError
+from io import StringIO
+
+import pytest
+from gcalcli.color_printer import COLOR_NAMES, ColorPrinter, valid_color_name
+from gcalcli.gcalcli import _u  # handles py2/py3 text compatibility
 
 
 def test_init():
     cp = ColorPrinter()
     assert cp
+
+
+def test_valid_color_name():
+    with pytest.raises(ArgumentTypeError):
+        valid_color_name('this_is_not_a_colorname')
 
 
 def test_all_colors():
@@ -77,3 +85,11 @@ def test_no_color():
     cp.msg(_u('msg'), 'red', file=out)
     out.seek(0)
     assert out.read() == _u('msg')
+
+
+def test_extract_colorcodes():
+    cp = ColorPrinter()
+    test_event_string = _u('\x1b[0;35mTest Event')
+    (event_string, color_string) = cp.extract_colorcodes(test_event_string, '')
+    assert color_string == _u('\x1b[0;35m')
+    assert event_string == 'Test Event'

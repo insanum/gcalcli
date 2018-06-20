@@ -5,7 +5,10 @@ from json import load
 import pytest
 from apiclient.discovery import HttpMock, build
 from gcalcli.color_printer import ColorPrinter
-from gcalcli.gcalcli import GoogleCalendarInterface, _u, get_color_parser
+from gcalcli.gcalcli import (GoogleCalendarInterface, _u,
+                             get_color_parser,
+                             get_cal_query_parser,
+                             get_output_parser)
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
 
@@ -39,19 +42,22 @@ def mocked_msg(self, msg, colorname, file=sys.stdout):
 
 
 @pytest.fixture
-def default_color_options():
-    return get_color_parser().parse_args([])
+def default_options():
+    opts = vars(get_color_parser().parse_args([]))
+    opts.update(vars(get_cal_query_parser().parse_args([])))
+    opts.update(vars(get_output_parser().parse_args([])))
+    return opts
 
 
 @pytest.fixture
-def gcal(monkeypatch, default_color_options):
+def gcal(monkeypatch, default_options):
     monkeypatch.setattr(
             GoogleCalendarInterface, '_CalService', mocked_calendar_service)
     monkeypatch.setattr(
             GoogleCalendarInterface, '_GetCached', mocked_calendar_list)
     monkeypatch.setattr(ColorPrinter, 'msg', mocked_msg)
     return GoogleCalendarInterface(
-            use_cache=False, **vars(default_color_options))
+            use_cache=False, **default_options)
 
 
 # TODO: These are more like placeholders for proper unit tests
@@ -79,5 +85,5 @@ def test_agenda(gcal):
 
 
 def test_cal_query(gcal):
-    gcal.AgendaQuery('calw')
-    gcal.AgendaQuery('calm')
+    gcal.CalQuery('calw')
+    gcal.CalQuery('calm')
