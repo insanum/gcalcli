@@ -1,5 +1,7 @@
 [report]
 show_missing = True
-
+exclude_lines=
+    pragma: no cover
+    pragma: no py${PYTEST_PYMAJVER} cover
 omit =
    *__init__.py

@@ -1,4 +1,4 @@
-from gcalcli.utils import get_time_from_str, days_since_epoch
+from gcalcli.utils import get_time_from_str, days_since_epoch, _u
 from datetime import datetime
 from dateutil.tz import UTC
 import pytest
@@ -27,6 +27,10 @@ def test_get_time_from_str():
 
 
 def test_days_since_epoch():
-
     assert days_since_epoch(datetime(1970, 1, 1, 0, tzinfo=UTC)) == 0
     assert days_since_epoch(datetime(1970, 12, 31)) == 364
+
+
+def test_u():
+    for text in [b'text', 'text', '\u309f']:
+        assert isinstance(_u(text), str)

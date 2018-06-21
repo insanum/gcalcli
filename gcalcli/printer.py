@@ -12,10 +12,10 @@ def valid_color_name(value):
     return value
 
 
-class ColorPrinter(object):
+class Printer(object):
     """Provide methods for terminal output with color (or not)"""
 
-    def __init__(self, conky=False, use_color=True):
+    def __init__(self, conky=False, use_color=True, use_art=True):
         self.use_color = use_color
         self.conky = conky
         self.colors = {
@@ -39,10 +39,24 @@ class ColorPrinter(object):
                 None: '' if conky else '\033[0m'}
         self.colorset = set(self.colors.keys())
 
+        self.use_art = use_art
+        self.art = {
+                'hrz': '\033(0\x71\033(B' if use_art else '-',
+                'vrt': '\033(0\x78\033(B' if use_art else '|',
+                'lrc': '\033(0\x6A\033(B' if use_art else '+',
+                'urc': '\033(0\x6B\033(B' if use_art else '+',
+                'ulc': '\033(0\x6C\033(B' if use_art else '+',
+                'llc': '\033(0\x6D\033(B' if use_art else '+',
+                'crs': '\033(0\x6E\033(B' if use_art else '+',
+                'lte': '\033(0\x74\033(B' if use_art else '+',
+                'rte': '\033(0\x75\033(B' if use_art else '+',
+                'bte': '\033(0\x76\033(B' if use_art else '+',
+                'ute': '\033(0\x77\033(B' if use_art else '+'}
+
     def get_colorcode(self, colorname):
         return self.colors.get(colorname, '')
 
-    def msg(self, msg, colorname, file=sys.stdout):
+    def msg(self, msg, colorname='default', file=sys.stdout):
         if self.use_color:
             msg = self.colors[colorname] + msg + self.colors['default']
         file.write(msg)
@@ -71,3 +85,7 @@ class ColorPrinter(object):
                 event_string = event_string[1:]
 
         return event_string, color_string
+
+    def art_msg(self, arttag, colorname, file=sys.stdout):
+        """Wrapper for easy emission of the calendar borders"""
+        self.msg(self.art[arttag], colorname, file=file)

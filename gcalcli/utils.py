@@ -1,5 +1,7 @@
 import calendar
 import time
+import locale
+import six
 from dateutil.tz import tzlocal
 from dateutil.parser import parse
 from datetime import datetime, timedelta
@@ -12,6 +14,36 @@ except ImportError:
         class Calendar:
             def parse(self, string):
                 return ([], 0)
+
+locale.setlocale(locale.LC_ALL, '')
+
+
+def set_locale(new_locale):
+    try:
+        locale.setlocale(locale.LC_ALL, new_locale)
+    except locale.Error as exc:
+        raise ValueError(
+                'Error: ' + str(exc) +
+                '!\n Check supported locales of your system.\n')
+
+
+def _u(text):
+    encoding = locale.getlocale()[1] or \
+            locale.getpreferredencoding(False) or "UTF-8"
+    if issubclass(type(text), six.text_type):
+        return text
+    if not issubclass(type(text), six.string_types):
+        if six.PY3:  # pragma: no py2 cover
+            if isinstance(text, bytes):
+                return six.text_type(text, encoding, 'replace')
+            else:
+                return six.text_type(text)
+        elif hasattr(text, '__unicode__'):  # pragma: no py3 cover
+            return six.text_type(text)
+        else:  # pragma: no py3 cover
+            return six.text_type(bytes(text), encoding, 'replace')
+    else:
+        return text.decode(encoding, 'replace')
 
 
 def get_time_from_str(when, duration=0, allday=False):

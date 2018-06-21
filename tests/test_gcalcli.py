@@ -4,7 +4,7 @@ from json import load
 
 import pytest
 from apiclient.discovery import HttpMock, build
-from gcalcli.color_printer import ColorPrinter
+from gcalcli.printer import Printer
 from gcalcli.gcalcli import (GoogleCalendarInterface, _u,
                              get_color_parser,
                              get_cal_query_parser,
@@ -34,7 +34,7 @@ def mocked_calendar_list(self):
     return self.calService
 
 
-def mocked_msg(self, msg, colorname, file=sys.stdout):
+def mocked_msg(self, msg, colorname='default', file=sys.stdout):
     # ignores file and always writes to stdout
     if self.use_color:
         msg = self.colors[colorname] + msg + self.colors['default']
@@ -55,7 +55,7 @@ def gcal(monkeypatch, default_options):
             GoogleCalendarInterface, '_CalService', mocked_calendar_service)
     monkeypatch.setattr(
             GoogleCalendarInterface, '_GetCached', mocked_calendar_list)
-    monkeypatch.setattr(ColorPrinter, 'msg', mocked_msg)
+    monkeypatch.setattr(Printer, 'msg', mocked_msg)
     return GoogleCalendarInterface(
             use_cache=False, **default_options)
 
@@ -68,7 +68,7 @@ def test_list(capsys, gcal):
 
     # test data has 6 cals
     assert cal_count == len(gcal.allCals)
-    expected_header = gcal.color_printer.get_colorcode(
+    expected_header = gcal.printer.get_colorcode(
             gcal.options['color_title']) + ' Access  Title\n'
 
     gcal.ListAllCalendars()
@@ -80,10 +80,16 @@ def test_list(capsys, gcal):
     assert len(captured.out.split('\n')) == cal_count + 3
 
 
+# TODO: need a way to mock some constant calendar items
+# possibly coordinate testing with add
 def test_agenda(gcal):
     gcal.AgendaQuery()
 
 
-def test_cal_query(gcal):
+def test_cal_query(capsys, gcal):
     gcal.CalQuery('calw')
+    captured = capsys.readouterr()
+    assert captured.out
     gcal.CalQuery('calm')
+    captured = capsys.readouterr()
+    assert captured.out
