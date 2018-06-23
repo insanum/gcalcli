@@ -86,6 +86,7 @@ import random
 import argparse
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
+from collections import namedtuple
 
 # Required 3rd party libraries
 try:
@@ -106,8 +107,11 @@ except ImportError as exc:
 # Package local imports
 
 from gcalcli import utils
-from gcalcli.utils import _u
+from gcalcli.utils import _u, days_since_epoch
 from gcalcli.printer import Printer, valid_color_name
+
+
+EventTitle = namedtuple('EventTitle', ['color', 'title'])
 
 
 def ParseReminder(rem):
@@ -354,7 +358,7 @@ class GoogleCalendarInterface:
         else:
             return "(No title)"
 
-    def _IsAllDay(self, event):
+    def _isallday(self, event):
         return event['s'].hour == 0 and event['s'].minute == 0 and \
             event['e'].hour == 0 and event['e'].minute == 0
 
@@ -367,115 +371,104 @@ class GoogleCalendarInterface:
                 day_num = 6
         return day_num
 
-    def _GetWeekEventStrings(self, cmd, cur_month,
-                             startDateTime, endDateTime, eventList):
+    def _event_time_in_range(self, e_time, r_start, r_end):
+        return e_time >= r_start and e_time < r_end
 
-        weekEventStrings = ['', '', '', '', '', '', '']
+    def _event_spans_time(self, e_start, e_end, time_point):
+        return e_start < time_point and e_end >= time_point
 
-        nowMarkerPrinted = False
-        if self.now < startDateTime or self.now > endDateTime:
-            # now isn't in this week
-            nowMarkerPrinted = True
+    def _format_title(self, event, allday=False):
+        titlestr = self._ValidTitle(event)
+        if allday:
+            return titlestr
+        elif self.options['military']:
+            return ' '.join([event['s'].strftime("%H:%M"), titlestr])
+        else:
+            return ' '.join([event['s'].strftime("%I:%M").lstrip('0') +
+                            event['s'].strftime('%p').lower(), titlestr])
 
-        for event in eventList:
-            if cmd == 'calm' and cur_month != event['s'].strftime("%b"):
-                continue
+    def _get_week_events(self, start_dt, end_dt, event_list):
+        week_events = [[] for _ in range(7)]
 
-            dayNum = self._cal_monday(int(event['s'].strftime("%w")))
+        now_in_week = True
+        if self.now < start_dt or self.now > end_dt:
+            now_in_week = False
 
-            allDay = self._IsAllDay(event)
+        for event in event_list:
+            event_daynum = self._cal_monday(int(event['s'].strftime("%w")))
+            event_allday = self._isallday(event)
 
-            # NOTE(slawqo): in allDay events end date is always set as day+1
-            # and hour 0:00 so to not display it one day more, it's necessary
-            # to lower it by one day:
-            if allDay:
-                eventEndDate = event['e'] - timedelta(days=1)
-            else:
-                eventEndDate = event['e']
+            event_end_date = event['e']
+            if event_allday:
+                # NOTE(slwaqo): in allDay events end date is always set as
+                # day+1 and hour 0:00 so to not display it one day more, it's
+                # necessary to lower it by one day
+                event_end_date = event['e'] - timedelta(days=1)
+
+            event_is_today = self._event_time_in_range(
+                event['s'], start_dt, end_dt)
+
+            event_continues_today = self._event_spans_time(
+                event['s'], event_end_date, start_dt)
 
             # NOTE(slawqo): it's necessary to process events which starts in
             # current period of time but for all day events also to process
             # events which was started before current period of time and are
             # still continue in current period of time
-            if ((event['s'] >= startDateTime and event['s'] < endDateTime) or
-                (allDay and event['s'] < startDateTime and
-                    eventEndDate >= startDateTime)):
+            if event_is_today or (event_allday and event_continues_today):
+                force_now_marker = False
 
-                forceEventColorAsMarker = False
-
-                if not nowMarkerPrinted:
-                    if (utils.days_since_epoch(self.now) <
-                            utils.days_since_epoch(event['s'])):
-                        nowMarkerPrinted = True
-                        weekEventStrings[dayNum - 1] += \
-                            ("\n" +
-                             self.printer.get_colorcode(
-                                 self.options['color_now_marker']) +
-                             (self.options['cal_width'] * '-'))
+                if now_in_week:
+                    if (days_since_epoch(self.now) <
+                            days_since_epoch(event['s'])):
+                        force_now_marker = False
+                        week_events[event_daynum - 1].append(
+                            EventTitle(self.options['color_now_marker'],
+                                       '\n' + self.options['cal_width'] * '-'))
                     elif self.now <= event['s']:
                         # add a line marker before next event
-                        nowMarkerPrinted = True
-                        weekEventStrings[dayNum] += \
-                            ("\n" +
-                             self.printer.get_colorcode(
-                                 self.options['color_now_marker']) +
-                             (self.options['cal_width'] * '-'))
+                        force_now_marker = False
+                        week_events[event_daynum].append(
+                            EventTitle(self.options['color_now_marker'],
+                                       '\n' + self.options['cal_width'] * '-'))
+
                     # We don't want to recolor all day events, but ignoring
                     # them leads to issues where the "now" marker misprints
                     # into the wrong day.  This resolves the issue by skipping
                     # all day events for specific coloring but not for previous
                     # or next events
                     elif self.now >= event['s'] and \
-                            self.now <= eventEndDate and \
-                            not allDay:
+                            self.now <= event_end_date and \
+                            not event_allday:
                         # line marker is during the event (recolor event)
-                        nowMarkerPrinted = True
-                        forceEventColorAsMarker = True
+                        force_now_marker = True
 
-                if allDay:
-                    tmpTimeStr = ''
-                elif self.options['military']:
-                    tmpTimeStr = event['s'].strftime("%H:%M")
+                if force_now_marker:
+                    event_color = self.options['color_now_marker']
                 else:
-                    tmpTimeStr = \
-                        event['s'].strftime("%I:%M").lstrip('0') + \
-                        event['s'].strftime('%p').lower()
-
-                if forceEventColorAsMarker:
-                    eventColor = self.options['color_now_marker']
-                else:
-                    eventColor = self._CalendarColor(event['gcalcli_cal'])
+                    event_color = self._CalendarColor(event['gcalcli_cal'])
 
                 # NOTE(slawqo): for all day events it's necessary to add event
-                # to more than one day in weekEventStrings
-                if allDay and event['s'] < eventEndDate:
-                    if eventEndDate > endDateTime:
-                        endDayNum = 6
+                # to more than one day in week_events
+                titlestr = self._format_title(event, allday=event_allday)
+                if event_allday and event['s'] < event_end_date:
+                    if event_end_date > end_dt:
+                        end_daynum = 6
                     else:
-                        endDayNum = \
-                            self._cal_monday(int(eventEndDate.strftime("%w")))
-                    if dayNum > endDayNum:
-                        dayNum = 0
-                    for day in range(dayNum, endDayNum + 1):
-                        # newline and empty string are the keys to turn off
-                        # coloring
-                        weekEventStrings[day] += (
-                            "\n" +
-                            _u(self.printer.get_colorcode(eventColor)) +
-                            _u(tmpTimeStr.strip()) +
-                            " " +
-                            _u(self._ValidTitle(event).strip()))
+                        end_daynum = \
+                            self._cal_monday(
+                                    int(event_end_date.strftime("%w")))
+                    if event_daynum > end_daynum:
+                        event_daynum = 0
+                    for day in range(event_daynum, end_daynum + 1):
+                        week_events[day].append(
+                            EventTitle(event_color, '\n' + titlestr))
                 else:
                     # newline and empty string are the keys to turn off
                     # coloring
-                    weekEventStrings[dayNum] += (
-                        "\n" +
-                        _u(self.printer.get_colorcode(eventColor)) +
-                        _u(tmpTimeStr.strip()) +
-                        " " +
-                        _u(self._ValidTitle(event).strip()))
-
-        return weekEventStrings
+                    week_events[event_daynum].append(
+                            EventTitle(event_color, '\n' + titlestr))
+        return week_events
 
     def _PrintLen(self, string):
         # We need to treat everything as unicode for this to actually give
@@ -483,56 +476,46 @@ class GoogleCalendarInterface:
         # so we convert them to unicode and then check their size. Fixes
         # the output issues we were seeing around non-US locale strings
         return sum(
-                self.UNIWIDTH[east_asian_width(tmp_char)] for tmp_char in
-                _u(string))
+                self.UNIWIDTH[east_asian_width(char)] for char in _u(string))
 
-    # return print length before cut, cut index, and force cut flag
-    def _next_cut(self, string, cur_print_length):
+    def _word_cut(self, word):
+        stop = 0
+        for i, char in enumerate(word):
+            stop += self._PrintLen(char)
+            if stop >= self.options['cal_width']:
+                return stop, i + 1
+
+    def _next_cut(self, string, cur_print_len):
         print_len = 0
-        for idx, tmp_char in enumerate(_u(string)):
-            print_tmp_char = self._PrintLen(tmp_char)
-            if (cur_print_length + print_len + print_tmp_char) > \
+
+        words = _u(string).split()
+        for i, word in enumerate(words):
+            word_len = self._PrintLen(word)
+            if (cur_print_len + word_len + print_len) >= \
                     self.options['cal_width']:
-                return (print_len, idx, True)
-            if tmp_char in (' ', '\n'):
-                return (print_len, idx, False)
-            print_len += print_tmp_char
-        return (print_len, -1, False)
+                cut_idx = len(' '.join(words[:i]))
+                # if the first word is too long, we cannot cut between words
+                if cut_idx == 0:
+                    return self._word_cut(word)
+                return (print_len, cut_idx)
+            print_len += word_len + i  # +i for the space between words
+        return (print_len, len(' '.join(words[:i])))
 
-    def _GetCutIndex(self, eventString):
-        printLen = self._PrintLen(eventString)
+    def _get_cut_index(self, event_string):
+        print_len = self._PrintLen(event_string)
 
-        if printLen <= self.options['cal_width']:
-            idx = eventString.find('\n')
-            if idx > -1:
-                printLen = self._PrintLen(eventString[:idx])
-            return (printLen, len(eventString))
+        # newline in string is a special case
+        idx = event_string.find('\n')
+        if idx > -1 and idx <= self.options['cal_width']:
+            return (self._PrintLen(event_string[:idx]),
+                    len(event_string[:idx]))
 
-        cutWidth, cut, forceCut = self._next_cut(eventString, 0)
+        if print_len <= self.options['cal_width']:
+            return (print_len, len(event_string))
 
-        if forceCut:
-            return (cutWidth, cut)
-
-        while cutWidth < self.options['cal_width']:
-            while cut < self.options['cal_width'] and \
-                    cut < printLen and \
-                    eventString[cut] == ' ':
-                cutWidth += 1
-                cut += 1
-
-            nextCutWidth, nextCut, forceCut = \
-                self._next_cut(eventString[cut:], cutWidth)
-
-            if forceCut:
-                break
-
-            cutWidth += nextCutWidth
-            cut += nextCut
-
-            if eventString[cut] == '\n':
-                break
-
-        return (cutWidth, cut)
+        else:
+            # we must cut: _next_cut will loop until we find the right spot
+            return self._next_cut(event_string, 0)
 
     def _GraphEvents(self, cmd, startDateTime, count, eventList):
         # ignore started events (i.e. events that start previous day and end
@@ -628,10 +611,8 @@ class GoogleCalendarInterface:
             self.printer.art_msg('vrt', color_border)
             self.printer.msg('\n')
 
-            weekColorStrings = ['', '', '', '', '', '', '']
-            weekEventStrings = self._GetWeekEventStrings(
-                    cmd, cur_month, startWeekDateTime, endWeekDateTime,
-                    eventList)
+            week_events = self._get_week_events(
+                    startWeekDateTime, endWeekDateTime, eventList)
 
             # get date range objects for the next week
             startWeekDateTime = endWeekDateTime
@@ -643,40 +624,29 @@ class GoogleCalendarInterface:
                 done = True
                 self.printer.art_msg('vrt', color_border)
                 for j in range(days):
-                    if not weekEventStrings[j]:
+                    if not week_events[j]:
                         # no events today
-                        weekColorStrings[j] = ''
                         self.printer.msg(
                                 empty_day + self.printer.art['vrt'],
                                 color_border)
-
                         continue
 
-                    # get any color code, and store it for successive loops
-                    weekEventStrings[j], weekColorStrings[j] = \
-                        self.printer.extract_colorcodes(
-                                weekEventStrings[j], weekColorStrings[j])
-
-                    if weekEventStrings[j][0] == '\n':
-                        weekColorStrings[j] = ''
-                        weekEventStrings[j] = weekEventStrings[j][1:]
-                        self.printer.msg(
-                                empty_day + self.printer.art['vrt'],
-                                color_border)
-                        done = False
-                        continue
-
-                    weekEventStrings[j] = weekEventStrings[j].lstrip()
-
-                    printLen, cut = self._GetCutIndex(weekEventStrings[j])
-                    padding = ' ' * (self.options['cal_width'] - printLen)
+                    curr_event = week_events[j][0]
+                    print_len, cut_idx = self._get_cut_index(curr_event.title)
+                    padding = ' ' * (self.options['cal_width'] - print_len)
 
                     self.printer.msg(
-                            weekColorStrings[j] +
-                            weekEventStrings[j][:cut] +
-                            padding, 'default')
+                            curr_event.title[:cut_idx] + padding,
+                            curr_event.color)
 
-                    weekEventStrings[j] = weekEventStrings[j][cut:]
+                    # trim what we've already printed
+                    trimmed_title = curr_event.title[cut_idx:].strip()
+
+                    if trimmed_title == '':
+                        week_events[j].pop(0)
+                    else:
+                        week_events[j][0] = \
+                                curr_event._replace(title=trimmed_title)
 
                     done = False
                     self.printer.art_msg('vrt', color_border)
@@ -773,7 +743,7 @@ class GoogleCalendarInterface:
         self.printer.msg(prefix, self.options['color_date'])
 
         happeningNow = event['s'] <= self.now <= event['e']
-        allDay = self._IsAllDay(event)
+        allDay = self._isallday(event)
         eventColor = self.options['color_now_marker'] \
             if happeningNow and not allDay \
             else self._CalendarColor(event['gcalcli_cal'])
