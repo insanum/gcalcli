@@ -85,11 +85,3 @@ def test_no_color():
     cp.msg(_u('msg'), 'red', file=out)
     out.seek(0)
     assert out.read() == _u('msg')
-
-
-def test_extract_colorcodes():
-    cp = Printer()
-    test_event_string = _u('\x1b[0;35mTest Event')
-    (event_string, color_string) = cp.extract_colorcodes(test_event_string, '')
-    assert color_string == _u('\x1b[0;35m')
-    assert event_string == 'Test Event'

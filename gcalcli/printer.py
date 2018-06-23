@@ -69,25 +69,6 @@ class Printer(object):
     def debug_msg(self, msg):
         self.msg(msg, 'yellow', file=sys.stderr)
 
-    def extract_colorcodes(self, event_string, color_string):
-        """Extract any color code which preceeds an event string and copy it
-        over to color_string.  This is a temporary measure.  In the near
-        future, I'd like to avoid putting these things in just to have to pull
-        them back out."""
-
-        stop_char = '}' if self.conky else 'm'
-
-        if event_string:
-            if event_string[0] == '$' or event_string[0] == '\033':
-                color_string = ''
-                while event_string[0] != stop_char:
-                    color_string += event_string[0]
-                    event_string = event_string[1:]
-                color_string += event_string[0]
-                event_string = event_string[1:]
-
-        return event_string, color_string
-
     def art_msg(self, arttag, colorname, file=sys.stdout):
         """Wrapper for easy emission of the calendar borders"""
         self.msg(self.art[arttag], colorname, file=file)
