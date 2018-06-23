@@ -86,7 +86,6 @@ import random
 import argparse
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
-from io import StringIO
 
 # Required 3rd party libraries
 try:
@@ -359,7 +358,16 @@ class GoogleCalendarInterface:
         return event['s'].hour == 0 and event['s'].minute == 0 and \
             event['e'].hour == 0 and event['e'].minute == 0
 
-    def _GetWeekEventStrings(self, cmd, curMonth,
+    def _cal_monday(self, day_num):
+        """Shift the day number if we're doing cal monday, or cal_weekend is
+        false, since that also means we're starting on day 1"""
+        if self.options['cal_monday'] or not self.options['cal_weekend']:
+            day_num -= 1
+            if day_num < 0:
+                day_num = 6
+        return day_num
+
+    def _GetWeekEventStrings(self, cmd, cur_month,
                              startDateTime, endDateTime, eventList):
 
         weekEventStrings = ['', '', '', '', '', '', '']
@@ -370,14 +378,10 @@ class GoogleCalendarInterface:
             nowMarkerPrinted = True
 
         for event in eventList:
-            if cmd == 'calm' and curMonth != event['s'].strftime("%b"):
+            if cmd == 'calm' and cur_month != event['s'].strftime("%b"):
                 continue
 
-            dayNum = int(event['s'].strftime("%w"))
-            if self.options['cal_monday']:
-                dayNum -= 1
-                if dayNum < 0:
-                    dayNum = 6
+            dayNum = self._cal_monday(int(event['s'].strftime("%w")))
 
             allDay = self._IsAllDay(event)
 
@@ -448,11 +452,8 @@ class GoogleCalendarInterface:
                     if eventEndDate > endDateTime:
                         endDayNum = 6
                     else:
-                        endDayNum = int(eventEndDate.strftime("%w"))
-                        if self.options['cal_monday']:
-                            endDayNum -= 1
-                            if endDayNum < 0:
-                                endDayNum = 6
+                        endDayNum = \
+                            self._cal_monday(int(eventEndDate.strftime("%w")))
                     if dayNum > endDayNum:
                         dayNum = 0
                     for day in range(dayNum, endDayNum + 1):
@@ -481,39 +482,33 @@ class GoogleCalendarInterface:
         # us the info we want.  Date string were coming in as `str` type
         # so we convert them to unicode and then check their size. Fixes
         # the output issues we were seeing around non-US locale strings
-        printLen = 0
-        for tmpChar in _u(string):
-            printLen += self.UNIWIDTH[east_asian_width(tmpChar)]
-        return printLen
+        return sum(
+                self.UNIWIDTH[east_asian_width(tmp_char)] for tmp_char in
+                _u(string))
 
     # return print length before cut, cut index, and force cut flag
-    def _NextCut(self, string, curPrintLen):
-        idx = 0
-        printLen = 0
-        for tmpChar in _u(string):
-            printTmpChar = self.UNIWIDTH[east_asian_width(tmpChar)]
-            if (curPrintLen + printLen + printTmpChar) > \
+    def _next_cut(self, string, cur_print_length):
+        print_len = 0
+        for idx, tmp_char in enumerate(_u(string)):
+            print_tmp_char = self._PrintLen(tmp_char)
+            if (cur_print_length + print_len + print_tmp_char) > \
                     self.options['cal_width']:
-                return (printLen, idx, True)
-            if tmpChar in (' ', '\n'):
-                return (printLen, idx, False)
-            idx += 1
-            printLen += printTmpChar
-        return (printLen, -1, False)
+                return (print_len, idx, True)
+            if tmp_char in (' ', '\n'):
+                return (print_len, idx, False)
+            print_len += print_tmp_char
+        return (print_len, -1, False)
 
     def _GetCutIndex(self, eventString):
-
         printLen = self._PrintLen(eventString)
 
         if printLen <= self.options['cal_width']:
-            if '\n' in eventString:
-                idx = eventString.find('\n')
+            idx = eventString.find('\n')
+            if idx > -1:
                 printLen = self._PrintLen(eventString[:idx])
-            else:
-                idx = len(eventString)
-            return (printLen, idx)
+            return (printLen, len(eventString))
 
-        cutWidth, cut, forceCut = self._NextCut(eventString, 0)
+        cutWidth, cut, forceCut = self._next_cut(eventString, 0)
 
         if forceCut:
             return (cutWidth, cut)
@@ -526,7 +521,7 @@ class GoogleCalendarInterface:
                 cut += 1
 
             nextCutWidth, nextCut, forceCut = \
-                self._NextCut(eventString[cut:], cutWidth)
+                self._next_cut(eventString[cut:], cutWidth)
 
             if forceCut:
                 break
@@ -545,107 +540,77 @@ class GoogleCalendarInterface:
 
         color_border = self.options['color_border']
 
-        # Build up a buffer of bytes to flush
-        buf = StringIO()
-
         while (len(eventList) and eventList[0]['s'] < startDateTime):
             eventList = eventList[1:]
 
-        dayWidthLine = self.options['cal_width'] * self.printer.art['hrz']
-
-        dayNums = range(7) if self.options['cal_weekend'] else range(1, 6)
-        days = len(dayNums)
+        day_width_line = self.options['cal_width'] * self.printer.art['hrz']
+        days = 7 if self.options['cal_weekend'] else 5
+        # Get the localized day names... January 1, 2001 was a Monday
+        day_names = [date(2001, 1, i + 1).strftime('%A') for i in range(days)]
+        if not self.options['cal_monday'] or not self.options['cal_weekend']:
+            day_names = day_names[6:] + day_names[:6]
 
         def build_divider(left, center, right):
-            return (self.printer.art[left] + dayWidthLine +
-                    ((days - 1) * (self.printer.art[center] + dayWidthLine)) +
-                    self.printer.art[right])
+            return (
+                self.printer.art[left] + day_width_line +
+                ((days - 1) * (self.printer.art[center] + day_width_line)) +
+                self.printer.art[right])
 
-        topWeekDivider = build_divider('ulc', 'ute', 'urc')
-        midWeekDivider = build_divider('lte', 'crs', 'rte')
-        botWeekDivider = build_divider('llc', 'bte', 'lrc')
-
-        empty = self.options['cal_width'] * ' '
-
-        # Get the localized day names... January 1, 2001 was a Monday
-        dayNames = [date(2001, 1, i + 1).strftime('%A') for i in range(7)]
-        dayNames = dayNames[6:] + dayNames[:6]
-
-        self.printer.art_msg('vrt', color_border, file=buf)
-
-        for i in dayNums:
-            if self.options['cal_monday']:
-                if i == 6:
-                    dayName = dayNames[0]
-                else:
-                    dayName = dayNames[i + 1]
-            else:
-                dayName = dayNames[i]
-
-            dayName += ' ' * (
-                    self.options['cal_width'] - self._PrintLen(dayName))
-
-            self.printer.msg(_u(dayName), self.options['color_date'], file=buf)
-            self.printer.art_msg('vrt', color_border, file=buf)
+        week_top = build_divider('ulc', 'ute', 'urc')
+        week_divider = build_divider('lte', 'crs', 'rte')
+        week_bottom = build_divider('llc', 'bte', 'lrc')
+        empty_day = self.options['cal_width'] * ' '
 
         if cmd == 'calm':
-            # top of month
-            self.printer.msg(
-                    '\n' + self.printer.art['ulc'] + dayWidthLine +
-                    ((days - 1) * (self.printer.art['hrz'] + dayWidthLine)) +
-                    self.printer.art['urc'] + '\n',
-                    color_border)
+            # month titlebar
+            month_title_top = build_divider('ulc', 'hrz', 'urc')
+            self.printer.msg(month_title_top + '\n', color_border)
 
-            m = startDateTime.strftime('%B %Y')
-            mw = (self.options['cal_width'] * days) + (days - 1)
-            m += ' ' * (mw - self._PrintLen(m))
+            month_title = startDateTime.strftime('%B %Y')
+            month_width = (self.options['cal_width'] * days) + (days - 1)
+            month_title += ' ' * (month_width - self._PrintLen(month_title))
 
             self.printer.art_msg('vrt', color_border)
-            self.printer.msg(m, self.options['color_date'])
+            self.printer.msg(month_title, self.options['color_date'])
             self.printer.art_msg('vrt', color_border)
-            self.printer.msg('\n')
 
-            # bottom of month
-            self.printer.art_msg('lte', color_border)
-            self.printer.msg(
-                    dayWidthLine + ((days - 1) * (
-                        self.printer.art['ute'] + dayWidthLine)),
-                    color_border)
-            self.printer.art_msg('rte', color_border)
-            self.printer.msg('\n')
+            month_title_bottom = build_divider('lte', 'ute', 'rte')
+            self.printer.msg('\n' + month_title_bottom + '\n', color_border)
+        else:
+            # week titlebar
+            # month title bottom takes care of this when cmd='calm'
+            self.printer.msg(week_top + '\n', color_border)
 
-        else:  # calw
-            # top of week
-            self.printer.msg('\n' + topWeekDivider + '\n', color_border)
+        # weekday labels
+        self.printer.art_msg('vrt', color_border)
+        for day_name in day_names:
+            day_name += ' ' * (
+                    self.options['cal_width'] - self._PrintLen(day_name))
 
-        buf.seek(0)
-        print(buf.read())
-        self.printer.msg(midWeekDivider + '\n', color_border)
+            self.printer.msg(day_name, self.options['color_date'])
+            self.printer.art_msg('vrt', color_border)
 
-        curMonth = startDateTime.strftime("%b")
+        self.printer.msg('\n' + week_divider + '\n', color_border)
+        cur_month = startDateTime.strftime("%b")
 
         # get date range objects for the first week
         if cmd == 'calm':
-            dayNum = int(startDateTime.strftime("%w"))
-            if self.options['cal_monday']:
-                dayNum -= 1
-                if dayNum < 0:
-                    dayNum = 6
-            startDateTime = (startDateTime - timedelta(days=dayNum))
+            day_num = self._cal_monday(int(startDateTime.strftime("%w")))
+            startDateTime = (startDateTime - timedelta(days=day_num))
         startWeekDateTime = startDateTime
         endWeekDateTime = (startWeekDateTime + timedelta(days=7))
 
         for i in range(count):
             # create and print the date line for a week
-            for j in dayNums:
+            for j in range(days):
                 if cmd == 'calw':
                     d = (startWeekDateTime +
                          timedelta(days=j)).strftime("%d %b")
                 else:  # (cmd == 'calm'):
                     d = (startWeekDateTime +
                          timedelta(days=j)).strftime("%d")
-                    if curMonth != (startWeekDateTime +
-                                    timedelta(days=j)).strftime("%b"):
+                    if cur_month != (startWeekDateTime +
+                                     timedelta(days=j)).strftime("%b"):
                         d = ''
                 tmpDateColor = self.options['color_date']
 
@@ -660,32 +625,30 @@ class GoogleCalendarInterface:
                 self.printer.art_msg('vrt', color_border)
                 self.printer.msg(d, tmpDateColor)
 
-            self.printer.msg('vrt', color_border)
+            self.printer.art_msg('vrt', color_border)
             self.printer.msg('\n')
 
             weekColorStrings = ['', '', '', '', '', '', '']
-            weekEventStrings = self._GetWeekEventStrings(cmd, curMonth,
-                                                         startWeekDateTime,
-                                                         endWeekDateTime,
-                                                         eventList)
+            weekEventStrings = self._GetWeekEventStrings(
+                    cmd, cur_month, startWeekDateTime, endWeekDateTime,
+                    eventList)
 
             # get date range objects for the next week
             startWeekDateTime = endWeekDateTime
             endWeekDateTime = (endWeekDateTime + timedelta(days=7))
 
-            while 1:
+            while True:
                 # keep looping over events by day, printing one line at a time
                 # stop when everything has been printed
                 done = True
-                buf = StringIO()
-                self.printer.art_msg('vrt', color_border, file=buf)
-                for j in dayNums:
+                self.printer.art_msg('vrt', color_border)
+                for j in range(days):
                     if not weekEventStrings[j]:
                         # no events today
                         weekColorStrings[j] = ''
                         self.printer.msg(
-                                empty + self.printer.art['vrt'], color_border,
-                                file=buf)
+                                empty_day + self.printer.art['vrt'],
+                                color_border)
 
                         continue
 
@@ -698,8 +661,8 @@ class GoogleCalendarInterface:
                         weekColorStrings[j] = ''
                         weekEventStrings[j] = weekEventStrings[j][1:]
                         self.printer.msg(
-                                empty + self.printer.art['vrt'], color_border,
-                                file=buf)
+                                empty_day + self.printer.art['vrt'],
+                                color_border)
                         done = False
                         continue
 
@@ -709,25 +672,23 @@ class GoogleCalendarInterface:
                     padding = ' ' * (self.options['cal_width'] - printLen)
 
                     self.printer.msg(
-                            _u(weekColorStrings[j] +
-                               weekEventStrings[j][:cut] +
-                               padding), 'default', file=buf)
+                            weekColorStrings[j] +
+                            weekEventStrings[j][:cut] +
+                            padding, 'default')
 
                     weekEventStrings[j] = weekEventStrings[j][cut:]
 
                     done = False
-                    self.printer.art_msg('vrt', color_border, file=buf)
+                    self.printer.art_msg('vrt', color_border)
 
+                self.printer.msg('\n')
                 if done:
                     break
 
-                buf.seek(0)
-                print(buf.read())
-
             if i < range(count)[len(range(count)) - 1]:
-                self.printer.msg(midWeekDivider + '\n', color_border)
+                self.printer.msg(week_divider + '\n', color_border)
             else:
-                self.printer.msg(botWeekDivider + '\n', color_border)
+                self.printer.msg(week_bottom + '\n', color_border)
 
     def _tsv(self, startDateTime, eventList):
         for event in eventList:
@@ -820,13 +781,13 @@ class GoogleCalendarInterface:
         if allDay:
             fmt = '  ' + timeFormat + '  %s\n'
             self.printer.msg(
-                    fmt % ('', _u(self._ValidTitle(event).strip())),
+                    fmt % ('', self._ValidTitle(event).strip()),
                     eventColor)
         else:
             fmt = '  ' + timeFormat + '  %s\n'
             self.printer.msg(
                     fmt % (
-                        _u(tmpTimeStr), _u(self._ValidTitle(event).strip())),
+                        tmpTimeStr, self._ValidTitle(event).strip()),
                     eventColor)
 
         if self.details['calendar']:
@@ -1038,13 +999,13 @@ class GoogleCalendarInterface:
                 self.printer.msg('Title: ', 'magenta')
                 val = input()
                 if val.strip():
-                    event['summary'] = _u(val.strip())
+                    event['summary'] = val.strip()
 
             elif val.lower() == 'l':
                 self.printer.msg('Location: ', 'magenta')
                 val = input()
                 if val.strip():
-                    event['location'] = _u(val.strip())
+                    event['location'] = val.strip()
 
             elif val.lower() == 'w':
                 self.printer.msg('When: ', 'magenta')
@@ -1097,7 +1058,7 @@ class GoogleCalendarInterface:
                 self.printer.msg('Description: ', 'magenta')
                 val = input()
                 if val.strip():
-                    event['description'] = _u(val.strip())
+                    event['description'] = val.strip()
 
             else:
                 self.printer.err_msg('Error: invalid input\n')
@@ -1324,11 +1285,7 @@ class GoogleCalendarInterface:
 
         # convert start date to the beginning of the week or month
         if cmd == 'calw':
-            dayNum = int(start.strftime("%w"))
-            if self.options['cal_monday']:
-                dayNum -= 1
-                if dayNum < 0:
-                    dayNum = 6
+            dayNum = self._cal_monday(int(start.strftime("%w")))
             start = (start - timedelta(days=dayNum))
             end = (start + timedelta(days=(count * 7)))
         else:  # cmd == 'calm':
@@ -1402,7 +1359,7 @@ class GoogleCalendarInterface:
             return
 
         event = {}
-        event['summary'] = _u(eTitle)
+        event['summary'] = eTitle
 
         if self.options['allday']:
             event['start'] = {'date': eStart}
@@ -1415,11 +1372,11 @@ class GoogleCalendarInterface:
                             'timeZone': self.cals[0]['timeZone']}
 
         if eWhere:
-            event['location'] = _u(eWhere)
+            event['location'] = eWhere
         if eDescr:
-            event['description'] = _u(eDescr)
+            event['description'] = eDescr
 
-        event['attendees'] = list(map(lambda w: {'email': _u(w)}, eWho))
+        event['attendees'] = list(map(lambda w: {'email': w}, eWho))
 
         if reminder or not self.options['default_reminders']:
             event['reminders'] = {'useDefault': False,
@@ -1498,7 +1455,7 @@ class GoogleCalendarInterface:
                     event['s'].strftime('%p').lower()
 
             message += '%s  %s\n' % \
-                       (tmpTimeStr, _u(self._ValidTitle(event).strip()))
+                       (tmpTimeStr, self._ValidTitle(event).strip())
 
         if not message:
             return
@@ -2012,7 +1969,7 @@ def main():
     calNamesFiltered = []
     for calName in FLAGS.calendar:
         calNameSimple = calName.split("#")[0]
-        calNamesFiltered.append(_u(calNameSimple))
+        calNamesFiltered.append(calNameSimple)
         calNameColors.append(calColors[calNameSimple])
     calNames = calNamesFiltered
 

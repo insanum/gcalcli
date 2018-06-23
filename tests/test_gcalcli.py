@@ -89,7 +89,12 @@ def test_agenda(gcal):
 def test_cal_query(capsys, gcal):
     gcal.CalQuery('calw')
     captured = capsys.readouterr()
-    assert captured.out
+    art = gcal.printer.art
+    expect_top = (
+            gcal.printer.colors[gcal.options['color_border']] + art['ulc'] +
+            art['hrz'] * gcal.options['cal_width'])
+    assert captured.out.startswith(expect_top)
+
     gcal.CalQuery('calm')
     captured = capsys.readouterr()
     assert captured.out

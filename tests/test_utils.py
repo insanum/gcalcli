@@ -1,6 +1,7 @@
-from gcalcli.utils import get_time_from_str, days_since_epoch, _u
+from gcalcli.utils import (_u, get_time_from_str, days_since_epoch, set_locale)
 from datetime import datetime
 from dateutil.tz import UTC
+import six
 import pytest
 
 
@@ -32,5 +33,13 @@ def test_days_since_epoch():
 
 
 def test_u():
-    for text in [b'text', 'text', '\u309f']:
-        assert isinstance(_u(text), str)
+    for text in [b'text', 'text', '\u309f', u'\xe1', b'\xff\xff', 42]:
+        if six.PY2:
+            assert isinstance(_u(text), unicode)  # noqa: F821
+        else:
+            assert isinstance(_u(text), str)
+
+
+def test_set_locale():
+    with pytest.raises(ValueError):
+        set_locale('not_a_real_locale')

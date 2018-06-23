@@ -33,14 +33,14 @@ def _u(text):
     if issubclass(type(text), six.text_type):
         return text
     if not issubclass(type(text), six.string_types):
-        if six.PY3:  # pragma: no py2 cover
+        if six.PY3:
             if isinstance(text, bytes):
                 return six.text_type(text, encoding, 'replace')
             else:
                 return six.text_type(text)
-        elif hasattr(text, '__unicode__'):  # pragma: no py3 cover
+        elif hasattr(text, '__unicode__'):
             return six.text_type(text)
-        else:  # pragma: no py3 cover
+        else:
             return six.text_type(bytes(text), encoding, 'replace')
     else:
         return text.decode(encoding, 'replace')

@@ -1,5 +1,7 @@
+from __future__ import absolute_import
 import argparse
 import sys
+from gcalcli.utils import _u
 COLOR_NAMES = set(('default', 'black', 'red', 'green', 'yellow', 'blue',
                    'magenta', 'cyan', 'white', 'brightblack', 'brightred',
                    'brightgreen', 'brightyellow', 'brightblue',
@@ -59,7 +61,7 @@ class Printer(object):
     def msg(self, msg, colorname='default', file=sys.stdout):
         if self.use_color:
             msg = self.colors[colorname] + msg + self.colors['default']
-        file.write(msg)
+        file.write(_u(msg))
 
     def err_msg(self, msg):
         self.msg(msg, 'brightred', file=sys.stderr)
