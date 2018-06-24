@@ -8,7 +8,8 @@ from gcalcli.printer import Printer
 from gcalcli.gcalcli import (GoogleCalendarInterface, _u,
                              get_color_parser,
                              get_cal_query_parser,
-                             get_output_parser)
+                             get_output_parser,
+                             parse_reminder)
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
 
@@ -50,19 +51,23 @@ def default_options():
 
 
 @pytest.fixture
-def gcal(monkeypatch, default_options):
+def PatchedGCalI(monkeypatch):
     monkeypatch.setattr(
             GoogleCalendarInterface, '_CalService', mocked_calendar_service)
     monkeypatch.setattr(
             GoogleCalendarInterface, '_GetCached', mocked_calendar_list)
     monkeypatch.setattr(Printer, 'msg', mocked_msg)
-    return GoogleCalendarInterface(
-            use_cache=False, **default_options)
+
+    def _method(**opts):
+        return GoogleCalendarInterface(use_cache=False, **opts)
+
+    return _method
 
 
 # TODO: These are more like placeholders for proper unit tests
 #       We just try the commands and make sure no errors occur.
-def test_list(capsys, gcal):
+def test_list(capsys, PatchedGCalI):
+    gcal = PatchedGCalI(**vars(get_color_parser().parse_args([])))
     with open(TEST_DATA_DIR + '/cal_list.json') as cl:
         cal_count = len(load(cl)['items'])
 
@@ -80,13 +85,16 @@ def test_list(capsys, gcal):
     assert len(captured.out.split('\n')) == cal_count + 3
 
 
-# TODO: need a way to mock some constant calendar items
-# possibly coordinate testing with add
-def test_agenda(gcal):
-    gcal.AgendaQuery()
+def test_agenda(PatchedGCalI):
+    PatchedGCalI(calendar=['jcrowgey*#green']).AgendaQuery()
 
 
-def test_cal_query(capsys, gcal):
+def test_cal_query(capsys, PatchedGCalI):
+    opts = vars(get_cal_query_parser().parse_args([]))
+    opts.update(vars(get_output_parser().parse_args([])))
+    opts.update(vars(get_color_parser().parse_args([])))
+    gcal = PatchedGCalI(**opts)
+
     gcal.CalQuery('calw')
     captured = capsys.readouterr()
     art = gcal.printer.art
@@ -97,4 +105,56 @@ def test_cal_query(capsys, gcal):
 
     gcal.CalQuery('calm')
     captured = capsys.readouterr()
-    assert captured.out
+    assert captured.out.startswith(expect_top)
+
+
+def test_add_event(PatchedGCalI):
+    gcal = PatchedGCalI(calendar=['jcrowgey*#green'])
+    title = 'test event'
+    where = 'anywhere'
+    start = 'now'
+    end = 'tomorrow'
+    descr = 'testing'
+    who = 'anyone'
+    reminder = None
+    gcal.AddEvent(title, where, start, end, descr, who, reminder)
+
+
+def test_quick_add(PatchedGCalI):
+    gcal = PatchedGCalI(calendar=['jcrowgey*#green'])
+    event_text = 'quick test event'
+    reminder = '5m sms'
+    gcal.QuickAddEvent(event_text, reminder=[reminder])
+
+
+def test_parse_reminder():
+    MINS_PER_DAY = 60 * 24
+    MINS_PER_WEEK = MINS_PER_DAY * 7
+
+    rem = '5m email'
+    tim, method = parse_reminder(rem)
+    assert method == 'email'
+    assert tim == 5
+
+    rem = '2h sms'
+    tim, method = parse_reminder(rem)
+    assert method == 'sms'
+    assert tim == 120
+
+    rem = '1d popup'
+    tim, method = parse_reminder(rem)
+    assert method == 'popup'
+    assert tim == MINS_PER_DAY
+
+    rem = '1w'
+    tim, method = parse_reminder(rem)
+    assert method == 'popup'
+    assert tim == MINS_PER_WEEK
+
+    rem = '10w'
+    tim, method = parse_reminder(rem)
+    assert method == 'popup'
+    assert tim == MINS_PER_WEEK * 10
+
+    rem = 'invalid reminder'
+    assert parse_reminder(rem) is None

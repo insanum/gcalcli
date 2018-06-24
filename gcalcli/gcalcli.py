@@ -99,7 +99,7 @@ try:
     from oauth2client.file import Storage
     from oauth2client.client import OAuth2WebServerFlow
     from oauth2client import tools
-except ImportError as exc:
+except ImportError as exc:  # pragma: no cover
     print("ERROR: Missing module - %s" % exc.args[0])
     sys.exit(1)
 
@@ -111,30 +111,8 @@ from gcalcli.utils import _u, days_since_epoch
 from gcalcli.printer import Printer, valid_color_name
 
 
-EventTitle = namedtuple('EventTitle', ['color', 'title'])
-
-
-def ParseReminder(rem):
-    matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
-    if not matchObj:
-        # Allow argparse to generate a message when parsing options
-        return None
-    n = int(matchObj.group(1))
-    t = matchObj.group(2)
-    m = matchObj.group(3)
-    if t == 'w':
-        n = n * 7 * 24 * 60
-    elif t == 'd':
-        n = n * 24 * 60
-    elif t == 'h':
-        n = n * 60
-
-    if not m:
-        m = 'popup'
-
-    return n, m
-
-
+EventTitle = namedtuple('EventTitle', ['title', 'color'])
+CalName = namedtuple('CalName', ['name', 'color'])
 DETAILS = ['all', 'calendar', 'location', 'length', 'reminders', 'description',
            'longurl', 'shorturl', 'url', 'attendees', 'email', 'attachments']
 
@@ -161,9 +139,7 @@ class GoogleCalendarInterface:
 
     UNIWIDTH = {'W': 2, 'F': 2, 'N': 1, 'Na': 1, 'H': 1, 'A': 1}
 
-    def __init__(
-            self, calNames=[], calNameColors=[], printer=Printer(),
-            **options):
+    def __init__(self, cal_names=[], printer=Printer(), **options):
         self.printer = printer
         self.options = options
 
@@ -179,32 +155,34 @@ class GoogleCalendarInterface:
         self.details['width'] = options.get('width', 80)
         self._GetCached()
 
-        if len(calNames):
-            # Changing the order of this and the `cal in self.allCals` loop
-            # is necessary for the matching to actually be sane (ie match
-            # supplied name to cached vs matching cache against supplied names)
-            for i in range(len(calNames)):
-                matches = []
-                for cal in self.allCals:
-                    # For exact match, we should match only 1 entry and accept
-                    # the first entry.  Should honor access role order since
-                    # it happens after _GetCached()
-                    if calNames[i] == cal['summary']:
-                        # This makes sure that if we have any regex matches
-                        # that we toss them out in favor of the specific match
-                        matches = [cal]
-                        cal['colorSpec'] = calNameColors[i]
-                        break
-                    # Otherwise, if the calendar matches as a regex, append
-                    # it to the list of potential matches
-                    elif re.search(calNames[i], cal['summary'], flags=re.I):
-                        matches.append(cal)
-                        cal['colorSpec'] = calNameColors[i]
-                # Add relevant matches to the list of calendars we want to
-                # operate against
-                self.cals += matches
-        else:
+        self._select_cals(cal_names)
+
+    def _select_cals(self, selected_names):
+        if not selected_names:
             self.cals = self.allCals
+            return
+
+        for cal_name in selected_names:
+            matches = []
+            for self_cal in self.allCals:
+                print(self_cal['summary'])
+                # For exact match, we should match only 1 entry and accept
+                # the first entry.  Should honor access role order since
+                # it happens after _GetCached()
+                if cal_name.name == self_cal['summary']:
+                    # This makes sure that if we have any regex matches
+                    # that we toss them out in favor of the specific match
+                    matches = [self_cal]
+                    self_cal['colorSpec'] = cal_name.color
+                    break
+                # Otherwise, if the calendar matches as a regex, append
+                # it to the list of potential matches
+                elif re.search(cal_name.name, self_cal['summary'], flags=re.I):
+                    matches.append(self_cal)
+                    self_cal['colorSpec'] = cal_name.color
+            # Add relevant matches to the list of calendars we want to
+            # operate against
+            self.cals += matches
 
     @staticmethod
     def _LocalizeDateTime(dt):
@@ -423,14 +401,17 @@ class GoogleCalendarInterface:
                             days_since_epoch(event['s'])):
                         force_now_marker = False
                         week_events[event_daynum - 1].append(
-                            EventTitle(self.options['color_now_marker'],
-                                       '\n' + self.options['cal_width'] * '-'))
+                            EventTitle(
+                                '\n' + self.options['cal_width'] * '-',
+                                self.options['color_now_marker']))
+
                     elif self.now <= event['s']:
                         # add a line marker before next event
                         force_now_marker = False
                         week_events[event_daynum].append(
-                            EventTitle(self.options['color_now_marker'],
-                                       '\n' + self.options['cal_width'] * '-'))
+                            EventTitle(
+                                '\n' + self.options['cal_width'] * '-',
+                                self.options['color_now_marker']))
 
                     # We don't want to recolor all day events, but ignoring
                     # them leads to issues where the "now" marker misprints
@@ -462,12 +443,12 @@ class GoogleCalendarInterface:
                         event_daynum = 0
                     for day in range(event_daynum, end_daynum + 1):
                         week_events[day].append(
-                            EventTitle(event_color, '\n' + titlestr))
+                            EventTitle('\n' + titlestr, event_color))
                 else:
                     # newline and empty string are the keys to turn off
                     # coloring
                     week_events[event_daynum].append(
-                            EventTitle(event_color, '\n' + titlestr))
+                            EventTitle('\n' + titlestr, event_color))
         return week_events
 
     def _PrintLen(self, string):
@@ -935,7 +916,6 @@ class GoogleCalendarInterface:
     def _EditEvent(self, event):
 
         while True:
-
             self.printer.msg(
                     'Edit?\n[N]o [s]ave [q]uit [t]itle [l]ocation [w]hen ' +
                     'len[g]th [r]eminder [d]escr: ', 'magenta')
@@ -1004,7 +984,7 @@ class GoogleCalendarInterface:
 
             elif val.lower() == 'r':
                 rem = []
-                while 1:
+                while True:
                     self.printer.msg(
                             'Enter a valid reminder or \'.\' to end: ',
                             'magenta')
@@ -1017,7 +997,7 @@ class GoogleCalendarInterface:
                     event['reminders'] = {'useDefault': False,
                                           'overrides': []}
                     for r in rem:
-                        n, m = ParseReminder(r)
+                        n, m = parse_reminder(r)
                         event['reminders']['overrides'].append({'minutes': n,
                                                                 'method': m})
                 else:
@@ -1050,7 +1030,6 @@ class GoogleCalendarInterface:
         day = ''
 
         for event in eventList:
-
             if self.options['ignore_started'] and (event['s'] < self.now):
                 continue
             if self.options['ignore_declined'] and self._DeclinedEvent(event):
@@ -1281,9 +1260,9 @@ class GoogleCalendarInterface:
 
         self._GraphEvents(cmd, start, count, eventList)
 
-    def QuickAddEvent(self, eventText, reminder=None):
-
-        if not eventText:
+    def QuickAddEvent(self, event_text, reminder=None):
+        """Wrapper around Google Calendar API's quickAdd"""
+        if not event_text:
             return
 
         if len(self.cals) > 1:
@@ -1294,21 +1273,21 @@ class GoogleCalendarInterface:
         if len(self.cals) < 1:
             self.printer.err_msg(
                     "Calendar not specified or not found.\n"
-                    "If \"gcalcli list\" doesn't find the calendar you're"
-                    "trying to use,\n" "your cache file might be stale and"
-                    "you might need to remove it and try" "again\n")
+                    "If \"gcalcli list doesn't find the calendar you're"
+                    "trying to use,\n your cache file might be stale and"
+                    "you might need to remove it and try again\n")
             return
 
         newEvent = self._RetryWithBackoff(
             self._CalService().events().quickAdd(calendarId=self.cals[0]['id'],
-                                                 text=eventText))
+                                                 text=event_text))
 
         if reminder or not self.options['default_reminders']:
             rem = {}
             rem['reminders'] = {'useDefault': False,
                                 'overrides': []}
             for r in reminder:
-                n, m = ParseReminder(r)
+                n, m = parse_reminder(r)
                 rem['reminders']['overrides'].append({'minutes': n,
                                                       'method': m})
 
@@ -1319,8 +1298,8 @@ class GoogleCalendarInterface:
                       body=rem))
 
         if self.details['url']:
-            hLink = self._ShortenURL(newEvent['htmlLink'])
-            self.printer.msg('New event added: %s\n' % hLink, 'green')
+            hlink = self._ShortenURL(newEvent['htmlLink'])
+            self.printer.msg('New event added: %s\n' % hlink, 'green')
 
     def AddEvent(self, eTitle, eWhere, eStart, eEnd, eDescr, eWho, reminder):
 
@@ -1352,7 +1331,7 @@ class GoogleCalendarInterface:
             event['reminders'] = {'useDefault': False,
                                   'overrides': []}
             for r in reminder:
-                n, m = ParseReminder(r)
+                n, m = parse_reminder(r)
                 event['reminders']['overrides'].append({'minutes': n,
                                                         'method': m})
 
@@ -1512,7 +1491,7 @@ class GoogleCalendarInterface:
                     event['reminders'] = {'useDefault': False,
                                           'overrides': []}
                     for r in reminder:
-                        n, m = ParseReminder(r)
+                        n, m = parse_reminder(r)
                         event['reminders']['overrides'].append({'minutes': n,
                                                                 'method': m})
 
@@ -1630,19 +1609,43 @@ class GoogleCalendarInterface:
                     sys.exit(1)
 
 
-def GetCalColors(calNames):
-    calColors = {}
-    for calName in calNames:
-        calNameParts = calName.split("#")
-        calNameSimple = calNameParts[0]
-        calColor = calColors.get(calNameSimple)
-        if len(calNameParts) > 0:
-            calColorRaw = calNameParts[-1]
-            calColorNew = calColorRaw
-            if calColorNew is not None:
-                calColor = calColorNew
-        calColors[calNameSimple] = calColor
-    return calColors
+def parse_reminder(rem):
+    matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
+    if not matchObj:
+        # Allow argparse to generate a message when parsing options
+        return None
+    n = int(matchObj.group(1))
+    t = matchObj.group(2)
+    m = matchObj.group(3)
+    if t == 'w':
+        n = n * 7 * 24 * 60
+    elif t == 'd':
+        n = n * 24 * 60
+    elif t == 'h':
+        n = n * 60
+
+    if not m:
+        m = 'popup'
+
+    return n, m
+
+
+def parse_cal_names(cal_names):
+    cal_colors = {}
+    for name in cal_names:
+        parts = name.split("#")
+        parts_count = len(parts)
+        if parts_count >= 1:
+            cal_name = parts[0]
+
+        if len(parts) == 2:
+            cal_color = valid_color_name(parts[1])
+
+        if len(parts) > 2:
+            raise ValueError('Cannot parse calendar name: "%s"' % name)
+
+        cal_colors[cal_name] = cal_color
+    return [CalName(name=k, color=cal_colors[k]) for k in cal_colors.keys()]
 
 
 def ValidWidth(value):
@@ -1653,7 +1656,7 @@ def ValidWidth(value):
 
 
 def ValidReminder(value):
-    if not ParseReminder(value):
+    if not parse_reminder(value):
         raise argparse.ArgumentTypeError(
                 "Not a valid reminder string: %s" % value)
     else:
@@ -1933,20 +1936,9 @@ def main():
     if len(FLAGS.calendar) == 0:
         FLAGS.calendar = FLAGS.defaultCalendar
 
-    calNames = []
-    calNameColors = []
-    calColors = GetCalColors(FLAGS.calendar)
-    calNamesFiltered = []
-    for calName in FLAGS.calendar:
-        calNameSimple = calName.split("#")[0]
-        calNamesFiltered.append(calNameSimple)
-        calNameColors.append(calColors[calNameSimple])
-    calNames = calNamesFiltered
-
-    gcal = GoogleCalendarInterface(calNames=calNames,
-                                   calNameColors=calNameColors,
-                                   printer=printer,
-                                   **vars(FLAGS))
+    cal_names = parse_cal_names(FLAGS.calendar)
+    gcal = GoogleCalendarInterface(
+            cal_names=cal_names, printer=printer, **vars(FLAGS))
 
     if FLAGS.command == 'list':
         gcal.ListAllCalendars()
@@ -2007,14 +1999,14 @@ def main():
                 printer.msg('Description: ', 'magenta')
                 FLAGS.description = input()
             if not FLAGS.reminder:
-                while 1:
+                while True:
                     printer.msg(
                             'Enter a valid reminder or \'.\' to end: ',
                             'magenta')
                     r = input()
                     if r == '.':
                         break
-                    n, m = ParseReminder(str(r))
+                    n, m = parse_reminder(str(r))
                     FLAGS.reminder.append(str(n) + ' ' + m)
 
         # calculate "when" time:
