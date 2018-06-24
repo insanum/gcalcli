@@ -1854,7 +1854,7 @@ def get_argument_parser():
             "(possibly multi-day if --duration is greater than 1). The "
             "time part of the --when will be ignored.")
     add.add_argument(
-            "--prompt", action="store_true",
+            "--noprompt", action="store_false", dest="prompt", default=True,
             help="Prompt for missing data when adding events")
 
     # TODO: Fix this it doesn't work this way as nothing ever goes into [start]
