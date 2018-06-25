@@ -1,0 +1,17 @@
+name: gcalcli
+
+# prefer default/conda channels over maybe-outdated conda-forge and others
+channels:
+  - defaults
+  - conda
+  - conda-forge
+
+dependencies:
+  - python=2.7
+  - httplib2
+  - python-gflags
+  - python-dateutil
+  - google-api-python-client<1.3
+  - oauth2client<=1.4.12
+  - parsedatetime
+  - vobject
