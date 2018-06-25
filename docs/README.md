@@ -36,6 +36,18 @@ Installation
 
 Check your OS distribution for packages.
 
+### Debian/Ubuntu
+
+```sh
+apt-get install gcalcli
+```
+
+### Install using [Nix](https://nixos.org/nix/)
+
+```sh
+nix-env -i gcalcli
+```
+
 ### Install from PyPI
 
 ```sh
