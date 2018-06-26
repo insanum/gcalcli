@@ -1,6 +1,8 @@
 import os
 import sys
 from json import load
+from datetime import datetime
+from dateutil.tz import tzutc
 
 import pytest
 from apiclient.discovery import HttpMock, build
@@ -9,6 +11,7 @@ from gcalcli.gcalcli import (GoogleCalendarInterface, _u,
                              get_color_parser,
                              get_cal_query_parser,
                              get_output_parser,
+                             parse_cal_names,
                              parse_reminder)
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
@@ -86,7 +89,7 @@ def test_list(capsys, PatchedGCalI):
 
 
 def test_agenda(PatchedGCalI):
-    PatchedGCalI(calendar=['jcrowgey*#green']).AgendaQuery()
+    PatchedGCalI().AgendaQuery()
 
 
 def test_cal_query(capsys, PatchedGCalI):
@@ -109,7 +112,7 @@ def test_cal_query(capsys, PatchedGCalI):
 
 
 def test_add_event(PatchedGCalI):
-    gcal = PatchedGCalI(calendar=['jcrowgey*#green'])
+    gcal = PatchedGCalI()
     title = 'test event'
     where = 'anywhere'
     start = 'now'
@@ -121,7 +124,7 @@ def test_add_event(PatchedGCalI):
 
 
 def test_quick_add(PatchedGCalI):
-    gcal = PatchedGCalI(calendar=['jcrowgey*#green'])
+    gcal = PatchedGCalI()
     event_text = 'quick test event'
     reminder = '5m sms'
     gcal.QuickAddEvent(event_text, reminder=[reminder])
@@ -158,3 +161,26 @@ def test_parse_reminder():
 
     rem = 'invalid reminder'
     assert parse_reminder(rem) is None
+
+
+def test_parse_cal_names(PatchedGCalI):
+    cal_names = parse_cal_names(['j*#green'])
+    gcal = PatchedGCalI(cal_names=cal_names)
+    gcal.AgendaQuery()
+
+    cal_names = parse_cal_names(['j*'])
+    gcal = PatchedGCalI(cal_names=cal_names)
+    gcal.AgendaQuery()
+
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'])
+    gcal = PatchedGCalI(cal_names=cal_names)
+    gcal.AgendaQuery()
+
+
+def test_localized_datetime(PatchedGCalI):
+    dt = GoogleCalendarInterface._LocalizeDateTime(datetime.now())
+    assert dt.tzinfo is not None
+
+    dt = datetime.now(tzutc())
+    dt = GoogleCalendarInterface._LocalizeDateTime(dt)
+    assert dt.tzinfo is not None

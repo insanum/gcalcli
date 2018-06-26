@@ -165,7 +165,6 @@ class GoogleCalendarInterface:
         for cal_name in selected_names:
             matches = []
             for self_cal in self.allCals:
-                print(self_cal['summary'])
                 # For exact match, we should match only 1 entry and accept
                 # the first entry.  Should honor access role order since
                 # it happens after _GetCached()
@@ -186,7 +185,7 @@ class GoogleCalendarInterface:
 
     @staticmethod
     def _LocalizeDateTime(dt):
-        if not hasattr(dt, 'tzinfo'):
+        if not hasattr(dt, 'tzinfo'):  # Why are we skipping these?
             return dt
         if dt.tzinfo is None:
             return dt.replace(tzinfo=tzlocal())
@@ -1633,6 +1632,7 @@ def parse_reminder(rem):
 def parse_cal_names(cal_names):
     cal_colors = {}
     for name in cal_names:
+        cal_color = 'default'
         parts = name.split("#")
         parts_count = len(parts)
         if parts_count >= 1:
