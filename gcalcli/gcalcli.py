@@ -93,6 +93,7 @@ try:
     from dateutil.tz import tzlocal
     from dateutil.parser import parse
     import httplib2
+    from six import next
     from six.moves import input, range, zip, map, cPickle as pickle
     from apiclient.discovery import build
     from apiclient.errors import HttpError
@@ -1559,14 +1560,14 @@ class GoogleCalendarInterface:
 
         if icsFile:
             try:
-                f = open(icsFile)
+                f = open(icsFile.name)
             except Exception as e:
                 self.printer.err_msg('Error: ' + str(e) + '!\n')
                 sys.exit(1)
 
         while True:
             try:
-                v = vobject.readComponents(f).next()
+                v = next(vobject.readComponents(f))
             except StopIteration:
                 break
 
@@ -1586,7 +1587,7 @@ class GoogleCalendarInterface:
                         insert(calendarId=self.cals[0]['id'],
                                body=event))
                     hLink = self._ShortenURL(newEvent['htmlLink'])
-                    self.color_Printer.msg(
+                    self.printer.msg(
                             'New event added: %s\n' % hLink, 'green')
                     continue
 
@@ -1870,7 +1871,8 @@ def get_argument_parser():
     edit.add_argument("text")
 
     _import = sub.add_parser("import", parents=[remind_parser])
-    _import.add_argument("file", type=argparse.FileType('r'), nargs="?")
+    _import.add_argument(
+            "file", type=argparse.FileType('r'), nargs="?", default=None)
     _import.add_argument(
             "--verbose", "-v", action="count", help="Be verbose on imports")
     _import.add_argument(
@@ -2053,8 +2055,7 @@ def main():
                 FLAGS.minutes, FLAGS.cmd, use_reminders=FLAGS.use_reminders)
 
     elif FLAGS.command == 'import':
-        gcal.ImportICS(
-                FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file.name)
+        gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file)
 
 
 def SIGINT_handler(signum, frame):

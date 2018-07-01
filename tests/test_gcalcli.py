@@ -135,6 +135,12 @@ def test_text_query(PatchedGCalI):
     gcal.TextQuery(_u('test'))
 
 
+def test_import(PatchedGCalI):
+    gcal = PatchedGCalI()
+    vcal_path = TEST_DATA_DIR + '/vv.txt'
+    gcal.ImportICS(icsFile=vcal_path)
+
+
 def test_parse_reminder():
     MINS_PER_DAY = 60 * 24
     MINS_PER_WEEK = MINS_PER_DAY * 7
