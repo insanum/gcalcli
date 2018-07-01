@@ -130,6 +130,11 @@ def test_quick_add(PatchedGCalI):
     gcal.QuickAddEvent(event_text, reminder=[reminder])
 
 
+def test_text_query(PatchedGCalI):
+    gcal = PatchedGCalI()
+    gcal.TextQuery(_u('test'))
+
+
 def test_parse_reminder():
     MINS_PER_DAY = 60 * 24
     MINS_PER_WEEK = MINS_PER_DAY * 7

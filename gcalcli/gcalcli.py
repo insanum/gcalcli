@@ -227,7 +227,7 @@ class GoogleCalendarInterface:
                                'https://www.googleapis.com/auth/urlshortener'],
                         user_agent=__program__ + '/' + __version__),
                     storage,
-                    self.options)
+                    argparse.Namespace(**self.options))
 
             self.authHttp = credentials.authorize(httplib2.Http())
 
