@@ -21,13 +21,14 @@ Requirements
 * [httplib2](https://github.com/httplib2/httplib2)
 * [oauth2client](https://github.com/google/oauth2client)
 * [six](https://pythonhosted.org/six/)
+* [parsedatetime](https://github.com/bear/parsedatetime)
 * A love for the command line!
 
 ### Optional packages
 
-* [vobject](http://vobject.skyhouseconsulting.com) Python module  
+* [vobject](http://vobject.skyhouseconsulting.com) Python module
   Used for ics/vcal importing.
-* [parsedatetime](http://github.com/bear/parsedatetime) Python module  
+* [parsedatetime](http://github.com/bear/parsedatetime) Python module
   Used for fuzzy dates/times like "now", "today", "eod tomorrow", etc.
 
 
