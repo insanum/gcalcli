@@ -870,7 +870,7 @@ class GoogleCalendarInterface:
             self.printer.msg('Deleted!\n', 'red')
             return
 
-        self.printer('Delete? [N]o [y]es [q]uit: ', 'magenta')
+        self.printer.msg('Delete? [N]o [y]es [q]uit: ', 'magenta')
         val = input()
 
         if not val or val.lower() == 'n':
@@ -1845,7 +1845,7 @@ def get_argument_parser():
 
     # TODO: Fix this it doesn't work this way as nothing ever goes into [start]
     # or [end]
-    delete = sub.add_parser("delete")
+    delete = sub.add_parser("delete", parents=[color_parser, output_parser])
     delete.add_argument("text", nargs=1)
     delete.add_argument("start", type=str, nargs="?")
     delete.add_argument("end", type=str, nargs="?")
