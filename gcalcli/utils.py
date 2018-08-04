@@ -16,6 +16,7 @@ except ImportError:
                 return ([], 0)
 
 locale.setlocale(locale.LC_ALL, '')
+parse_date_time_calendar = parsedatetime.Calendar()
 
 
 def set_locale(new_locale):
@@ -46,11 +47,10 @@ def _u(text):
         return text.decode(encoding, 'replace')
 
 
-def get_time_from_str(when, duration=0, allday=False):
-    dtp = DateTimeParser()
+def get_times_from_duration(when, duration=0, allday=False):
 
     try:
-        start = dtp.fromString(when)
+        start = get_time_from_str(when)
     except Exception:
         raise ValueError('Date and time is invalid!\n')
 
@@ -75,27 +75,23 @@ def get_time_from_str(when, duration=0, allday=False):
     return start, stop
 
 
+def get_time_from_str(when):
+    defaultDateTime = datetime.now(tzlocal()).replace(hour=0,
+                                                      minute=0,
+                                                      second=0,
+                                                      microsecond=0)
+
+    try:
+        event_time = parse(when, default=defaultDateTime)
+    except Exception:
+        struct, result = parse_date_time_calendar.parse(when)
+        if not result:
+            raise ValueError("Date and time is invalid")
+        event_time = datetime.fromtimestamp(time.mktime(struct), tzlocal())
+
+    return event_time
+
+
 def days_since_epoch(dt):
     __DAYS_IN_SECONDS__ = 24 * 60 * 60
     return calendar.timegm(dt.timetuple()) / __DAYS_IN_SECONDS__
-
-
-class DateTimeParser:
-    def __init__(self):
-        self.pdtCalendar = parsedatetime.Calendar()
-
-    def fromString(self, eWhen):
-        defaultDateTime = datetime.now(tzlocal()).replace(hour=0,
-                                                          minute=0,
-                                                          second=0,
-                                                          microsecond=0)
-
-        try:
-            eTimeStart = parse(eWhen, default=defaultDateTime)
-        except Exception:
-            struct, result = self.pdtCalendar.parse(eWhen)
-            if not result:
-                raise ValueError("Date and time is invalid")
-            eTimeStart = datetime.fromtimestamp(time.mktime(struct), tzlocal())
-
-        return eTimeStart

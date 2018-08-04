@@ -1,29 +1,30 @@
-from gcalcli.utils import (_u, get_time_from_str, days_since_epoch, set_locale)
+from gcalcli.utils import (
+        _u, get_times_from_duration, days_since_epoch, set_locale)
 from datetime import datetime
 from dateutil.tz import UTC
 import six
 import pytest
 
 
-def test_get_time_from_str():
+def test_get_times_from_duration():
     begin_2018 = '2018-01-01'
     begin_2018_midnight = begin_2018 + 'T00:00:00+00:00'
     two_hrs_later = begin_2018 + 'T02:00:00+00:00'
     next_day = '2018-01-02'
     assert (begin_2018_midnight, two_hrs_later) == \
-        get_time_from_str(begin_2018_midnight, duration=120)
+        get_times_from_duration(begin_2018_midnight, duration=120)
 
     assert (begin_2018, next_day) == \
-        get_time_from_str(begin_2018_midnight, duration=1, allday=True)
+        get_times_from_duration(begin_2018_midnight, duration=1, allday=True)
 
     with pytest.raises(ValueError):
-        get_time_from_str('this is not a date')
+        get_times_from_duration('this is not a date')
 
     with pytest.raises(ValueError):
-        get_time_from_str(begin_2018_midnight, duration='not a duration')
+        get_times_from_duration(begin_2018_midnight, duration='not a duration')
 
     with pytest.raises(ValueError):
-        get_time_from_str(
+        get_times_from_duration(
                 begin_2018_midnight, duration='not a duraction', allday=True)
 
 

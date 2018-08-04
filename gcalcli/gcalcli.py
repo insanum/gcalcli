@@ -131,7 +131,6 @@ class GoogleCalendarInterface:
     calService = None
     urlService = None
     command = 'notify-send -u critical -i appointment-soon -a gcalcli %s'
-    dateParser = utils.DateTimeParser()
 
     ACCESS_OWNER = 'owner'
     ACCESS_WRITER = 'writer'
@@ -964,7 +963,7 @@ class GoogleCalendarInterface:
                     td = (event['e'] - event['s'])
                     length = ((td.days * 1440) + (td.seconds / 60))
                     try:
-                        newStart, newEnd = utils.get_time_from_str(
+                        newStart, newEnd = utils.get_times_from_duration(
                                 val, length, self.options['allday'])
                     except ValueError as exc:
                         self.printer.err_msg(str(exc))
@@ -976,7 +975,7 @@ class GoogleCalendarInterface:
                 val = input().strip()
                 if val:
                     try:
-                        newStart, newEnd = utils.get_time_from_str(
+                        newStart, newEnd = utils.get_times_from_duration(
                                 event['start']['dateTime'], val,
                                 self.options['allday'])
                     except ValueError as exc:
@@ -1018,8 +1017,8 @@ class GoogleCalendarInterface:
             self._PrintEvent(
                     event, event['s'].strftime('\n%Y-%m-%d'))
 
-    def _IterateEvents(self, startDateTime, eventList,
-                       yearDate=False, work=None):
+    def _iterate_events(
+            self, startDateTime, eventList, yearDate=False, work=None):
 
         if len(eventList) == 0:
             self.printer.msg('\nNo Events Found...\n', 'yellow')
@@ -1151,33 +1150,33 @@ class GoogleCalendarInterface:
                     format % (cal['accessRole'], cal['summary']),
                     self._CalendarColor(cal))
 
-    def _ParseStartEnd(self, startText, endText):
+    def _parse_start_end(self, start_text, end_text):
         start = None
         end = None
 
-        if not startText:
+        if not start_text:
             start = self.now if self.options['ignore_started'] else None
         else:
             try:
-                start = self.dateParser.fromString(startText)
+                start = utils.get_time_from_str(start_text)
             except Exception:
                 raise Exception('Error: failed to parse start time\n')
 
-        if endText:
+        if start_text:
             try:
-                end = self.dateParser.fromString(endText)
+                end = utils.get_time_from_str(end_text)
             except Exception:
                 raise Exception('Error: failed to parse end time\n')
 
         return (start, end)
 
-    def _DisplayQueriedEvents(self, start, end, search=None, yearDate=False):
+    def _display_queried_events(self, start, end, search=None, yearDate=False):
         eventList = self._SearchForCalEvents(start, end, search)
 
         if self.options['tsv']:
             self._tsv(start, eventList)
         else:
-            self._IterateEvents(start, eventList, yearDate=yearDate)
+            self._iterate_events(start, eventList, yearDate=yearDate)
 
     def TextQuery(self, searchText='', startText='', endText=''):
 
@@ -1192,16 +1191,16 @@ class GoogleCalendarInterface:
         #       Don't forget to clean up AgendaQuery too!
 
         try:
-            start, end = self._ParseStartEnd(startText, endText)
+            start, end = self._parse_start_end(startText, endText)
         except Exception as exc:
             self.printer.err_msg(str(exc))
             return
 
-        self._DisplayQueriedEvents(start, end, searchText, True)
+        self._display_queried_events(start, end, searchText, True)
 
     def AgendaQuery(self, startText='', endText=''):
         try:
-            start, end = self._ParseStartEnd(startText, endText)
+            start, end = self._parse_start_end(startText, endText)
         except Exception as exc:
             self.printer.err_msg(str(exc))
             return
@@ -1212,7 +1211,7 @@ class GoogleCalendarInterface:
         if not end:
             end = (start + timedelta(days=self.agendaLength))
 
-        self._DisplayQueriedEvents(start, end)
+        self._display_queried_events(start, end)
 
     def CalQuery(self, cmd, startText='', count=1):
 
@@ -1224,7 +1223,7 @@ class GoogleCalendarInterface:
                                      microsecond=0)
         else:
             try:
-                start = self.dateParser.fromString(startText)
+                start = utils.get_time_from_str(startText)
                 start = start.replace(hour=0, minute=0, second=0,
                                       microsecond=0)
             except Exception:
@@ -1352,8 +1351,8 @@ class GoogleCalendarInterface:
         eventList = self._SearchForCalEvents(start, end, searchText)
 
         self.iamaExpert = expert
-        self._IterateEvents(self.now, eventList,
-                            yearDate=True, work=self._DeleteEvent)
+        self._iterate_events(
+                self.now, eventList, yearDate=True, work=self._DeleteEvent)
 
     def EditEvents(self, searchText=''):
 
@@ -1363,8 +1362,8 @@ class GoogleCalendarInterface:
 
         eventList = self._SearchForCalEvents(None, None, searchText)
 
-        self._IterateEvents(self.now, eventList,
-                            yearDate=True, work=self._EditEvent)
+        self._iterate_events(
+                self.now, eventList, yearDate=True, work=self._EditEvent)
 
     def Remind(self, minutes=10, command=None, use_reminders=False):
         """Check for events between now and now+minutes.  If use_reminders then
@@ -2013,7 +2012,7 @@ def main():
 
         # calculate "when" time:
         try:
-            eStart, eEnd = utils.get_time_from_str(
+            eStart, eEnd = utils.get_times_from_duration(
                     FLAGS.when, FLAGS.duration, FLAGS.allday)
         except ValueError as exc:
             printer.err_msg(str(exc))
@@ -2030,9 +2029,9 @@ def main():
             sys.exit(1)
 
         if FLAGS.start:
-            eStart = gcal.dateParser.fromString(FLAGS.start)
+            eStart = utils.get_time_from_str(FLAGS.start)
         if FLAGS.end:
-            eEnd = gcal.dateParser.fromString(FLAGS.end)
+            eEnd = utils.get_time_from_str(FLAGS.end)
 
         # allow unicode strings for input
         gcal.DeleteEvents(_u(FLAGS.text[0]),
