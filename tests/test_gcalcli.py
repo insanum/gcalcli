@@ -29,7 +29,7 @@ def mocked_calendar_service(self):
 def mocked_calendar_list(self):
     http = HttpMock(
             TEST_DATA_DIR + '/cal_list.json', {'status': '200'})
-    request = self._CalService().calendarList().list()
+    request = self._cal_service().calendarList().list()
     cal_list = request.execute(http=http)
     self.allCals = [cal for cal in cal_list['items']]
     if not self.calService:
@@ -56,9 +56,9 @@ def default_options():
 @pytest.fixture
 def PatchedGCalI(monkeypatch):
     monkeypatch.setattr(
-            GoogleCalendarInterface, '_CalService', mocked_calendar_service)
+            GoogleCalendarInterface, '_cal_service', mocked_calendar_service)
     monkeypatch.setattr(
-            GoogleCalendarInterface, '_GetCached', mocked_calendar_list)
+            GoogleCalendarInterface, '_get_cached', mocked_calendar_list)
     monkeypatch.setattr(Printer, 'msg', mocked_msg)
 
     def _method(**opts):
@@ -191,10 +191,10 @@ def test_parse_cal_names(PatchedGCalI):
     gcal.AgendaQuery()
 
 
-def test_localized_datetime(PatchedGCalI):
-    dt = GoogleCalendarInterface._LocalizeDateTime(datetime.now())
+def test_localize_datetime(PatchedGCalI):
+    dt = GoogleCalendarInterface._localize_datetime(datetime.now())
     assert dt.tzinfo is not None
 
     dt = datetime.now(tzutc())
-    dt = GoogleCalendarInterface._LocalizeDateTime(dt)
+    dt = GoogleCalendarInterface._localize_datetime(dt)
     assert dt.tzinfo is not None

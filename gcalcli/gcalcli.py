@@ -46,21 +46,8 @@
 #                                                                           #
 # Author: Eric Davis <http://www.insanum.com>                               #
 #         Brian Hartvigsen <http://github.com/tresni>                       #
+#         Joshua Crowgey                                                    #
 # Home: https://github.com/insanum/gcalcli                                  #
-#                                                                           #
-# Requirements:                                                             #
-#  - Python 2                                                               #
-#        http://www.python.org                                              #
-#  - Google APIs Client Library for Python 2                                #
-#        https://developers.google.com/api-client-library/python            #
-#  - dateutil Python 2 module                                               #
-#        http://www.labix.org/python-dateutil                               #
-#                                                                           #
-# Optional:                                                                 #
-#  - vobject Python module (needed for importing ics/vcal files)            #
-#        http://vobject.skyhouseconsulting.com                              #
-#  - parsedatetime Python module (needed for fuzzy date parsing)            #
-#        https://github.com/bear/parsedatetime                              #
 #                                                                           #
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
 #                                                                           #
@@ -153,7 +140,7 @@ class GoogleCalendarInterface:
                                None)
         # stored as detail, but provided as option
         self.details['width'] = options.get('width', 80)
-        self._GetCached()
+        self._get_cached()
 
         self._select_cals(cal_names)
 
@@ -167,7 +154,7 @@ class GoogleCalendarInterface:
             for self_cal in self.allCals:
                 # For exact match, we should match only 1 entry and accept
                 # the first entry.  Should honor access role order since
-                # it happens after _GetCached()
+                # it happens after _get_cached()
                 if cal_name.name == self_cal['summary']:
                     # This makes sure that if we have any regex matches
                     # that we toss them out in favor of the specific match
@@ -184,7 +171,7 @@ class GoogleCalendarInterface:
             self.cals += matches
 
     @staticmethod
-    def _LocalizeDateTime(dt):
+    def _localize_datetime(dt):
         if not hasattr(dt, 'tzinfo'):  # Why are we skipping these?
             return dt
         if dt.tzinfo is None:
@@ -192,7 +179,7 @@ class GoogleCalendarInterface:
         else:
             return dt.astimezone(tzlocal())
 
-    def _RetryWithBackoff(self, method):
+    def _retry_with_backoff(self, method):
         for n in range(0, self.maxRetries):
             try:
                 return method.execute()
@@ -208,7 +195,7 @@ class GoogleCalendarInterface:
 
         return None
 
-    def _GoogleAuth(self):
+    def _google_auth(self):
         if not self.authHttp:
             if self.options['configFolder']:
                 storage = Storage(
@@ -233,26 +220,26 @@ class GoogleCalendarInterface:
 
         return self.authHttp
 
-    def _CalService(self):
+    def _cal_service(self):
         if not self.calService:
             self.calService = \
                 build(serviceName='calendar',
                       version='v3',
-                      http=self._GoogleAuth())
+                      http=self._google_auth())
 
         return self.calService
 
-    def _UrlService(self):
+    def _url_service(self):
         if not self.urlService:
-            self._GoogleAuth()
+            self._google_auth()
             self.urlService = \
                 build(serviceName='urlshortener',
                       version='v1',
-                      http=self._GoogleAuth())
+                      http=self._google_auth())
 
         return self.urlService
 
-    def _GetCached(self):
+    def _get_cached(self):
         if self.options['configFolder']:
             cacheFile = os.path.expanduser(
                     "%s/cache" % self.options['configFolder'])
@@ -282,16 +269,16 @@ class GoogleCalendarInterface:
                 pass
                 # fall through
 
-        calList = self._RetryWithBackoff(
-            self._CalService().calendarList().list())
+        calList = self._retry_with_backoff(
+            self._cal_service().calendarList().list())
 
         while True:
             for cal in calList['items']:
                 self.allCals.append(cal)
             pageToken = calList.get('nextPageToken')
             if pageToken:
-                calList = self._RetryWithBackoff(
-                    self._CalService().calendarList().list(
+                calList = self._retry_with_backoff(
+                    self._cal_service().calendarList().list(
                         pageToken=pageToken))
             else:
                 break
@@ -303,20 +290,19 @@ class GoogleCalendarInterface:
             with open(cacheFile, 'wb') as _cache_:
                 pickle.dump(self.cache, _cache_)
 
-    def _ShortenURL(self, url):
+    def _shorten_url(self, url):
         if self.details['url'] != "short":
             return url
         # Note that when authenticated to a google account different shortUrls
         # can be returned for the same longUrl. See: http://goo.gl/Ya0A9
-        shortUrl = self._RetryWithBackoff(
-            self._UrlService().url().insert(body={'longUrl': url}))
+        shortUrl = self._retry_with_backoff(
+            self._url_service().url().insert(body={'longUrl': url}))
         return shortUrl['id']
 
-    def _CalendarColor(self, cal):
-
+    def _calendar_color(self, cal):
         if cal is None:
             return 'default'
-        elif 'colorSpec' in cal and cal['colorSpec'] is not None:
+        elif cal.get('colorSpec', None):
             return cal['colorSpec']
         elif cal['accessRole'] == self.ACCESS_OWNER:
             return self.options['color_owner']
@@ -329,7 +315,7 @@ class GoogleCalendarInterface:
         else:
             return 'default'
 
-    def _ValidTitle(self, event):
+    def _valid_title(self, event):
         if 'summary' in event and event['summary'].strip():
             return event['summary']
         else:
@@ -355,7 +341,7 @@ class GoogleCalendarInterface:
         return e_start < time_point and e_end >= time_point
 
     def _format_title(self, event, allday=False):
-        titlestr = self._ValidTitle(event)
+        titlestr = self._valid_title(event)
         if allday:
             return titlestr
         elif self.options['military']:
@@ -426,7 +412,7 @@ class GoogleCalendarInterface:
                 if force_now_marker:
                     event_color = self.options['color_now_marker']
                 else:
-                    event_color = self._CalendarColor(event['gcalcli_cal'])
+                    event_color = self._calendar_color(event['gcalcli_cal'])
 
                 # NOTE(slawqo): for all day events it's necessary to add event
                 # to more than one day in week_events
@@ -450,7 +436,7 @@ class GoogleCalendarInterface:
                             EventTitle('\n' + titlestr, event_color))
         return week_events
 
-    def _PrintLen(self, string):
+    def _printed_len(self, string):
         # We need to treat everything as unicode for this to actually give
         # us the info we want.  Date string were coming in as `str` type
         # so we convert them to unicode and then check their size. Fixes
@@ -461,7 +447,7 @@ class GoogleCalendarInterface:
     def _word_cut(self, word):
         stop = 0
         for i, char in enumerate(word):
-            stop += self._PrintLen(char)
+            stop += self._printed_len(char)
             if stop >= self.options['cal_width']:
                 return stop, i + 1
 
@@ -470,7 +456,7 @@ class GoogleCalendarInterface:
 
         words = _u(string).split()
         for i, word in enumerate(words):
-            word_len = self._PrintLen(word)
+            word_len = self._printed_len(word)
             if (cur_print_len + word_len + print_len) >= \
                     self.options['cal_width']:
                 cut_idx = len(' '.join(words[:i]))
@@ -482,12 +468,12 @@ class GoogleCalendarInterface:
         return (print_len, len(' '.join(words[:i])))
 
     def _get_cut_index(self, event_string):
-        print_len = self._PrintLen(event_string)
+        print_len = self._printed_len(event_string)
 
         # newline in string is a special case
         idx = event_string.find('\n')
         if idx > -1 and idx <= self.options['cal_width']:
-            return (self._PrintLen(event_string[:idx]),
+            return (self._printed_len(event_string[:idx]),
                     len(event_string[:idx]))
 
         if print_len <= self.options['cal_width']:
@@ -531,7 +517,7 @@ class GoogleCalendarInterface:
 
             month_title = startDateTime.strftime('%B %Y')
             month_width = (self.options['cal_width'] * days) + (days - 1)
-            month_title += ' ' * (month_width - self._PrintLen(month_title))
+            month_title += ' ' * (month_width - self._printed_len(month_title))
 
             self.printer.art_msg('vrt', color_border)
             self.printer.msg(month_title, self.options['color_date'])
@@ -548,7 +534,7 @@ class GoogleCalendarInterface:
         self.printer.art_msg('vrt', color_border)
         for day_name in day_names:
             day_name += ' ' * (
-                    self.options['cal_width'] - self._PrintLen(day_name))
+                    self.options['cal_width'] - self._printed_len(day_name))
 
             self.printer.msg(day_name, self.options['color_date'])
             self.printer.art_msg('vrt', color_border)
@@ -582,7 +568,7 @@ class GoogleCalendarInterface:
                     tmpDateColor = self.options['color_now_marker']
                     d += " **"
 
-                d += ' ' * (self.options['cal_width'] - self._PrintLen(d))
+                d += ' ' * (self.options['cal_width'] - self._printed_len(d))
 
                 # print dates
                 self.printer.art_msg('vrt', color_border)
@@ -652,12 +638,12 @@ class GoogleCalendarInterface:
                                          _u(event['e'].strftime('%H:%M')))
 
             if self.details['url']:
-                output += "\t%s" % (self._ShortenURL(event['htmlLink'])
+                output += "\t%s" % (self._shorten_url(event['htmlLink'])
                                     if 'htmlLink' in event else '')
-                output += "\t%s" % (self._ShortenURL(event['hangoutLink'])
+                output += "\t%s" % (self._shorten_url(event['hangoutLink'])
                                     if 'hangoutLink' in event else '')
 
-            output += "\t%s" % _u(self._ValidTitle(event).strip())
+            output += "\t%s" % _u(self._valid_title(event).strip())
 
             if self.details['location']:
                 output += "\t%s" % (_u(event['location'].strip())
@@ -726,18 +712,18 @@ class GoogleCalendarInterface:
         allDay = self._isallday(event)
         eventColor = self.options['color_now_marker'] \
             if happeningNow and not allDay \
-            else self._CalendarColor(event['gcalcli_cal'])
+            else self._calendar_color(event['gcalcli_cal'])
 
         if allDay:
             fmt = '  ' + timeFormat + '  %s\n'
             self.printer.msg(
-                    fmt % ('', self._ValidTitle(event).strip()),
+                    fmt % ('', self._valid_title(event).strip()),
                     eventColor)
         else:
             fmt = '  ' + timeFormat + '  %s\n'
             self.printer.msg(
                     fmt % (
-                        tmpTimeStr, self._ValidTitle(event).strip()),
+                        tmpTimeStr, self._valid_title(event).strip()),
                     eventColor)
 
         if self.details['calendar']:
@@ -746,12 +732,12 @@ class GoogleCalendarInterface:
             self.printer.msg(xstr, 'default')
 
         if self.details['url'] and 'htmlLink' in event:
-            hLink = self._ShortenURL(event['htmlLink'])
+            hLink = self._shorten_url(event['htmlLink'])
             xstr = "%s  Link: %s\n" % (detailsIndent, hLink)
             self.printer.msg(xstr, 'default')
 
         if self.details['url'] and 'hangoutLink' in event:
-            hLink = self._ShortenURL(event['hangoutLink'])
+            hLink = self._shorten_url(event['hangoutLink'])
             xstr = "%s  Hangout Link: %s\n" % (detailsIndent, hLink)
             self.printer.msg(xstr, 'default')
 
@@ -863,8 +849,8 @@ class GoogleCalendarInterface:
     def _DeleteEvent(self, event):
 
         if self.iamaExpert:
-            self._RetryWithBackoff(
-                self._CalService().events().
+            self._retry_with_backoff(
+                self._cal_service().events().
                 delete(calendarId=event['gcalcli_cal']['id'],
                        eventId=event['id']))
             self.printer.msg('Deleted!\n', 'red')
@@ -877,8 +863,8 @@ class GoogleCalendarInterface:
             return
 
         elif val.lower() == 'y':
-            self._RetryWithBackoff(
-                self._CalService().events().
+            self._retry_with_backoff(
+                self._cal_service().events().
                 delete(calendarId=event['gcalcli_cal']['id'],
                        eventId=event['id']))
             self.printer.msg('Deleted!\n', 'red')
@@ -932,8 +918,8 @@ class GoogleCalendarInterface:
                     if k in event:
                         modEvent[k] = event[k]
 
-                self._RetryWithBackoff(
-                    self._CalService().events().
+                self._retry_with_backoff(
+                    self._cal_service().events().
                     patch(calendarId=event['gcalcli_cal']['id'],
                           eventId=event['id'],
                           body=modEvent))
@@ -1065,7 +1051,7 @@ class GoogleCalendarInterface:
                     # all date events
                     event['s'] = parse(event['start']['date'])
 
-                event['s'] = self._LocalizeDateTime(event['s'])
+                event['s'] = self._localize_datetime(event['s'])
 
                 if 'dateTime' in event['end']:
                     event['e'] = parse(event['end']['dateTime'])
@@ -1073,7 +1059,7 @@ class GoogleCalendarInterface:
                     # all date events
                     event['e'] = parse(event['end']['date'])
 
-                event['e'] = self._LocalizeDateTime(event['e'])
+                event['e'] = self._localize_datetime(event['e'])
 
                 # For all-day events, Google seems to assume that the event
                 # time is based in the UTC instead of the local timezone.  Here
@@ -1093,8 +1079,8 @@ class GoogleCalendarInterface:
 
             pageToken = events.get('nextPageToken')
             if pageToken:
-                events = self._RetryWithBackoff(
-                    self._CalService().events().
+                events = self._retry_with_backoff(
+                    self._cal_service().events().
                     list(calendarId=cal['id'], pageToken=pageToken))
             else:
                 break
@@ -1105,13 +1091,13 @@ class GoogleCalendarInterface:
 
         eventList = []
         for cal in self.cals:
-            work = self._CalService().events().\
+            work = self._cal_service().events().\
                 list(calendarId=cal['id'],
                      timeMin=start.isoformat() if start else None,
                      timeMax=end.isoformat() if end else None,
                      q=searchText if searchText else None,
                      singleEvents=True)
-            events = self._RetryWithBackoff(work)
+            events = self._retry_with_backoff(work)
             eventList.extend(self._GetAllEvents(cal, events, end))
 
         eventList.sort(key=lambda x: x['s'])
@@ -1148,7 +1134,7 @@ class GoogleCalendarInterface:
         for cal in self.allCals:
             self.printer.msg(
                     format % (cal['accessRole'], cal['summary']),
-                    self._CalendarColor(cal))
+                    self._calendar_color(cal))
 
     def _parse_start_end(self, start_text, end_text):
         start = end = None
@@ -1263,9 +1249,9 @@ class GoogleCalendarInterface:
                     "you might need to remove it and try again\n")
             return
 
-        newEvent = self._RetryWithBackoff(
-            self._CalService().events().quickAdd(calendarId=self.cals[0]['id'],
-                                                 text=event_text))
+        newEvent = self._retry_with_backoff(
+            self._cal_service().events().quickAdd(
+                calendarId=self.cals[0]['id'], text=event_text))
 
         if reminder or not self.options['default_reminders']:
             rem = {}
@@ -1276,14 +1262,14 @@ class GoogleCalendarInterface:
                 rem['reminders']['overrides'].append({'minutes': n,
                                                       'method': m})
 
-            newEvent = self._RetryWithBackoff(
-                self._CalService().events().
+            newEvent = self._retry_with_backoff(
+                self._cal_service().events().
                 patch(calendarId=self.cals[0]['id'],
                       eventId=newEvent['id'],
                       body=rem))
 
         if self.details['url']:
-            hlink = self._ShortenURL(newEvent['htmlLink'])
+            hlink = self._shorten_url(newEvent['htmlLink'])
             self.printer.msg('New event added: %s\n' % hlink, 'green')
 
     def AddEvent(self, eTitle, eWhere, eStart, eEnd, eDescr, eWho, reminder):
@@ -1320,12 +1306,12 @@ class GoogleCalendarInterface:
                 event['reminders']['overrides'].append({'minutes': n,
                                                         'method': m})
 
-        newEvent = self._RetryWithBackoff(
-            self._CalService().events().
+        newEvent = self._retry_with_backoff(
+            self._cal_service().events().
             insert(calendarId=self.cals[0]['id'], body=event))
 
         if self.details['url']:
-            hLink = self._ShortenURL(newEvent['htmlLink'])
+            hLink = self._shorten_url(newEvent['htmlLink'])
             self.printer.msg('New event added: %s\n' % hLink, 'green')
 
     def DeleteEvents(self, searchText='', expert=False, start=None, end=None):
@@ -1389,7 +1375,7 @@ class GoogleCalendarInterface:
                     event['s'].strftime('%p').lower()
 
             message += '%s  %s\n' % \
-                       (tmpTimeStr, self._ValidTitle(event).strip())
+                       (tmpTimeStr, self._valid_title(event).strip())
 
         if not message:
             return
@@ -1437,10 +1423,10 @@ class GoogleCalendarInterface:
                 if ve.dtend.value:
                     print("End..........%s" % ve.dtend.value.isoformat())
                 if ve.dtstart.value:
-                    print("Local Start..%s" % self._LocalizeDateTime(
+                    print("Local Start..%s" % self._localize_datetime(
                         ve.dtstart.value))
                 if ve.dtend.value:
-                    print("Local End....%s" % self._LocalizeDateTime(
+                    print("Local End....%s" % self._localize_datetime(
                         ve.dtend.value))
 
             if hasattr(ve, 'rrule'):
@@ -1567,11 +1553,11 @@ class GoogleCalendarInterface:
                     continue
 
                 if not verbose:
-                    newEvent = self._RetryWithBackoff(
-                        self._CalService().events().
+                    newEvent = self._retry_with_backoff(
+                        self._cal_service().events().
                         insert(calendarId=self.cals[0]['id'],
                                body=event))
-                    hLink = self._ShortenURL(newEvent['htmlLink'])
+                    hLink = self._shorten_url(newEvent['htmlLink'])
                     self.printer.msg(
                             'New event added: %s\n' % hLink, 'green')
                     continue
@@ -1581,11 +1567,11 @@ class GoogleCalendarInterface:
                 if not val or val.lower() == 's':
                     continue
                 if val.lower() == 'i':
-                    newEvent = self._RetryWithBackoff(
-                        self._CalService().events().
+                    newEvent = self._retry_with_backoff(
+                        self._cal_service().events().
                         insert(calendarId=self.cals[0]['id'],
                                body=event))
-                    hLink = self._ShortenURL(newEvent['htmlLink'])
+                    hLink = self._shorten_url(newEvent['htmlLink'])
                     self.printer.msg('New event added: %s\n' % hLink, 'green')
                 elif val.lower() == 'q':
                     sys.exit(0)
