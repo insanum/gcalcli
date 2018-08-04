@@ -3,20 +3,12 @@ import time
 import locale
 import six
 from dateutil.tz import tzlocal
-from dateutil.parser import parse
+from dateutil.parser import parse as dateutil_parse
 from datetime import datetime, timedelta
-# If they have parsedatetime, we'll use it for fuzzy datetime comparison.  If
-# not, we just return a fake failure every time and use only dateutil.
-try:
-    from parsedatetime import parsedatetime
-except ImportError:
-    class parsedatetime:
-        class Calendar:
-            def parse(self, string):
-                return ([], 0)
+from parsedatetime.parsedatetime import Calendar
 
 locale.setlocale(locale.LC_ALL, '')
-parse_date_time_calendar = parsedatetime.Calendar()
+fuzzy_date_parse = Calendar().parse
 
 
 def set_locale(new_locale):
@@ -52,13 +44,14 @@ def get_times_from_duration(when, duration=0, allday=False):
     try:
         start = get_time_from_str(when)
     except Exception:
-        raise ValueError('Date and time is invalid!\n')
+        raise ValueError('Date and time is invalid: %s\n' % (when))
 
     if allday:
         try:
             stop = start + timedelta(days=float(duration))
         except Exception:
-            raise ValueError('Duration time (days) is invalid\n')
+            raise ValueError(
+                    'Duration time (days) is invalid: %s\n' % (duration))
 
         start = start.date().isoformat()
         stop = stop.date().isoformat()
@@ -67,7 +60,8 @@ def get_times_from_duration(when, duration=0, allday=False):
         try:
             stop = start + timedelta(minutes=float(duration))
         except Exception:
-            raise ValueError('Duration time (minutes) is invalid\n')
+            raise ValueError(
+                    'Duration time (minutes) is invalid: %s\n' % (duration))
 
         start = start.isoformat()
         stop = stop.isoformat()
@@ -76,17 +70,17 @@ def get_times_from_duration(when, duration=0, allday=False):
 
 
 def get_time_from_str(when):
-    defaultDateTime = datetime.now(tzlocal()).replace(hour=0,
-                                                      minute=0,
-                                                      second=0,
-                                                      microsecond=0)
+    """Convert a string to a time: first uses the dateutil parser, falls back
+    on fuzzy matching with parsedatetime"""
+    zero_oclock_today = datetime.now(tzlocal()).replace(
+            hour=0, minute=0, second=0, microsecond=0)
 
     try:
-        event_time = parse(when, default=defaultDateTime)
-    except Exception:
-        struct, result = parse_date_time_calendar.parse(when)
+        event_time = dateutil_parse(when, default=zero_oclock_today)
+    except ValueError:
+        struct, result = fuzzy_date_parse(when)
         if not result:
-            raise ValueError("Date and time is invalid")
+            raise ValueError("Date and time is invalid: %s" % (when))
         event_time = datetime.fromtimestamp(time.mktime(struct), tzlocal())
 
     return event_time

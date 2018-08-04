@@ -89,7 +89,10 @@ def test_list(capsys, PatchedGCalI):
 
 
 def test_agenda(PatchedGCalI):
+    # TODO: use capsys to do some assertions here
     PatchedGCalI().AgendaQuery()
+    PatchedGCalI().AgendaQuery('tomorrow')
+    PatchedGCalI().AgendaQuery('today', 'tomorrow')
 
 
 def test_cal_query(capsys, PatchedGCalI):

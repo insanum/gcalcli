@@ -125,7 +125,7 @@ class GoogleCalendarInterface:
     allEvents = []
     cals = []
     now = datetime.now(tzlocal())
-    agendaLength = 5
+    agenda_length = 5
     maxRetries = 5
     authHttp = None
     calService = None
@@ -1151,37 +1151,32 @@ class GoogleCalendarInterface:
                     self._CalendarColor(cal))
 
     def _parse_start_end(self, start_text, end_text):
-        start = None
-        end = None
-
-        if not start_text:
-            start = self.now if self.options['ignore_started'] else None
-        else:
-            try:
-                start = utils.get_time_from_str(start_text)
-            except Exception:
-                raise Exception('Error: failed to parse start time\n')
+        start = end = None
+        try:
+            start = utils.get_time_from_str(start_text)
+        except Exception:
+            pass
 
         if start_text:
             try:
                 end = utils.get_time_from_str(end_text)
             except Exception:
-                raise Exception('Error: failed to parse end time\n')
+                pass
 
         return (start, end)
 
     def _display_queried_events(self, start, end, search=None, yearDate=False):
-        eventList = self._SearchForCalEvents(start, end, search)
+        event_list = self._SearchForCalEvents(start, end, search)
 
-        if self.options['tsv']:
-            self._tsv(start, eventList)
+        if self.options.get('tsv'):
+            self._tsv(start, event_list)
         else:
-            self._iterate_events(start, eventList, yearDate=yearDate)
+            self._iterate_events(start, event_list, yearDate=yearDate)
 
-    def TextQuery(self, searchText='', startText='', endText=''):
+    def TextQuery(self, search_text='', start_text='', end_text=''):
 
         # the empty string would get *ALL* events...
-        if not searchText:
+        if not search_text:
             return
 
         # This is really just an optimization to the gcalendar api
@@ -1190,26 +1185,17 @@ class GoogleCalendarInterface:
         # TODO: Look at moving this into the _SearchForCalEvents
         #       Don't forget to clean up AgendaQuery too!
 
-        try:
-            start, end = self._parse_start_end(startText, endText)
-        except Exception as exc:
-            self.printer.err_msg(str(exc))
-            return
+        start, end = self._parse_start_end(start_text, end_text)
+        self._display_queried_events(start, end, search_text, True)
 
-        self._display_queried_events(start, end, searchText, True)
-
-    def AgendaQuery(self, startText='', endText=''):
-        try:
-            start, end = self._parse_start_end(startText, endText)
-        except Exception as exc:
-            self.printer.err_msg(str(exc))
-            return
+    def AgendaQuery(self, start_text='', end_text=''):
+        start, end = self._parse_start_end(start_text, end_text)
 
         if not start:
             start = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
 
         if not end:
-            end = (start + timedelta(days=self.agendaLength))
+            end = (start + timedelta(days=self.agenda_length))
 
         self._display_queried_events(start, end)
 
@@ -1950,13 +1936,13 @@ def main():
             sys.exit(1)
 
         gcal.TextQuery(
-                _u(FLAGS.text[0]), startText=FLAGS.start, endText=FLAGS.end)
+                _u(FLAGS.text[0]), start_text=FLAGS.start, end_text=FLAGS.end)
 
         if not FLAGS.tsv:
             sys.stdout.write('\n')
 
     elif FLAGS.command == 'agenda':
-        gcal.AgendaQuery(startText=FLAGS.start, endText=FLAGS.end)
+        gcal.AgendaQuery(start_text=FLAGS.start, end_text=FLAGS.end)
 
         if not FLAGS.tsv:
             sys.stdout.write('\n')
@@ -1988,12 +1974,12 @@ def main():
                 FLAGS.where = input()
             if FLAGS.when is None:
                 printer.msg('When: ', 'magenta')
-                FLAGS.where = input()
+                FLAGS.when = input()
             if FLAGS.duration is None:
                 if FLAGS.allday:
                     prompt = 'Duration (days): '
                 else:
-                    prompt = 'Duration (days): '
+                    prompt = 'Duration (minutes): '
                 printer.msg(prompt, 'magenta')
                 FLAGS.duration = input()
             if FLAGS.description is None:
@@ -2016,6 +2002,9 @@ def main():
                     FLAGS.when, FLAGS.duration, FLAGS.allday)
         except ValueError as exc:
             printer.err_msg(str(exc))
+            # Since we actually need a valid start and end time in order to
+            # add the event, we cannot proceed.
+            raise
 
         gcal.AddEvent(FLAGS.title, FLAGS.where, eStart, eEnd,
                       FLAGS.description, FLAGS.who,

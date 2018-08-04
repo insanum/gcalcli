@@ -27,6 +27,7 @@ setup(name='gcalcli',
           'google-api-python-client>=1.4',
           'httplib2',
           'oauth2client',
+          'parsedatetime',
           'six'
       ],
       extras_require={
