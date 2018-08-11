@@ -1,0 +1,2 @@
+class GcalcliError(Exception):
+    pass

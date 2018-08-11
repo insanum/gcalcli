@@ -17,34 +17,6 @@ from gcalcli.gcalcli import (GoogleCalendarInterface, _u,
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
 
 
-def mocked_calendar_service(self):
-    http = HttpMock(
-            TEST_DATA_DIR + '/cal_service_discovery.json', {'status': '200'})
-    if not self.calService:
-        self.calService = build(
-                serviceName='calendar', version='v3', http=http)
-    return self.calService
-
-
-def mocked_calendar_list(self):
-    http = HttpMock(
-            TEST_DATA_DIR + '/cal_list.json', {'status': '200'})
-    request = self._cal_service().calendarList().list()
-    cal_list = request.execute(http=http)
-    self.allCals = [cal for cal in cal_list['items']]
-    if not self.calService:
-        self.calService = build(
-                serviceName='calendar', version='v3', http=http)
-    return self.calService
-
-
-def mocked_msg(self, msg, colorname='default', file=sys.stdout):
-    # ignores file and always writes to stdout
-    if self.use_color:
-        msg = self.colors[colorname] + msg + self.colors['default']
-    sys.stdout.write(msg)
-
-
 @pytest.fixture
 def default_options():
     opts = vars(get_color_parser().parse_args([]))
@@ -55,16 +27,42 @@ def default_options():
 
 @pytest.fixture
 def PatchedGCalI(monkeypatch):
+    def mocked_calendar_service(self):
+        http = HttpMock(
+                TEST_DATA_DIR + '/cal_service_discovery.json',
+                {'status': '200'})
+        if not self.calService:
+            self.calService = build(
+                    serviceName='calendar', version='v3', http=http)
+        return self.calService
+
+    def mocked_calendar_list(self):
+        http = HttpMock(
+                TEST_DATA_DIR + '/cal_list.json', {'status': '200'})
+        request = self._cal_service().calendarList().list()
+        cal_list = request.execute(http=http)
+        self.allCals = [cal for cal in cal_list['items']]
+        if not self.calService:
+            self.calService = build(
+                 serviceName='calendar', version='v3', http=http)
+        return self.calService
+
+    def mocked_msg(self, msg, colorname='default', file=sys.stdout):
+        # ignores file and always writes to stdout
+        if self.use_color:
+            msg = self.colors[colorname] + msg + self.colors['default']
+        sys.stdout.write(msg)
+
     monkeypatch.setattr(
             GoogleCalendarInterface, '_cal_service', mocked_calendar_service)
     monkeypatch.setattr(
             GoogleCalendarInterface, '_get_cached', mocked_calendar_list)
     monkeypatch.setattr(Printer, 'msg', mocked_msg)
 
-    def _method(**opts):
+    def _init(**opts):
         return GoogleCalendarInterface(use_cache=False, **opts)
 
-    return _method
+    return _init
 
 
 # TODO: These are more like placeholders for proper unit tests
@@ -115,33 +113,39 @@ def test_cal_query(capsys, PatchedGCalI):
 
 
 def test_add_event(PatchedGCalI):
-    gcal = PatchedGCalI()
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'])
+    gcal = PatchedGCalI(
+            cal_names=cal_names, allday=False, default_reminders=True)
     title = 'test event'
     where = 'anywhere'
     start = 'now'
     end = 'tomorrow'
     descr = 'testing'
     who = 'anyone'
-    reminder = None
-    gcal.AddEvent(title, where, start, end, descr, who, reminder)
+    reminders = None
+    assert gcal.AddEvent(title, where, start, end, descr, who, reminders)
 
 
 def test_quick_add(PatchedGCalI):
-    gcal = PatchedGCalI()
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'])
+    gcal = PatchedGCalI(cal_names=cal_names)
     event_text = 'quick test event'
     reminder = '5m sms'
-    gcal.QuickAddEvent(event_text, reminder=[reminder])
+    assert gcal.QuickAddEvent(event_text, reminders=[reminder])
 
 
 def test_text_query(PatchedGCalI):
     gcal = PatchedGCalI()
-    gcal.TextQuery(_u('test'))
+    # TODO: mock the api reply for the search
+    # and then assert something greater than zero
+    assert gcal.TextQuery(_u('test')) == 0
 
 
 def test_import(PatchedGCalI):
-    gcal = PatchedGCalI()
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'])
+    gcal = PatchedGCalI(cal_names=cal_names, default_reminders=True)
     vcal_path = TEST_DATA_DIR + '/vv.txt'
-    gcal.ImportICS(icsFile=vcal_path)
+    assert gcal.ImportICS(icsFile=open(vcal_path))
 
 
 def test_parse_reminder():
@@ -178,17 +182,21 @@ def test_parse_reminder():
 
 
 def test_parse_cal_names(PatchedGCalI):
+    # TODO we need to mock the event list returned by the search
+    # and then assert the right number of events
+    # for the moment, we assert 0 (which indicates successful completion of
+    # the code path, but no events printed)
     cal_names = parse_cal_names(['j*#green'])
     gcal = PatchedGCalI(cal_names=cal_names)
-    gcal.AgendaQuery()
+    assert gcal.AgendaQuery() == 0
 
     cal_names = parse_cal_names(['j*'])
     gcal = PatchedGCalI(cal_names=cal_names)
-    gcal.AgendaQuery()
+    assert gcal.AgendaQuery() == 0
 
     cal_names = parse_cal_names(['jcrowgey@uw.edu'])
     gcal = PatchedGCalI(cal_names=cal_names)
-    gcal.AgendaQuery()
+    assert gcal.AgendaQuery() == 0
 
 
 def test_localize_datetime(PatchedGCalI):

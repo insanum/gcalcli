@@ -97,6 +97,7 @@ except ImportError as exc:  # pragma: no cover
 from gcalcli import utils
 from gcalcli.utils import _u, days_since_epoch
 from gcalcli.printer import Printer, valid_color_name
+from gcalcli.exceptions import GcalcliError
 
 
 EventTitle = namedtuple('EventTitle', ['title', 'color'])
@@ -110,7 +111,6 @@ class GoogleCalendarInterface:
     cache = {}
     allCals = []
     allEvents = []
-    cals = []
     now = datetime.now(tzlocal())
     agenda_length = 5
     maxRetries = 5
@@ -127,6 +127,7 @@ class GoogleCalendarInterface:
     UNIWIDTH = {'W': 2, 'F': 2, 'N': 1, 'Na': 1, 'H': 1, 'A': 1}
 
     def __init__(self, cal_names=[], printer=Printer(), **options):
+        self.cals = []
         self.printer = printer
         self.options = options
 
@@ -145,6 +146,9 @@ class GoogleCalendarInterface:
         self._select_cals(cal_names)
 
     def _select_cals(self, selected_names):
+        if self.cals:
+            raise GcalcliError('this object should not already have cals')
+
         if not selected_names:
             self.cals = self.allCals
             return
@@ -349,6 +353,16 @@ class GoogleCalendarInterface:
         else:
             return ' '.join([event['s'].strftime("%I:%M").lstrip('0') +
                             event['s'].strftime('%p').lower(), titlestr])
+
+    def _add_reminders(self, event, reminders=None):
+        if reminders or not self.options['default_reminders']:
+            event['reminders'] = {'useDefault': False,
+                                  'overrides': []}
+            for r in reminders:
+                n, m = parse_reminder(r)
+                event['reminders']['overrides'].append({'minutes': n,
+                                                        'method': m})
+        return event
 
     def _get_week_events(self, start_dt, end_dt, event_list):
         week_events = [[] for _ in range(7)]
@@ -1006,9 +1020,11 @@ class GoogleCalendarInterface:
     def _iterate_events(
             self, startDateTime, eventList, yearDate=False, work=None):
 
+        selected = 0
+
         if len(eventList) == 0:
             self.printer.msg('\nNo Events Found...\n', 'yellow')
-            return
+            return selected
 
         # 10 chars for day and length must match 'indent' in _PrintEvent
         dayFormat = '\n%Y-%m-%d' if yearDate else '\n%a %b %d'
@@ -1020,6 +1036,7 @@ class GoogleCalendarInterface:
             if self.options['ignore_declined'] and self._DeclinedEvent(event):
                 continue
 
+            selected += 1
             tmpDayStr = event['s'].strftime(dayFormat)
             prefix = None
             if yearDate or tmpDayStr != day:
@@ -1029,6 +1046,8 @@ class GoogleCalendarInterface:
 
             if work:
                 work(event)
+
+        return selected
 
     def _GetAllEvents(self, cal, events, end):
 
@@ -1155,15 +1174,15 @@ class GoogleCalendarInterface:
         event_list = self._SearchForCalEvents(start, end, search)
 
         if self.options.get('tsv'):
-            self._tsv(start, event_list)
+            return self._tsv(start, event_list)
         else:
-            self._iterate_events(start, event_list, yearDate=yearDate)
+            return self._iterate_events(start, event_list, yearDate=yearDate)
 
     def TextQuery(self, search_text='', start_text='', end_text=''):
 
-        # the empty string would get *ALL* events...
         if not search_text:
-            return
+            # the empty string would get *ALL* events...
+            raise GcalcliError('Search text is required.')
 
         # This is really just an optimization to the gcalendar api
         # why ask for a bunch of events we are going to filter out
@@ -1172,7 +1191,7 @@ class GoogleCalendarInterface:
         #       Don't forget to clean up AgendaQuery too!
 
         start, end = self._parse_start_end(start_text, end_text)
-        self._display_queried_events(start, end, search_text, True)
+        return self._display_queried_events(start, end, search_text, True)
 
     def AgendaQuery(self, start_text='', end_text=''):
         start, end = self._parse_start_end(start_text, end_text)
@@ -1183,7 +1202,7 @@ class GoogleCalendarInterface:
         if not end:
             end = (start + timedelta(days=self.agenda_length))
 
-        self._display_queried_events(start, end)
+        return self._display_queried_events(start, end)
 
     def CalQuery(self, cmd, startText='', count=1):
 
@@ -1231,88 +1250,79 @@ class GoogleCalendarInterface:
 
         self._GraphEvents(cmd, start, count, eventList)
 
-    def QuickAddEvent(self, event_text, reminder=None):
+    def QuickAddEvent(self, event_text, reminders=None):
         """Wrapper around Google Calendar API's quickAdd"""
         if not event_text:
-            return
+            raise GcalcliError('event_text is required for a quickAdd')
 
-        if len(self.cals) > 1:
-            self.printer.err_msg(
-                    'You must only specify a single calendar\n')
-            return
+        if len(self.cals) != 1:
+            # TODO: get a better name for this exception class
+            # and use it elsewhere
+            raise GcalcliError('You must only specify a single calendar\n')
 
-        if len(self.cals) < 1:
-            self.printer.err_msg(
-                    "Calendar not specified or not found.\n"
-                    "If \"gcalcli list doesn't find the calendar you're"
-                    "trying to use,\n your cache file might be stale and"
-                    "you might need to remove it and try again\n")
-            return
-
-        newEvent = self._retry_with_backoff(
+        new_event = self._retry_with_backoff(
             self._cal_service().events().quickAdd(
                 calendarId=self.cals[0]['id'], text=event_text))
 
-        if reminder or not self.options['default_reminders']:
+        if reminders or not self.options['default_reminders']:
             rem = {}
             rem['reminders'] = {'useDefault': False,
                                 'overrides': []}
-            for r in reminder:
+            for r in reminders:
                 n, m = parse_reminder(r)
                 rem['reminders']['overrides'].append({'minutes': n,
                                                       'method': m})
 
-            newEvent = self._retry_with_backoff(
+            new_event = self._retry_with_backoff(
                 self._cal_service().events().
                 patch(calendarId=self.cals[0]['id'],
-                      eventId=newEvent['id'],
+                      eventId=new_event['id'],
                       body=rem))
 
         if self.details['url']:
-            hlink = self._shorten_url(newEvent['htmlLink'])
+            hlink = self._shorten_url(new_event['htmlLink'])
             self.printer.msg('New event added: %s\n' % hlink, 'green')
 
-    def AddEvent(self, eTitle, eWhere, eStart, eEnd, eDescr, eWho, reminder):
+        return new_event
+
+    def AddEvent(self, title, where, start, end, descr, who, reminders):
 
         if len(self.cals) != 1:
-            self.printer.err_msg('Must specify a single calendar\n')
-            return
+            # TODO: get a better name for this exception class
+            # and use it elsewhere
+            raise GcalcliError('You must only specify a single calendar\n')
 
         event = {}
-        event['summary'] = eTitle
+        event['summary'] = title
 
         if self.options['allday']:
-            event['start'] = {'date': eStart}
-            event['end'] = {'date': eEnd}
+            event['start'] = {'date': start}
+            event['end'] = {'date': end}
 
         else:
-            event['start'] = {'dateTime': eStart,
+            event['start'] = {'dateTime': start,
                               'timeZone': self.cals[0]['timeZone']}
-            event['end'] = {'dateTime': eEnd,
+            event['end'] = {'dateTime': end,
                             'timeZone': self.cals[0]['timeZone']}
 
-        if eWhere:
-            event['location'] = eWhere
-        if eDescr:
-            event['description'] = eDescr
+        if where:
+            event['location'] = where
+        if descr:
+            event['description'] = descr
 
-        event['attendees'] = list(map(lambda w: {'email': w}, eWho))
+        event['attendees'] = list(map(lambda w: {'email': w}, who))
 
-        if reminder or not self.options['default_reminders']:
-            event['reminders'] = {'useDefault': False,
-                                  'overrides': []}
-            for r in reminder:
-                n, m = parse_reminder(r)
-                event['reminders']['overrides'].append({'minutes': n,
-                                                        'method': m})
+        event = self._add_reminders(event, reminders)
 
-        newEvent = self._retry_with_backoff(
+        new_event = self._retry_with_backoff(
             self._cal_service().events().
             insert(calendarId=self.cals[0]['id'], body=event))
 
         if self.details['url']:
-            hLink = self._shorten_url(newEvent['htmlLink'])
-            self.printer.msg('New event added: %s\n' % hLink, 'green')
+            hlink = self._shorten_url(new_event['htmlLink'])
+            self.printer.msg('New event added: %s\n' % hlink, 'green')
+
+        return new_event
 
     def DeleteEvents(self, searchText='', expert=False, start=None, end=None):
 
@@ -1323,7 +1333,7 @@ class GoogleCalendarInterface:
         eventList = self._SearchForCalEvents(start, end, searchText)
 
         self.iamaExpert = expert
-        self._iterate_events(
+        return self._iterate_events(
                 self.now, eventList, yearDate=True, work=self._DeleteEvent)
 
     def EditEvents(self, searchText=''):
@@ -1334,7 +1344,7 @@ class GoogleCalendarInterface:
 
         eventList = self._SearchForCalEvents(None, None, searchText)
 
-        self._iterate_events(
+        return self._iterate_events(
                 self.now, eventList, yearDate=True, work=self._EditEvent)
 
     def Remind(self, minutes=10, command=None, use_reminders=False):
@@ -1390,7 +1400,7 @@ class GoogleCalendarInterface:
         if not pid:
             os.execvp(cmd[0], cmd)
 
-    def ImportICS(self, verbose=False, dump=False, reminder=None,
+    def ImportICS(self, verbose=False, dump=False, reminders=None,
                   icsFile=None):
 
         def CreateEventFromVOBJ(ve):
@@ -1458,13 +1468,7 @@ class GoogleCalendarInterface:
                 else:
                     event['start'] = {'date': start}
 
-                if reminder or not self.options['default_reminders']:
-                    event['reminders'] = {'useDefault': False,
-                                          'overrides': []}
-                    for r in reminder:
-                        n, m = parse_reminder(r)
-                        event['reminders']['overrides'].append({'minutes': n,
-                                                                'method': m})
+                event = self._add_reminders(event, reminders)
 
                 # Can only have an end if we have a start, but not the other
                 # way around apparently...  If there is no end, use the start
@@ -1486,7 +1490,6 @@ class GoogleCalendarInterface:
                 event['description'] = descr
 
             if hasattr(ve, 'organizer'):
-
                 if ve.organizer.value.startswith("MAILTO:"):
                     email = ve.organizer.value[7:]
                 else:
@@ -1515,7 +1518,7 @@ class GoogleCalendarInterface:
 
         try:
             import vobject
-        except Exception:
+        except ImportError:
             self.printer.err_msg(
                     'Python vobject module not installed!\n')
             sys.exit(1)
@@ -1524,14 +1527,13 @@ class GoogleCalendarInterface:
             verbose = True
 
         if not dump and len(self.cals) != 1:
-            self.printer.err_msg('Must specify a single calendar\n')
-            return
+            raise GcalcliError('Must specify a single calendar\n')
 
         f = sys.stdin
 
         if icsFile:
             try:
-                f = open(icsFile.name)
+                f = icsFile
             except Exception as e:
                 self.printer.err_msg('Error: ' + str(e) + '!\n')
                 sys.exit(1)
@@ -1543,7 +1545,6 @@ class GoogleCalendarInterface:
                 break
 
             for ve in v.vevent_list:
-
                 event = CreateEventFromVOBJ(ve)
 
                 if not event:
@@ -1557,9 +1558,9 @@ class GoogleCalendarInterface:
                         self._cal_service().events().
                         insert(calendarId=self.cals[0]['id'],
                                body=event))
-                    hLink = self._shorten_url(newEvent['htmlLink'])
+                    hlink = self._shorten_url(newEvent.get('htmlLink'))
                     self.printer.msg(
-                            'New event added: %s\n' % hLink, 'green')
+                            'New event added: %s\n' % hlink, 'green')
                     continue
 
                 self.printer.msg('\n[S]kip [i]mport [q]uit: ', 'magenta')
@@ -1571,13 +1572,15 @@ class GoogleCalendarInterface:
                         self._cal_service().events().
                         insert(calendarId=self.cals[0]['id'],
                                body=event))
-                    hLink = self._shorten_url(newEvent['htmlLink'])
-                    self.printer.msg('New event added: %s\n' % hLink, 'green')
+                    hlink = self._shorten_url(newEvent.get('htmlLink'))
+                    self.printer.msg('New event added: %s\n' % hlink, 'green')
                 elif val.lower() == 'q':
                     sys.exit(0)
                 else:
                     self.printer.err_msg('Error: invalid input\n')
                     sys.exit(1)
+        # TODO: return the number of events added
+        return True
 
 
 def parse_reminder(rem):
@@ -1921,8 +1924,12 @@ def main():
             printer.err_msg('Error: invalid search string\n')
             sys.exit(1)
 
-        gcal.TextQuery(
+        try:
+            gcal.TextQuery(
                 _u(FLAGS.text[0]), start_text=FLAGS.start, end_text=FLAGS.end)
+        except GcalcliError as exc:
+            printer.err_msg(str(exc))
+            sys.exit(1)
 
         if not FLAGS.tsv:
             sys.stdout.write('\n')
@@ -1947,8 +1954,12 @@ def main():
             sys.exit(1)
 
         # allow unicode strings for input
-        gcal.QuickAddEvent(_u(FLAGS.text),
-                           reminder=FLAGS.reminder)
+        try:
+            gcal.QuickAddEvent(_u(FLAGS.text),
+                               reminders=FLAGS.reminder)
+        except GcalcliError as exc:
+            printer.err_msg(str(exc))
+            sys.exit(1)
 
     elif FLAGS.command == 'add':
         if FLAGS.prompt:
@@ -1992,9 +2003,13 @@ def main():
             # add the event, we cannot proceed.
             raise
 
-        gcal.AddEvent(FLAGS.title, FLAGS.where, eStart, eEnd,
-                      FLAGS.description, FLAGS.who,
-                      FLAGS.reminder)
+        try:
+            gcal.AddEvent(FLAGS.title, FLAGS.where, eStart, eEnd,
+                          FLAGS.description, FLAGS.who,
+                          FLAGS.reminder)
+        except GcalcliError as exc:
+            printer.err_msg(str(exc))
+            sys.exit(1)
 
     elif FLAGS.command == 'delete':
         eStart = None
@@ -2029,7 +2044,12 @@ def main():
                 FLAGS.minutes, FLAGS.cmd, use_reminders=FLAGS.use_reminders)
 
     elif FLAGS.command == 'import':
-        gcal.ImportICS(FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file)
+        try:
+            gcal.ImportICS(
+                    FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file)
+        except GcalcliError as exc:
+            printer.err_msg(str(exc))
+            sys.exit(1)
 
 
 def SIGINT_handler(signum, frame):
