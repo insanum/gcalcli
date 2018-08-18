@@ -55,7 +55,7 @@
 from __future__ import print_function, absolute_import
 
 __program__ = 'gcalcli'
-__version__ = 'v4.0.0a4'
+__version__ = 'v4.0.0a5'
 __author__ = 'Eric Davis, Brian Hartvigsen'
 __API_CLIENT_ID__ = '232867676714.apps.googleusercontent.com'
 __API_CLIENT_SECRET__ = '3tZSxItw6_VnZMezQwC8lUqy'
@@ -1647,8 +1647,8 @@ def get_details_parser():
     return details_parser
 
 
-def get_output_parser():
-    output_parser = argparse.ArgumentParser(add_help=False)
+def get_output_parser(parents=[]):
+    output_parser = argparse.ArgumentParser(add_help=False, parents=parents)
     output_parser.add_argument(
             "--tsv", action="store_true", dest="tsv", default=False,
             help="Use Tab Separated Value output")
@@ -1777,8 +1777,11 @@ def get_argument_parser():
 
     # parent parser types used for subcommands
     details_parser = get_details_parser()
-    output_parser = get_output_parser()
     color_parser = get_color_parser()
+
+    # Output parser should imply color parser
+    output_parser = get_output_parser(parents=[color_parser])
+
     remind_parser = get_remind_parser()
     cal_query_parser = get_cal_query_parser()
 
@@ -1789,25 +1792,21 @@ def get_argument_parser():
 
     sub.add_parser("list", parents=[color_parser])
 
-    search = sub.add_parser(
-            "search", parents=[details_parser, output_parser, color_parser])
+    search = sub.add_parser("search", parents=[details_parser, output_parser])
     search.add_argument("text", nargs=1)
     search.add_argument("start", type=str, nargs="?")
     search.add_argument("end", type=str, nargs="?")
 
-    agenda = sub.add_parser(
-            "agenda", parents=[details_parser, output_parser, color_parser])
+    agenda = sub.add_parser("agenda", parents=[details_parser, output_parser])
     agenda.add_argument("start", type=str, nargs="?")
     agenda.add_argument("end", type=str, nargs="?")
 
     calw = sub.add_parser(
-            "calw", parents=[details_parser, output_parser, color_parser,
-                             cal_query_parser])
+            "calw", parents=[details_parser, output_parser, cal_query_parser])
     calw.add_argument("weeks", type=int, default=1, nargs="?")
 
     sub.add_parser(
-            "calm", parents=[details_parser, output_parser, color_parser,
-                             cal_query_parser])
+            "calm", parents=[details_parser, output_parser, cal_query_parser])
 
     quick = sub.add_parser("quick", parents=[details_parser, remind_parser])
     quick.add_argument("text")
@@ -1834,7 +1833,7 @@ def get_argument_parser():
 
     # TODO: Fix this it doesn't work this way as nothing ever goes into [start]
     # or [end]
-    delete = sub.add_parser("delete", parents=[color_parser, output_parser])
+    delete = sub.add_parser("delete", parents=[output_parser])
     delete.add_argument("text", nargs=1)
     delete.add_argument("start", type=str, nargs="?")
     delete.add_argument("end", type=str, nargs="?")
