@@ -90,10 +90,7 @@ except ImportError as exc:  # pragma: no cover
 from gcalcli import __program__, __version__
 from gcalcli import utils
 
-# XXX: we shouldn't import DETAILS, we should parse this information
-# out in the argparsers module so that what we pass to the GCI constructor
-# is ready to go
-from gcalcli.argparsers import get_argument_parser, DETAILS
+from gcalcli.argparsers import get_argument_parser
 from gcalcli.utils import _u, days_since_epoch
 from gcalcli.printer import Printer, valid_color_name
 from gcalcli.exceptions import GcalcliError
@@ -130,9 +127,6 @@ class GoogleCalendarInterface:
 
         self.details = {}
         chosen_details = options.get('details', [])
-        for choice in DETAILS:
-            self.details[choice] = \
-                    'all' in chosen_details or choice in chosen_details
         self.details['url'] = ('short' if 'shorturl' in chosen_details else
                                'long' if 'longurl' in chosen_details else
                                None)

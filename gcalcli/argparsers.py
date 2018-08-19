@@ -9,11 +9,24 @@ DETAILS = ['all', 'calendar', 'location', 'length', 'reminders', 'description',
            'longurl', 'shorturl', 'url', 'attendees', 'email', 'attachments']
 
 
+class DetailsAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+
+        details = []
+        if 'all' in values:
+            details = DETAILS[1:]
+        else:
+            for d in values:
+                details.append(d)
+
+        setattr(namespace, self.dest, details)
+
+
 def validwidth(value):
-    if type(value) == int and value < 10:
+    ival = int(value)
+    if ival < 10:
         raise argparse.ArgumentTypeError("Width must be a number >= 10")
-    else:
-        return int(value)
+    return ival
 
 
 def validreminder(value):
@@ -27,7 +40,7 @@ def validreminder(value):
 def get_details_parser():
     details_parser = argparse.ArgumentParser(add_help=False)
     details_parser.add_argument(
-            "--details", default=[], type=str, action="append",
+            "--details", default={}, type=str, action=DetailsAction,
             choices=DETAILS,
             help="Which parts to display, can be: " + ", ".join(DETAILS))
     return details_parser
@@ -85,7 +98,8 @@ def get_color_parser():
 def get_remind_parser():
     remind_parser = argparse.ArgumentParser(add_help=False)
     remind_parser.add_argument(
-            "--reminder", default=[], type=validreminder, action="append",
+            "--reminder", default=[], type=validreminder, dest="reminders",
+            action="append",
             help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
             "is a number which may be followed by an optional "
             "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
