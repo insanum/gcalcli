@@ -2,6 +2,7 @@ import calendar
 import time
 import locale
 import six
+import re
 from dateutil.tz import tzlocal
 from dateutil.parser import parse as dateutil_parse
 from datetime import datetime, timedelta
@@ -9,6 +10,27 @@ from parsedatetime.parsedatetime import Calendar
 
 locale.setlocale(locale.LC_ALL, '')
 fuzzy_date_parse = Calendar().parse
+
+
+def parse_reminder(rem):
+    matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
+    if not matchObj:
+        # Allow argparse to generate a message when parsing options
+        return None
+    n = int(matchObj.group(1))
+    t = matchObj.group(2)
+    m = matchObj.group(3)
+    if t == 'w':
+        n = n * 7 * 24 * 60
+    elif t == 'd':
+        n = n * 24 * 60
+    elif t == 'h':
+        n = n * 60
+
+    if not m:
+        m = 'popup'
+
+    return n, m
 
 
 def set_locale(new_locale):
