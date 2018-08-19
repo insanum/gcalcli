@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import sys
 from json import load
@@ -7,12 +8,14 @@ from dateutil.tz import tzutc
 import pytest
 from apiclient.discovery import HttpMock, build
 from gcalcli.printer import Printer
-from gcalcli.gcalcli import (GoogleCalendarInterface, _u,
-                             get_color_parser,
-                             get_cal_query_parser,
-                             get_output_parser,
-                             parse_cal_names,
-                             parse_reminder)
+from gcalcli.utils import parse_reminder, _u
+from gcalcli.argparsers import (get_start_end_parser,
+                                get_color_parser,
+                                get_cal_query_parser,
+                                get_output_parser,
+                                get_search_parser)
+from gcalcli.gcalcli import (GoogleCalendarInterface,
+                             parse_cal_names)
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
 
@@ -89,8 +92,12 @@ def test_list(capsys, PatchedGCalI):
 def test_agenda(PatchedGCalI):
     # TODO: use capsys to do some assertions here
     PatchedGCalI().AgendaQuery()
-    PatchedGCalI().AgendaQuery('tomorrow')
-    PatchedGCalI().AgendaQuery('today', 'tomorrow')
+
+    opts = get_start_end_parser().parse_args(['tomorrow'])
+    PatchedGCalI().AgendaQuery(start=opts.start, end=opts.end)
+
+    opts = get_start_end_parser().parse_args(['today', 'tomorrow'])
+    PatchedGCalI().AgendaQuery(start=opts.start, end=opts.end)
 
 
 def test_cal_query(capsys, PatchedGCalI):
@@ -135,10 +142,27 @@ def test_quick_add(PatchedGCalI):
 
 
 def test_text_query(PatchedGCalI):
+    search_parser = get_search_parser()
     gcal = PatchedGCalI()
+
     # TODO: mock the api reply for the search
     # and then assert something greater than zero
-    assert gcal.TextQuery(_u('test')) == 0
+
+    opts = search_parser.parse_args(['test', '1970-01-01', '2038-01-18'])
+    assert gcal.TextQuery(opts.text, opts.start, opts.end) == 0
+
+    opts = search_parser.parse_args(['test', '1970-01-01'])
+    assert gcal.TextQuery(opts.text, opts.start, opts.end) == 0
+
+    opts = search_parser.parse_args(['test'])
+    assert gcal.TextQuery(opts.text, opts.start, opts.end) == 0
+
+
+def test_modify_event(PatchedGCalI):
+    opts = get_search_parser().parse_args(['test'])
+    gcal = PatchedGCalI(**vars(opts))
+    assert gcal.ModifyEvents(
+            gcal._edit_event, opts.text, opts.start, opts.end) == 0
 
 
 def test_import(PatchedGCalI):

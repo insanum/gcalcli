@@ -54,12 +54,6 @@
 #############################################################################
 from __future__ import print_function, absolute_import
 
-__program__ = 'gcalcli'
-__version__ = 'v4.0.0a5'
-__author__ = 'Eric Davis, Brian Hartvigsen'
-__API_CLIENT_ID__ = '232867676714.apps.googleusercontent.com'
-__API_CLIENT_SECRET__ = '3tZSxItw6_VnZMezQwC8lUqy'
-
 # These are standard libraries and should never fail
 import sys
 import os
@@ -70,7 +64,6 @@ import textwrap
 import signal
 import json
 import random
-import argparse
 from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
 from collections import namedtuple
@@ -94,7 +87,13 @@ except ImportError as exc:  # pragma: no cover
 
 # Package local imports
 
+from gcalcli import __program__, __version__
 from gcalcli import utils
+
+# XXX: we shouldn't import DETAILS, we should parse this information
+# out in the argparsers module so that what we pass to the GCI constructor
+# is ready to go
+from gcalcli.argparsers import get_argument_parser, DETAILS
 from gcalcli.utils import _u, days_since_epoch
 from gcalcli.printer import Printer, valid_color_name
 from gcalcli.exceptions import GcalcliError
@@ -102,8 +101,6 @@ from gcalcli.exceptions import GcalcliError
 
 EventTitle = namedtuple('EventTitle', ['title', 'color'])
 CalName = namedtuple('CalName', ['name', 'color'])
-DETAILS = ['all', 'calendar', 'location', 'length', 'reminders', 'description',
-           'longurl', 'shorturl', 'url', 'attendees', 'email', 'attachments']
 
 
 class GoogleCalendarInterface:
@@ -200,6 +197,7 @@ class GoogleCalendarInterface:
         return None
 
     def _google_auth(self):
+        from argparse import Namespace
         if not self.authHttp:
             if self.options['configFolder']:
                 storage = Storage(
@@ -218,7 +216,7 @@ class GoogleCalendarInterface:
                                'https://www.googleapis.com/auth/urlshortener'],
                         user_agent=__program__ + '/' + __version__),
                     storage,
-                    argparse.Namespace(**self.options))
+                    Namespace(**self.options))
 
             self.authHttp = credentials.authorize(httplib2.Http())
 
@@ -359,7 +357,7 @@ class GoogleCalendarInterface:
             event['reminders'] = {'useDefault': False,
                                   'overrides': []}
             for r in reminders:
-                n, m = parse_reminder(r)
+                n, m = utils.parse_reminder(r)
                 event['reminders']['overrides'].append({'minutes': n,
                                                         'method': m})
         return event
@@ -860,7 +858,7 @@ class GoogleCalendarInterface:
                 )
             self.printer.msg(xstr, 'default')
 
-    def _DeleteEvent(self, event):
+    def _delete_event(self, event):
 
         if self.iamaExpert:
             self._retry_with_backoff(
@@ -912,7 +910,7 @@ class GoogleCalendarInterface:
                             'timeZone': event['gcalcli_cal']['timeZone']}
         return event
 
-    def _EditEvent(self, event):
+    def _edit_event(self, event):
 
         while True:
             self.printer.msg(
@@ -996,7 +994,7 @@ class GoogleCalendarInterface:
                     event['reminders'] = {'useDefault': False,
                                           'overrides': []}
                     for r in rem:
-                        n, m = parse_reminder(r)
+                        n, m = utils.parse_reminder(r)
                         event['reminders']['overrides'].append({'minutes': n,
                                                                 'method': m})
                 else:
@@ -1106,22 +1104,22 @@ class GoogleCalendarInterface:
 
         return eventList
 
-    def _SearchForCalEvents(self, start, end, searchText):
+    def _search_for_events(self, start, end, search_text):
 
-        eventList = []
+        event_list = []
         for cal in self.cals:
             work = self._cal_service().events().\
                 list(calendarId=cal['id'],
                      timeMin=start.isoformat() if start else None,
                      timeMax=end.isoformat() if end else None,
-                     q=searchText if searchText else None,
+                     q=search_text if search_text else None,
                      singleEvents=True)
             events = self._retry_with_backoff(work)
-            eventList.extend(self._GetAllEvents(cal, events, end))
+            event_list.extend(self._GetAllEvents(cal, events, end))
 
-        eventList.sort(key=lambda x: x['s'])
+        event_list.sort(key=lambda x: x['s'])
 
-        return eventList
+        return event_list
 
     def _DeclinedEvent(self, event):
         if 'attendees' in event:
@@ -1132,7 +1130,6 @@ class GoogleCalendarInterface:
         return False
 
     def ListAllCalendars(self):
-
         accessLen = 0
 
         for cal in self.allCals:
@@ -1155,47 +1152,22 @@ class GoogleCalendarInterface:
                     format % (cal['accessRole'], cal['summary']),
                     self._calendar_color(cal))
 
-    def _parse_start_end(self, start_text, end_text):
-        start = end = None
-        try:
-            start = utils.get_time_from_str(start_text)
-        except Exception:
-            pass
-
-        if start_text:
-            try:
-                end = utils.get_time_from_str(end_text)
-            except Exception:
-                pass
-
-        return (start, end)
-
     def _display_queried_events(self, start, end, search=None, yearDate=False):
-        event_list = self._SearchForCalEvents(start, end, search)
+        event_list = self._search_for_events(start, end, search)
 
         if self.options.get('tsv'):
             return self._tsv(start, event_list)
         else:
             return self._iterate_events(start, event_list, yearDate=yearDate)
 
-    def TextQuery(self, search_text='', start_text='', end_text=''):
-
+    def TextQuery(self, search_text='', start=None, end=None):
         if not search_text:
             # the empty string would get *ALL* events...
             raise GcalcliError('Search text is required.')
 
-        # This is really just an optimization to the gcalendar api
-        # why ask for a bunch of events we are going to filter out
-        # anyway?
-        # TODO: Look at moving this into the _SearchForCalEvents
-        #       Don't forget to clean up AgendaQuery too!
-
-        start, end = self._parse_start_end(start_text, end_text)
         return self._display_queried_events(start, end, search_text, True)
 
-    def AgendaQuery(self, start_text='', end_text=''):
-        start, end = self._parse_start_end(start_text, end_text)
-
+    def AgendaQuery(self, start=None, end=None):
         if not start:
             start = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -1205,7 +1177,6 @@ class GoogleCalendarInterface:
         return self._display_queried_events(start, end)
 
     def CalQuery(self, cmd, startText='', count=1):
-
         if not startText:
             # convert now to midnight this morning and use for default
             start = self.now.replace(hour=0,
@@ -1246,7 +1217,7 @@ class GoogleCalendarInterface:
             if totalDays % 7:
                 count += 1
 
-        eventList = self._SearchForCalEvents(start, end, None)
+        eventList = self._search_for_events(start, end, None)
 
         self._GraphEvents(cmd, start, count, eventList)
 
@@ -1269,7 +1240,7 @@ class GoogleCalendarInterface:
             rem['reminders'] = {'useDefault': False,
                                 'overrides': []}
             for r in reminders:
-                n, m = parse_reminder(r)
+                n, m = utils.parse_reminder(r)
                 rem['reminders']['overrides'].append({'minutes': n,
                                                       'method': m})
 
@@ -1324,28 +1295,15 @@ class GoogleCalendarInterface:
 
         return new_event
 
-    def DeleteEvents(self, searchText='', expert=False, start=None, end=None):
+    def ModifyEvents(
+            self, work, search_text, start=None, end=None, expert=False):
+        if not search_text:
+            raise GcalcliError('The empty string would get *ALL* events')
 
-        # the empty string would get *ALL* events...
-        if not searchText:
-            return
-
-        eventList = self._SearchForCalEvents(start, end, searchText)
-
+        eventList = self._search_for_events(start, end, search_text)
         self.iamaExpert = expert
         return self._iterate_events(
-                self.now, eventList, yearDate=True, work=self._DeleteEvent)
-
-    def EditEvents(self, searchText=''):
-
-        # the empty string would get *ALL* events...
-        if not searchText:
-            return
-
-        eventList = self._SearchForCalEvents(None, None, searchText)
-
-        return self._iterate_events(
-                self.now, eventList, yearDate=True, work=self._EditEvent)
+                self.now, eventList, yearDate=True, work=work)
 
     def Remind(self, minutes=10, command=None, use_reminders=False):
         """Check for events between now and now+minutes.  If use_reminders then
@@ -1358,7 +1316,7 @@ class GoogleCalendarInterface:
         start = self.now
         end = (start + timedelta(minutes=(minutes + 5)))
 
-        eventList = self._SearchForCalEvents(start, end, None)
+        eventList = self._search_for_events(start, end, None)
 
         message = ''
 
@@ -1583,27 +1541,6 @@ class GoogleCalendarInterface:
         return True
 
 
-def parse_reminder(rem):
-    matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
-    if not matchObj:
-        # Allow argparse to generate a message when parsing options
-        return None
-    n = int(matchObj.group(1))
-    t = matchObj.group(2)
-    m = matchObj.group(3)
-    if t == 'w':
-        n = n * 7 * 24 * 60
-    elif t == 'd':
-        n = n * 24 * 60
-    elif t == 'h':
-        n = n * 60
-
-    if not m:
-        m = 'popup'
-
-    return n, m
-
-
 def parse_cal_names(cal_names):
     cal_colors = {}
     for name in cal_names:
@@ -1621,245 +1558,6 @@ def parse_cal_names(cal_names):
 
         cal_colors[cal_name] = cal_color
     return [CalName(name=k, color=cal_colors[k]) for k in cal_colors.keys()]
-
-
-def ValidWidth(value):
-    if type(value) == int and value < 10:
-        raise argparse.ArgumentTypeError("Width must be a number >= 10")
-    else:
-        return int(value)
-
-
-def ValidReminder(value):
-    if not parse_reminder(value):
-        raise argparse.ArgumentTypeError(
-                "Not a valid reminder string: %s" % value)
-    else:
-        return value
-
-
-def get_details_parser():
-    details_parser = argparse.ArgumentParser(add_help=False)
-    details_parser.add_argument(
-            "--details", default=[], type=str, action="append",
-            choices=DETAILS,
-            help="Which parts to display, can be: " + ", ".join(DETAILS))
-    return details_parser
-
-
-def get_output_parser(parents=[]):
-    output_parser = argparse.ArgumentParser(add_help=False, parents=parents)
-    output_parser.add_argument(
-            "--tsv", action="store_true", dest="tsv", default=False,
-            help="Use Tab Separated Value output")
-    output_parser.add_argument(
-            "--nostarted", action="store_true", dest="ignore_started",
-            default=False, help="Hide events that have started")
-    output_parser.add_argument(
-            "--nodeclined", action="store_true", dest="ignore_declined",
-            default=False, help="Hide events that have been declined")
-    output_parser.add_argument(
-            "--width", "-w", default=10, dest='cal_width', type=ValidWidth,
-            help="Set output width")
-    output_parser.add_argument(
-            "--military", action="store_true", default=False,
-            help="Use 24 hour display")
-    return output_parser
-
-
-def get_color_parser():
-    color_parser = argparse.ArgumentParser(add_help=False)
-    color_parser.add_argument(
-            "--color_owner", default="cyan", type=valid_color_name,
-            help="Color for owned calendars")
-    color_parser.add_argument(
-            "--color_writer", default="green", type=valid_color_name,
-            help="Color for writable calendars")
-    color_parser.add_argument(
-            "--color_reader", default="magenta", type=valid_color_name,
-            help="Color for read-only calendars")
-    color_parser.add_argument(
-            "--color_freebusy", default="default", type=valid_color_name,
-            help="Color for free/busy calendars")
-    color_parser.add_argument(
-            "--color_date", default="yellow", type=valid_color_name,
-            help="Color for the date")
-    color_parser.add_argument(
-            "--color_now_marker", default="brightred", type=valid_color_name,
-            help="Color for the now marker")
-    color_parser.add_argument(
-            "--color_border", default="white", type=valid_color_name,
-            help="Color of line borders")
-    color_parser.add_argument(
-            "--color_title", default="brightyellow", type=valid_color_name,
-            help="Color of the agenda column titles")
-    return color_parser
-
-
-def get_remind_parser():
-    remind_parser = argparse.ArgumentParser(add_help=False)
-    remind_parser.add_argument(
-            "--reminder", default=[], type=ValidReminder, action="append",
-            help="Reminders in the form 'TIME METH' or 'TIME'.  TIME "
-            "is a number which may be followed by an optional "
-            "'w', 'd', 'h', or 'm' (meaning weeks, days, hours, "
-            "minutes) and default to minutes.  METH is a string "
-            "'popup', 'email', or 'sms' and defaults to popup.")
-    remind_parser.add_argument(
-            "--default_reminders", action="store_true",
-            dest="default_reminders", default=False,
-            help="If no --reminder is given, use the defaults.  If this is "
-            "false, do not create any reminders.")
-    return remind_parser
-
-
-def get_cal_query_parser():
-    cal_query_parser = argparse.ArgumentParser(add_help=False)
-    cal_query_parser.add_argument("start", type=str, nargs="?")
-    cal_query_parser.add_argument(
-            "--monday", action="store_true", dest='cal_monday', default=False,
-            help="Start the week on Monday")
-    cal_query_parser.add_argument(
-            "--noweekend", action="store_false", dest='cal_weekend',
-            default=True,  help="Hide Saturday and Sunday")
-    return cal_query_parser
-
-
-def get_argument_parser():
-    parser = argparse.ArgumentParser(
-            description='Google Calendar Command Line Interface',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            fromfile_prefix_chars="@",
-            parents=[tools.argparser])
-
-    parser.add_argument(
-            "--version", action="version", version="%%(prog)s %s (%s)" %
-            (__version__, __author__))
-
-    # Program level options
-    parser.add_argument(
-            "--client_id", default=__API_CLIENT_ID__, type=str,
-            help="API client_id")
-    parser.add_argument(
-            "--client_secret", default=__API_CLIENT_SECRET__, type=str,
-            help="API client_secret")
-    parser.add_argument(
-            "--configFolder", default=None, type=str,
-            help="Optional directory to load/store all configuration " +
-            "information")
-    parser.add_argument(
-            "--noincluderc", action="store_false", dest="includeRc",
-            help="Whether to include ~/.gcalclirc when using configFolder")
-    parser.add_argument(
-            "--calendar", default=[], type=str, action="append",
-            help="Which calendars to use")
-    parser.add_argument(
-            "--defaultCalendar", default=[], type=str, action="append",
-            help="Optional default calendar to use if no --calendar options" +
-            "are given")
-    parser.add_argument(
-            "--locale", default='', type=str, help="System locale")
-    parser.add_argument(
-            "--refresh", action="store_true", dest="refresh_cache",
-            default=False, help="Delete and refresh cached data")
-    parser.add_argument(
-            "--nocache", action="store_false", dest="use_cache", default=True,
-            help="Execute command without using cache")
-    parser.add_argument(
-            "--conky", action="store_true", default=False,
-            help="Use Conky color codes")
-    parser.add_argument(
-            "--nocolor", action="store_false", default=True, dest="color",
-            help="Enable/Disable all color output")
-    parser.add_argument(
-            "--nolineart", action="store_false", dest="lineart",
-            help="Enable/Disable line art")
-
-    # parent parser types used for subcommands
-    details_parser = get_details_parser()
-    color_parser = get_color_parser()
-
-    # Output parser should imply color parser
-    output_parser = get_output_parser(parents=[color_parser])
-
-    remind_parser = get_remind_parser()
-    cal_query_parser = get_cal_query_parser()
-
-    sub = parser.add_subparsers(
-            help="Invoking a subcommand with --help prints subcommand usage.",
-            dest="command")
-    sub.required = True
-
-    sub.add_parser("list", parents=[color_parser])
-
-    search = sub.add_parser("search", parents=[details_parser, output_parser])
-    search.add_argument("text", nargs=1)
-    search.add_argument("start", type=str, nargs="?")
-    search.add_argument("end", type=str, nargs="?")
-
-    agenda = sub.add_parser("agenda", parents=[details_parser, output_parser])
-    agenda.add_argument("start", type=str, nargs="?")
-    agenda.add_argument("end", type=str, nargs="?")
-
-    calw = sub.add_parser(
-            "calw", parents=[details_parser, output_parser, cal_query_parser])
-    calw.add_argument("weeks", type=int, default=1, nargs="?")
-
-    sub.add_parser(
-            "calm", parents=[details_parser, output_parser, cal_query_parser])
-
-    quick = sub.add_parser("quick", parents=[details_parser, remind_parser])
-    quick.add_argument("text")
-
-    add = sub.add_parser("add", parents=[details_parser, remind_parser])
-    add.add_argument("--title", default=None, type=str, help="Event title")
-    add.add_argument(
-            "--who", default=[], type=str, action="append", help="Event title")
-    add.add_argument("--where", default=None, type=str, help="Event location")
-    add.add_argument("--when", default=None, type=str, help="Event time")
-    add.add_argument(
-            "--duration", default=None, type=int,
-            help="Event duration in minutes or days if --allday is given.")
-    add.add_argument(
-            "--description", default=None, type=str, help="Event description")
-    add.add_argument(
-            "--allday", action="store_true", dest="allday", default=False,
-            help="If --allday is given, the event will be an all-day event "
-            "(possibly multi-day if --duration is greater than 1). The "
-            "time part of the --when will be ignored.")
-    add.add_argument(
-            "--noprompt", action="store_false", dest="prompt", default=True,
-            help="Prompt for missing data when adding events")
-
-    # TODO: Fix this it doesn't work this way as nothing ever goes into [start]
-    # or [end]
-    delete = sub.add_parser("delete", parents=[output_parser])
-    delete.add_argument("text", nargs=1)
-    delete.add_argument("start", type=str, nargs="?")
-    delete.add_argument("end", type=str, nargs="?")
-    delete.add_argument(
-            "--iamaexpert", action="store_true", help="Probably not")
-
-    edit = sub.add_parser("edit", parents=[details_parser, output_parser])
-    edit.add_argument("text")
-
-    _import = sub.add_parser("import", parents=[remind_parser])
-    _import.add_argument(
-            "file", type=argparse.FileType('r'), nargs="?", default=None)
-    _import.add_argument(
-            "--verbose", "-v", action="count", help="Be verbose on imports")
-    _import.add_argument(
-            "--dump", "-d", action="store_true",
-            help="Print events and don't import")
-
-    remind = sub.add_parser("remind")
-    remind.add_argument("minutes", type=int)
-    remind.add_argument("cmd", type=str)
-    remind.add_argument(
-            "--use_reminders", action="store_true",
-            help="Honour the remind time when running remind command")
-
-    return parser
 
 
 def main():
@@ -1915,140 +1613,99 @@ def main():
     gcal = GoogleCalendarInterface(
             cal_names=cal_names, printer=printer, **vars(FLAGS))
 
-    if FLAGS.command == 'list':
-        gcal.ListAllCalendars()
+    try:
+        if FLAGS.command == 'list':
+            gcal.ListAllCalendars()
 
-    elif FLAGS.command == 'search':
-        if not FLAGS.text:
-            printer.err_msg('Error: invalid search string\n')
-            sys.exit(1)
+        elif FLAGS.command == 'agenda':
+            gcal.AgendaQuery(start=FLAGS.start, end=FLAGS.end)
 
-        try:
-            gcal.TextQuery(
-                _u(FLAGS.text[0]), start_text=FLAGS.start, end_text=FLAGS.end)
-        except GcalcliError as exc:
-            printer.err_msg(str(exc))
-            sys.exit(1)
+        elif FLAGS.command == 'calw':
+            gcal.CalQuery(
+                    FLAGS.command, count=FLAGS.weeks, startText=FLAGS.start)
 
-        if not FLAGS.tsv:
-            sys.stdout.write('\n')
+        elif FLAGS.command == 'calm':
+            gcal.CalQuery(FLAGS.command, startText=FLAGS.start)
 
-    elif FLAGS.command == 'agenda':
-        gcal.AgendaQuery(start_text=FLAGS.start, end_text=FLAGS.end)
+        elif FLAGS.command == 'quick':
+            if not FLAGS.text:
+                printer.err_msg('Error: invalid event text\n')
+                sys.exit(1)
 
-        if not FLAGS.tsv:
-            sys.stdout.write('\n')
+            # allow unicode strings for input
+            gcal.QuickAddEvent(_u(FLAGS.text), reminders=FLAGS.reminder)
 
-    elif FLAGS.command == 'calw':
-        gcal.CalQuery(FLAGS.command, count=FLAGS.weeks, startText=FLAGS.start)
-        sys.stdout.write('\n')
+        elif FLAGS.command == 'add':
+            if FLAGS.prompt:
+                if FLAGS.title is None:
+                    printer.msg('Title: ', 'magenta')
+                    FLAGS.title = input()
+                if FLAGS.where is None:
+                    printer.msg('Location: ', 'magenta')
+                    FLAGS.where = input()
+                if FLAGS.when is None:
+                    printer.msg('When: ', 'magenta')
+                    FLAGS.when = input()
+                if FLAGS.duration is None:
+                    if FLAGS.allday:
+                        prompt = 'Duration (days): '
+                    else:
+                        prompt = 'Duration (minutes): '
+                    printer.msg(prompt, 'magenta')
+                    FLAGS.duration = input()
+                if FLAGS.description is None:
+                    printer.msg('Description: ', 'magenta')
+                    FLAGS.description = input()
+                if not FLAGS.reminder:
+                    while True:
+                        printer.msg(
+                                'Enter a valid reminder or \'.\' to end: ',
+                                'magenta')
+                        r = input()
+                        if r == '.':
+                            break
+                        n, m = utils.parse_reminder(str(r))
+                        FLAGS.reminder.append(str(n) + ' ' + m)
 
-    elif FLAGS.command == 'calm':
-        gcal.CalQuery(FLAGS.command, startText=FLAGS.start)
-        sys.stdout.write('\n')
+            # calculate "when" time:
+            try:
+                estart, eend = utils.get_times_from_duration(
+                        FLAGS.when, FLAGS.duration, FLAGS.allday)
+            except ValueError as exc:
+                printer.err_msg(str(exc))
+                # Since we actually need a valid start and end time in order to
+                # add the event, we cannot proceed.
+                raise
 
-    elif FLAGS.command == 'quick':
-        if not FLAGS.text:
-            printer.err_msg('Error: invalid event text\n')
-            sys.exit(1)
-
-        # allow unicode strings for input
-        try:
-            gcal.QuickAddEvent(_u(FLAGS.text),
-                               reminders=FLAGS.reminder)
-        except GcalcliError as exc:
-            printer.err_msg(str(exc))
-            sys.exit(1)
-
-    elif FLAGS.command == 'add':
-        if FLAGS.prompt:
-            if FLAGS.title is None:
-                printer.msg('Title: ', 'magenta')
-                FLAGS.title = input()
-            if FLAGS.where is None:
-                printer.msg('Location: ', 'magenta')
-                FLAGS.where = input()
-            if FLAGS.when is None:
-                printer.msg('When: ', 'magenta')
-                FLAGS.when = input()
-            if FLAGS.duration is None:
-                if FLAGS.allday:
-                    prompt = 'Duration (days): '
-                else:
-                    prompt = 'Duration (minutes): '
-                printer.msg(prompt, 'magenta')
-                FLAGS.duration = input()
-            if FLAGS.description is None:
-                printer.msg('Description: ', 'magenta')
-                FLAGS.description = input()
-            if not FLAGS.reminder:
-                while True:
-                    printer.msg(
-                            'Enter a valid reminder or \'.\' to end: ',
-                            'magenta')
-                    r = input()
-                    if r == '.':
-                        break
-                    n, m = parse_reminder(str(r))
-                    FLAGS.reminder.append(str(n) + ' ' + m)
-
-        # calculate "when" time:
-        try:
-            eStart, eEnd = utils.get_times_from_duration(
-                    FLAGS.when, FLAGS.duration, FLAGS.allday)
-        except ValueError as exc:
-            printer.err_msg(str(exc))
-            # Since we actually need a valid start and end time in order to
-            # add the event, we cannot proceed.
-            raise
-
-        try:
-            gcal.AddEvent(FLAGS.title, FLAGS.where, eStart, eEnd,
+            gcal.AddEvent(FLAGS.title, FLAGS.where, estart, eend,
                           FLAGS.description, FLAGS.who,
                           FLAGS.reminder)
-        except GcalcliError as exc:
-            printer.err_msg(str(exc))
-            sys.exit(1)
 
-    elif FLAGS.command == 'delete':
-        eStart = None
-        eEnd = None
-        if not FLAGS.text:
-            printer.err_msg('Error: invalid search string\n')
-            sys.exit(1)
+        elif FLAGS.command == 'search':
+            gcal.TextQuery(FLAGS.text[0], start=FLAGS.start, end=FLAGS.end)
 
-        if FLAGS.start:
-            eStart = utils.get_time_from_str(FLAGS.start)
-        if FLAGS.end:
-            eEnd = utils.get_time_from_str(FLAGS.end)
+        elif FLAGS.command == 'delete':
+            gcal.ModifyEvents(
+                    gcal._delete_event, FLAGS.text[0],
+                    start=FLAGS.start, end=FLAGS.end, expert=FLAGS.iamaexpert)
 
-        # allow unicode strings for input
-        gcal.DeleteEvents(_u(FLAGS.text[0]),
-                          FLAGS.iamaexpert, eStart, eEnd)
+        elif FLAGS.command == 'edit':
+            gcal.ModifyEvents(
+                    gcal._edit_event, FLAGS.text[0], start=FLAGS.start,
+                    end=FLAGS.end)
 
-        sys.stdout.write('\n')
+        elif FLAGS.command == 'remind':
+            gcal.Remind(
+                    FLAGS.minutes, FLAGS.cmd,
+                    use_reminders=FLAGS.use_reminders)
 
-    elif FLAGS.command == 'edit':
-        if not FLAGS.text:
-            printer.err_msg('Error: invalid search string\n')
-            sys.exit(1)
-
-        # allow unicode strings for input
-        gcal.EditEvents(_u(FLAGS.text))
-
-        sys.stdout.write('\n')
-
-    elif FLAGS.command == 'remind':
-        gcal.Remind(
-                FLAGS.minutes, FLAGS.cmd, use_reminders=FLAGS.use_reminders)
-
-    elif FLAGS.command == 'import':
-        try:
+        elif FLAGS.command == 'import':
             gcal.ImportICS(
                     FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file)
-        except GcalcliError as exc:
-            printer.err_msg(str(exc))
-            sys.exit(1)
+
+    except GcalcliError as exc:
+        printer.err_msg(str(exc))
+        sys.exit(1)
 
 
 def SIGINT_handler(signum, frame):

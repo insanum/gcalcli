@@ -14,7 +14,7 @@ except ImportError:
 
 setup(name='gcalcli',
       version='4.0.0a5',
-      maintainer='Eric Davis, Brian Hartvigsen',
+      maintainer='Eric Davis, Brian Hartvigsen, Joshua Crowgey',
       maintainer_email='edavis@insanum.com, brian.andrew@brianandjenny.com',
       description='Google Calendar Command Line Interface',
       long_description=long_description,
