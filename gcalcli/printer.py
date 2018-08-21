@@ -2,10 +2,48 @@ from __future__ import absolute_import
 import argparse
 import sys
 from gcalcli.utils import _u
+
 COLOR_NAMES = set(('default', 'black', 'red', 'green', 'yellow', 'blue',
                    'magenta', 'cyan', 'white', 'brightblack', 'brightred',
                    'brightgreen', 'brightyellow', 'brightblue',
                    'brightmagenta', 'brightcyan', 'brightwhite'))
+ART_CHARS = {
+    'fancy': {
+        'hrz': '\033(0\x71\033(B',
+        'vrt': '\033(0\x78\033(B',
+        'lrc': '\033(0\x6A\033(B',
+        'urc': '\033(0\x6B\033(B',
+        'ulc': '\033(0\x6C\033(B',
+        'llc': '\033(0\x6D\033(B',
+        'crs': '\033(0\x6E\033(B',
+        'lte': '\033(0\x74\033(B',
+        'rte': '\033(0\x75\033(B',
+        'bte': '\033(0\x76\033(B',
+        'ute': '\033(0\x77\033(B'},
+    'unicode': {
+        'hrz': _u(b'\xe2\x94\x80'),
+        'vrt': _u(b'\xe2\x94\x82'),
+        'lrc': _u(b'\xe2\x94\x98'),
+        'urc': _u(b'\xe2\x94\x90'),
+        'ulc': _u(b'\xe2\x94\x8c'),
+        'llc': _u(b'\xe2\x94\x94'),
+        'crs': _u(b'\xe2\x94\xbc'),
+        'lte': _u(b'\xe2\x94\x9c'),
+        'rte': _u(b'\xe2\x94\xa4'),
+        'bte': _u(b'\xe2\x94\xb4'),
+        'ute': _u(b'\xe2\x94\xac')},
+    'ascii': {
+        'hrz': '-',
+        'vrt': '|',
+        'lrc': '+',
+        'urc': '+',
+        'ulc': '+',
+        'llc': '+',
+        'crs': '+',
+        'lte': '+',
+        'rte': '+',
+        'bte': '+',
+        'ute': '+'}}
 
 
 def valid_color_name(value):
@@ -17,7 +55,7 @@ def valid_color_name(value):
 class Printer(object):
     """Provide methods for terminal output with color (or not)"""
 
-    def __init__(self, conky=False, use_color=True, use_art=True):
+    def __init__(self, conky=False, use_color=True, art_style='ascii'):
         self.use_color = use_color
         self.conky = conky
         self.colors = {
@@ -41,19 +79,8 @@ class Printer(object):
                 None: '' if conky else '\033[0m'}
         self.colorset = set(self.colors.keys())
 
-        self.use_art = use_art
-        self.art = {
-                'hrz': '\033(0\x71\033(B' if use_art else '-',
-                'vrt': '\033(0\x78\033(B' if use_art else '|',
-                'lrc': '\033(0\x6A\033(B' if use_art else '+',
-                'urc': '\033(0\x6B\033(B' if use_art else '+',
-                'ulc': '\033(0\x6C\033(B' if use_art else '+',
-                'llc': '\033(0\x6D\033(B' if use_art else '+',
-                'crs': '\033(0\x6E\033(B' if use_art else '+',
-                'lte': '\033(0\x74\033(B' if use_art else '+',
-                'rte': '\033(0\x75\033(B' if use_art else '+',
-                'bte': '\033(0\x76\033(B' if use_art else '+',
-                'ute': '\033(0\x77\033(B' if use_art else '+'}
+        self.art_style = art_style
+        self.art = ART_CHARS[self.art_style]
 
     def get_colorcode(self, colorname):
         return self.colors.get(colorname, '')

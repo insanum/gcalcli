@@ -1587,7 +1587,7 @@ def main():
         (FLAGS, junk) = parser.parse_known_args(tmpArgv)
 
     printer = Printer(
-            conky=FLAGS.conky, use_color=FLAGS.color, use_art=FLAGS.lineart)
+            conky=FLAGS.conky, use_color=FLAGS.color, art_style=FLAGS.lineart)
 
     if junk:
         printer.err_msg(

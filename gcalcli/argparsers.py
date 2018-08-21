@@ -189,8 +189,11 @@ def get_argument_parser():
             "--nocolor", action="store_false", default=True, dest="color",
             help="Enable/Disable all color output")
     parser.add_argument(
-            "--nolineart", action="store_false", dest="lineart",
-            help="Enable/Disable line art")
+            "--lineart", default="fancy",
+            choices=["fancy", "unicode", "ascii"],
+            help="Choose line art style for calendars: \"fancy\": for" +
+            "VTcodes, \"unicode\" for Unicode box drawing characters," +
+            "\"ascii\" for old-school plusses, hyphens and pipes.")
 
     # parent parser types used for subcommands
     details_parser = get_details_parser()
