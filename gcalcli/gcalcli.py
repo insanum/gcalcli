@@ -1627,7 +1627,7 @@ def main():
                 sys.exit(1)
 
             # allow unicode strings for input
-            gcal.QuickAddEvent(_u(FLAGS.text), reminders=FLAGS.reminder)
+            gcal.QuickAddEvent(_u(FLAGS.text), reminders=FLAGS.reminders)
 
         elif FLAGS.command == 'add':
             if FLAGS.prompt:
@@ -1650,7 +1650,7 @@ def main():
                 if FLAGS.description is None:
                     printer.msg('Description: ', 'magenta')
                     FLAGS.description = input()
-                if not FLAGS.reminder:
+                if not FLAGS.reminders:
                     while True:
                         printer.msg(
                                 'Enter a valid reminder or \'.\' to end: ',
@@ -1659,7 +1659,7 @@ def main():
                         if r == '.':
                             break
                         n, m = utils.parse_reminder(str(r))
-                        FLAGS.reminder.append(str(n) + ' ' + m)
+                        FLAGS.reminders.append(str(n) + ' ' + m)
 
             # calculate "when" time:
             try:
@@ -1673,7 +1673,7 @@ def main():
 
             gcal.AddEvent(FLAGS.title, FLAGS.where, estart, eend,
                           FLAGS.description, FLAGS.who,
-                          FLAGS.reminder)
+                          FLAGS.reminders)
 
         elif FLAGS.command == 'search':
             gcal.TextQuery(FLAGS.text[0], start=FLAGS.start, end=FLAGS.end)
@@ -1695,7 +1695,7 @@ def main():
 
         elif FLAGS.command == 'import':
             gcal.ImportICS(
-                    FLAGS.verbose, FLAGS.dump, FLAGS.reminder, FLAGS.file)
+                    FLAGS.verbose, FLAGS.dump, FLAGS.reminders, FLAGS.file)
 
     except GcalcliError as exc:
         printer.err_msg(str(exc))
