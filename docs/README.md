@@ -283,8 +283,10 @@ gcalcli [options] command [command args or options]
     (default: 'false')
   --[no]includeRc: Whether to include ~/.gcalclirc when using configFolder
     (default: 'false')
-  --[no]lineart: Enable/Disable line art
-    (default: 'true')
+  --lineart: Choose line art style for calendars: "fancy": for VTcodes,
+             "unicode" for Unicode box drawing characters (provides conky
+             compatibility), "ascii" for old-school plusses, hyphens and pipes.
+    (default: 'ascii')
   --locale: System locale
   --[no]military: Use 24 hour display
     (default: 'false')
