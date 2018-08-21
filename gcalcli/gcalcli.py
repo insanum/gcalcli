@@ -287,7 +287,7 @@ class GoogleCalendarInterface:
                 pickle.dump(self.cache, _cache_)
 
     def _shorten_url(self, url):
-        if self.details['url'] != "short":
+        if self.details.get('url', False) != "short":
             return url
         # Note that when authenticated to a google account different shortUrls
         # can be returned for the same longUrl. See: http://goo.gl/Ya0A9
@@ -643,7 +643,7 @@ class GoogleCalendarInterface:
                                          _u(event['e'].strftime('%Y-%m-%d')),
                                          _u(event['e'].strftime('%H:%M')))
 
-            if self.details['url']:
+            if self.details.get('url'):
                 output += "\t%s" % (self._shorten_url(event['htmlLink'])
                                     if 'htmlLink' in event else '')
                 output += "\t%s" % (self._shorten_url(event['hangoutLink'])
@@ -651,18 +651,18 @@ class GoogleCalendarInterface:
 
             output += "\t%s" % _u(self._valid_title(event).strip())
 
-            if self.details['location']:
+            if self.details.get('location'):
                 output += "\t%s" % (_u(event['location'].strip())
                                     if 'location' in event else '')
 
-            if self.details['description']:
+            if self.details.get('description'):
                 output += "\t%s" % (_u(event['description'].strip())
                                     if 'description' in event else '')
 
-            if self.details['calendar']:
+            if self.details.get('calendar'):
                 output += "\t%s" % _u(event['gcalcli_cal']['summary'].strip())
 
-            if self.details['email']:
+            if self.details.get('email'):
                 output += "\t%s" % (event['creator']['email'].strip()
                                     if 'email' in event['creator'] else '')
 
@@ -676,22 +676,22 @@ class GoogleCalendarInterface:
             if box:
                 wrapper.initial_indent = (indent + '  ')
                 wrapper.subsequent_indent = (indent + '  ')
-                wrapper.width = (self.details['width'] - 2)
+                wrapper.width = (self.details.get('width') - 2)
             else:
                 wrapper.initial_indent = indent
                 wrapper.subsequent_indent = indent
-                wrapper.width = self.details['width']
+                wrapper.width = self.details.get('width')
             new_descr = ""
             for line in descr.split("\n"):
                 if box:
                     tmpLine = wrapper.fill(line)
                     for singleLine in tmpLine.split("\n"):
-                        singleLine = singleLine.ljust(self.details['width'],
-                                                      ' ')
+                        singleLine = singleLine.ljust(
+                                self.details.get('width'), ' ')
                         new_descr += singleLine[:len(indent)] + \
                             self.printer.art['vrt'] + \
                             singleLine[(len(indent) + 1):
-                                       (self.details['width'] - 1)] + \
+                                       (self.details.get('width') - 1)] + \
                             self.printer.art['vrt'] + '\n'
                 else:
                     new_descr += wrapper.fill(line) + "\n"
@@ -732,22 +732,22 @@ class GoogleCalendarInterface:
                         tmpTimeStr, self._valid_title(event).strip()),
                     eventColor)
 
-        if self.details['calendar']:
+        if self.details.get('calendar'):
             xstr = "%s  Calendar: %s\n" % (
                     detailsIndent, event['gcalcli_cal']['summary'])
             self.printer.msg(xstr, 'default')
 
-        if self.details['url'] and 'htmlLink' in event:
+        if self.details.get('url') and 'htmlLink' in event:
             hLink = self._shorten_url(event['htmlLink'])
             xstr = "%s  Link: %s\n" % (detailsIndent, hLink)
             self.printer.msg(xstr, 'default')
 
-        if self.details['url'] and 'hangoutLink' in event:
+        if self.details.get('url') and 'hangoutLink' in event:
             hLink = self._shorten_url(event['hangoutLink'])
             xstr = "%s  Hangout Link: %s\n" % (detailsIndent, hLink)
             self.printer.msg(xstr, 'default')
 
-        if self.details['location'] and \
+        if self.details.get('location') and \
            'location' in event and \
            event['location'].strip():
             xstr = "%s  Location: %s\n" % (
@@ -756,7 +756,7 @@ class GoogleCalendarInterface:
             )
             self.printer.msg(xstr, 'default')
 
-        if self.details['attendees'] and 'attendees' in event:
+        if self.details.get('attendees') and 'attendees' in event:
             xstr = "%s  Attendees:\n" % (detailsIndent)
             self.printer.msg(xstr, 'default')
 
@@ -778,7 +778,7 @@ class GoogleCalendarInterface:
                     )
                     self.printer.msg(xstr, 'default')
 
-        if self.details['attachments'] and 'attachments' in event:
+        if self.details.get('attachments') and 'attachments' in event:
             xstr = "%s  Attachments:\n" % (detailsIndent)
             self.printer.msg(xstr, 'default')
 
@@ -791,12 +791,12 @@ class GoogleCalendarInterface:
                 )
                 self.printer.msg(xstr, 'default')
 
-        if self.details['length']:
+        if self.details.get('length'):
             diffDateTime = (event['e'] - event['s'])
             xstr = "%s  Length: %s\n" % (detailsIndent, diffDateTime)
             self.printer.msg(xstr, 'default')
 
-        if self.details['reminders'] and 'reminders' in event:
+        if self.details.get('reminders') and 'reminders' in event:
             if event['reminders']['useDefault'] is True:
                 xstr = "%s  Reminder: (default)\n" % (detailsIndent)
                 self.printer.msg(xstr, 'default')
@@ -806,7 +806,7 @@ class GoogleCalendarInterface:
                            (detailsIndent, rem['method'], rem['minutes'])
                     self.printer.msg(xstr, 'default')
 
-        if self.details['email'] and \
+        if self.details.get('email') and \
            'email' in event['creator'] and \
            event['creator']['email'].strip():
             xstr = "%s  Email: %s\n" % (
@@ -815,7 +815,7 @@ class GoogleCalendarInterface:
             )
             self.printer.msg(xstr, 'default')
 
-        if self.details['description'] and \
+        if self.details.get('description') and \
            'description' in event and \
            event['description'].strip():
             descrIndent = detailsIndent + '  '
@@ -824,13 +824,13 @@ class GoogleCalendarInterface:
                 topMarker = (descrIndent +
                              self.printer.art['ulc'] +
                              (self.printer.art['hrz'] *
-                              ((self.details['width'] - len(descrIndent)) -
+                              ((self.details.get('width') - len(descrIndent)) -
                                2)) +
                              self.printer.art['urc'])
                 botMarker = (descrIndent +
                              self.printer.art['llc'] +
                              (self.printer.art['hrz'] *
-                              ((self.details['width'] - len(descrIndent)) -
+                              ((self.details.get('width') - len(descrIndent)) -
                                2)) +
                              self.printer.art['lrc'])
                 xstr = "%s  Description:\n%s\n%s\n%s\n" % (
@@ -842,7 +842,7 @@ class GoogleCalendarInterface:
                 )
             else:
                 marker = descrIndent + '-' * \
-                    (self.details['width'] - len(descrIndent))
+                    (self.details.get('width') - len(descrIndent))
                 xstr = "%s  Description:\n%s\n%s\n%s\n" % (
                     detailsIndent,
                     marker,
@@ -1244,7 +1244,7 @@ class GoogleCalendarInterface:
                       eventId=new_event['id'],
                       body=rem))
 
-        if self.details['url']:
+        if self.details.get('url'):
             hlink = self._shorten_url(new_event['htmlLink'])
             self.printer.msg('New event added: %s\n' % hlink, 'green')
 
@@ -1283,7 +1283,7 @@ class GoogleCalendarInterface:
             self._cal_service().events().
             insert(calendarId=self.cals[0]['id'], body=event))
 
-        if self.details['url']:
+        if self.details.get('url'):
             hlink = self._shorten_url(new_event['htmlLink'])
             self.printer.msg('New event added: %s\n' % hlink, 'green')
 

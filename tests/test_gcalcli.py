@@ -90,14 +90,13 @@ def test_list(capsys, PatchedGCalI):
 
 
 def test_agenda(PatchedGCalI):
-    # TODO: use capsys to do some assertions here
-    PatchedGCalI().AgendaQuery()
+    assert PatchedGCalI().AgendaQuery() == 0
 
     opts = get_start_end_parser().parse_args(['tomorrow'])
-    PatchedGCalI().AgendaQuery(start=opts.start, end=opts.end)
+    assert PatchedGCalI().AgendaQuery(start=opts.start, end=opts.end) == 0
 
     opts = get_start_end_parser().parse_args(['today', 'tomorrow'])
-    PatchedGCalI().AgendaQuery(start=opts.start, end=opts.end)
+    assert PatchedGCalI().AgendaQuery(start=opts.start, end=opts.end) == 0
 
 
 def test_cal_query(capsys, PatchedGCalI):
@@ -230,3 +229,10 @@ def test_localize_datetime(PatchedGCalI):
     dt = datetime.now(tzutc())
     dt = GoogleCalendarInterface._localize_datetime(dt)
     assert dt.tzinfo is not None
+
+
+def test_iterate_events(capsys, PatchedGCalI):
+    gcal = PatchedGCalI()
+    assert gcal._iterate_events(gcal.now, []) == 0
+
+    # TODO: add some events to a list and assert their selection
