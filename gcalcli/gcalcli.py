@@ -125,12 +125,8 @@ class GoogleCalendarInterface:
         self.printer = printer
         self.options = options
 
-        self.details = {}
-        chosen_details = options.get('details', [])
-        self.details['url'] = ('short' if 'shorturl' in chosen_details else
-                               'long' if 'longurl' in chosen_details else
-                               None)
-        # stored as detail, but provided as option
+        self.details = options.get('details', {})
+        # stored as detail, but provided as option: TODO: fix that
         self.details['width'] = options.get('width', 80)
         self._get_cached()
 

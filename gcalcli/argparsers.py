@@ -4,20 +4,28 @@ import gcalcli
 from gcalcli import utils
 from gcalcli.printer import valid_color_name
 from oauth2client import tools
+import copy as _copy
 
 DETAILS = ['all', 'calendar', 'location', 'length', 'reminders', 'description',
            'longurl', 'shorturl', 'url', 'attendees', 'email', 'attachments']
 
+BOOL_DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
+                'attendees', 'email', 'attachments']
 
-class DetailsAction(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
 
-        details = []
-        if 'all' in values:
-            details = DETAILS[1:]
-        else:
-            for d in values:
-                details.append(d)
+class DetailsAction(argparse._AppendAction):
+
+    def __call__(self, parser, namespace, value, option_string=None):
+        details = _copy.copy(getattr(namespace, self.dest, {}))
+
+        if value == 'all':
+            details = {d: True for d in BOOL_DETAILS}
+        elif value in BOOL_DETAILS:
+            details[value] = True
+        elif value in ['shorturl', 'url']:
+            details['url'] = 'short'
+        elif value == 'longurl':
+            details['url'] = 'long'
 
         setattr(namespace, self.dest, details)
 
@@ -40,7 +48,7 @@ def validreminder(value):
 def get_details_parser():
     details_parser = argparse.ArgumentParser(add_help=False)
     details_parser.add_argument(
-            "--details", default={}, type=str, action=DetailsAction,
+            "--details", default={}, action=DetailsAction,
             choices=DETAILS,
             help="Which parts to display, can be: " + ", ".join(DETAILS))
     return details_parser
