@@ -464,7 +464,7 @@ me and use nothing that is common I highly recommend the
 
 #### Agenda On Your Root Desktop
 
-Put your agenda on your desktop using Conky. The '--conky' option causes
+Put your agenda on your desktop using [Conky](https://github.com/brndnmtthws/conky). The '--conky' option causes
 gcalcli to output Conky color sequences. Note that you need to use the Conky
 'execpi' command for the gcalcli output to be parsed for color sequences. Add
 the following to your .conkyrc:
@@ -481,6 +481,11 @@ ${execpi 300 gcalcli --conky calw 3}
 
 You may need to increase the `text_buffer_size` in your conkyrc file.  Users
 have reported that the default of 256 bytes is too small for busy calendars.
+
+Additionaly you need to set `--lineart=unicode` to output unicode-characters for box drawing. To avoid misaligned borders use a monospace font like 'DejaVu Sans Mono'. On Python2 it might be necessary to set the environment variable `PYTHONIOENCODING=utf8` if you are using characters beyond 'latin1'. For example:
+```
+${font DejaVu Sans Mono:size=9}${execpi 300 export PYTHONIOENCODING=utf8 && gcalcli --conky --lineart=unicode calw 3}
+```
 
 #### Agenda Integration With tmux
 
