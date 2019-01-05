@@ -1246,7 +1246,7 @@ class GoogleCalendarInterface:
 
         return new_event
 
-    def AddEvent(self, title, where, start, end, descr, who, reminders):
+    def AddEvent(self, title, where, start, end, descr, who, reminders, color_id):
 
         if len(self.cals) != 1:
             # TODO: get a better name for this exception class
@@ -1271,13 +1271,28 @@ class GoogleCalendarInterface:
         if descr:
             event['description'] = descr
 
+        if color_id:
+            color_map = {
+                "lavender": 1,
+                "sage": 2,
+                "grape": 3,
+                "flamingo": 4,
+                "banana": 5,
+                "tangerine": 6,
+                "peacock": 7,
+                "graphite": 8,
+                "blueberry": 9,
+                "basil": 10,
+                "tomato": 11,
+            }
+            event['colorId'] = color_map.get(color_id.lower())
+
         event['attendees'] = list(map(lambda w: {'email': w}, who))
 
         event = self._add_reminders(event, reminders)
-
-        new_event = self._retry_with_backoff(
-            self._cal_service().events().
-            insert(calendarId=self.cals[0]['id'], body=event))
+        events = self._cal_service().events()
+        request = events.insert(calendarId=self.cals[0]['id'], body=event)
+        new_event = self._retry_with_backoff(request)
 
         if self.details.get('url'):
             hlink = self._shorten_url(new_event['htmlLink'])
@@ -1607,6 +1622,9 @@ def main():
         if FLAGS.command == 'list':
             gcal.ListAllCalendars()
 
+        elif FLAGS.command == "colors":
+            gcal.GetColours()
+
         elif FLAGS.command == 'agenda':
             gcal.AgendaQuery(start=FLAGS.start, end=FLAGS.end)
 
@@ -1646,6 +1664,9 @@ def main():
                 if FLAGS.description is None:
                     printer.msg('Description: ', 'magenta')
                     FLAGS.description = input()
+                if FLAGS.color is None:
+                    printer.msg('Color: ', 'magenta')
+                    FLAGS.color = input()
                 if not FLAGS.reminders:
                     while True:
                         printer.msg(
@@ -1669,7 +1690,7 @@ def main():
 
             gcal.AddEvent(FLAGS.title, FLAGS.where, estart, eend,
                           FLAGS.description, FLAGS.who,
-                          FLAGS.reminders)
+                          FLAGS.reminders, FLAGS.color)
 
         elif FLAGS.command == 'search':
             gcal.TextQuery(FLAGS.text[0], start=FLAGS.start, end=FLAGS.end)

@@ -129,7 +129,8 @@ def test_add_event(PatchedGCalI):
     descr = 'testing'
     who = 'anyone'
     reminders = None
-    assert gcal.AddEvent(title, where, start, end, descr, who, reminders)
+    color_id = 11
+    assert gcal.AddEvent(title, where, start, end, descr, who, reminders, color_id)
 
 
 def test_quick_add(PatchedGCalI):
