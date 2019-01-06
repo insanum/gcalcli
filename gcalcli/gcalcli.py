@@ -68,6 +68,8 @@ from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
 from collections import namedtuple
 
+from . utils import OVERRIDE_COLOR_MAP
+
 # Required 3rd party libraries
 try:
     from dateutil.tz import tzlocal
@@ -712,9 +714,26 @@ class GoogleCalendarInterface:
 
         happeningNow = event['s'] <= self.now <= event['e']
         allDay = self._isallday(event)
-        eventColor = self.options['color_now_marker'] \
-            if happeningNow and not allDay \
-            else self._calendar_color(event['gcalcli_cal'])
+        if self.options['override_color'] and event.get('overridden_event_color'):
+            # maps ansi color names with utils.OVERRIDE_COLOR_MAP vals
+            ansi_codes = {
+                "1": "brightblue",
+                "2": "brightgreen",
+                "3": "brightmagenta",
+                "4": "magenta",
+                "5": "brightyellow",
+                "6": "brightred",
+                "7": "brightcyan",
+                "8": "brightblack",
+                "9": "blue",
+                "10": "green",
+                "11": "red"
+            }
+            eventColor = ansi_codes[event.get('colorId')]
+        else:
+            eventColor = self.options['color_now_marker'] \
+                if happeningNow and not allDay \
+                else self._calendar_color(event['gcalcli_cal'])
 
         if allDay:
             fmt = '  ' + timeFormat + '  %s\n'
@@ -1019,6 +1038,10 @@ class GoogleCalendarInterface:
         day = ''
 
         for event in eventList:
+            overridden_event_color = event.get('colorId')
+            if overridden_event_color:
+                event['colorId'] = overridden_event_color
+                event['overridden_event_color'] = True
             if self.options['ignore_started'] and (event['s'] < self.now):
                 continue
             if self.options['ignore_declined'] and self._DeclinedEvent(event):
@@ -1272,20 +1295,7 @@ class GoogleCalendarInterface:
             event['description'] = descr
 
         if color_id:
-            color_map = {
-                "lavender": 1,
-                "sage": 2,
-                "grape": 3,
-                "flamingo": 4,
-                "banana": 5,
-                "tangerine": 6,
-                "peacock": 7,
-                "graphite": 8,
-                "blueberry": 9,
-                "basil": 10,
-                "tomato": 11,
-            }
-            event['colorId'] = color_map.get(color_id.lower())
+            event['colorId'] = OVERRIDE_COLOR_MAP.get(color_id.lower())
 
         event['attendees'] = list(map(lambda w: {'email': w}, who))
 

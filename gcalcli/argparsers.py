@@ -71,6 +71,9 @@ def get_output_parser(parents=[]):
     output_parser.add_argument(
             "--military", action="store_true", default=False,
             help="Use 24 hour display")
+    output_parser.add_argument(
+            "--override-color", action="store_true", default=False,
+            help="Use overridden color for event")
     return output_parser
 
 
