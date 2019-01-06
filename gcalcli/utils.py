@@ -11,19 +11,22 @@ from parsedatetime.parsedatetime import Calendar
 locale.setlocale(locale.LC_ALL, '')
 fuzzy_date_parse = Calendar().parse
 
-OVERRIDE_COLOR_MAP = {
-    "lavender": 1,
-    "sage": 2,
-    "grape": 3,
-    "flamingo": 4,
-    "banana": 5,
-    "tangerine": 6,
-    "peacock": 7,
-    "graphite": 8,
-    "blueberry": 9,
-    "basil": 10,
-    "tomato": 11,
-}
+valid_override_colors = [
+    "lavender",
+    "sage",
+    "grape",
+    "flamingo",
+    "banana",
+    "tangerine",
+    "peacock",
+    "graphite",
+    "blueberry",
+    "basil",
+    "tomato",
+]
+
+override_color_map = {x[1]: x[0]
+                      for x in list(enumerate(valid_override_colors, start=1))}
 
 
 def parse_reminder(rem):
