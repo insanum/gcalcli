@@ -1317,7 +1317,7 @@ class GoogleCalendarInterface:
             event['description'] = descr
 
         if color_id:
-            event['colorId'] = override_color_map.get(color_id.lower())
+            event['colorId'] = override_color_map.get(color_id)
 
         event['attendees'] = list(map(lambda w: {'email': w}, who))
 
