@@ -432,7 +432,8 @@ class GoogleCalendarInterface:
                         }
                         event_color = ansi_codes[event.get('colorId')]
                     else:
-                        event_color = self._calendar_color(event['gcalcli_cal'])
+                        event_color = self._calendar_color(
+                            event['gcalcli_cal'])
 
                 # NOTE(slawqo): for all day events it's necessary to add event
                 # to more than one day in week_events
@@ -950,7 +951,8 @@ class GoogleCalendarInterface:
                 self.printer.msg('Color: ', 'magenta')
                 val = input()
                 if val not in valid_override_colors:
-                    err_msg = "Valid colors are " + " ".join(valid_override_colors) + "."
+                    err_msg = "Valid colors are " + " ".join(
+                        valid_override_colors) + "."
                     self.printer.msg(err_msg, 'red')
                 else:
                     self.options['override_color'] = True
@@ -1291,7 +1293,16 @@ class GoogleCalendarInterface:
 
         return new_event
 
-    def AddEvent(self, title, where, start, end, descr, who, reminders, color_id):
+    def AddEvent(
+            self,
+            title,
+            where,
+            start,
+            end,
+            descr,
+            who,
+            reminders,
+            color_id):
 
         if len(self.cals) != 1:
             # TODO: get a better name for this exception class
