@@ -68,7 +68,7 @@ from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
 from collections import namedtuple
 
-from . utils import override_color_map, valid_override_colors
+from gcalcli.utils import override_color_map, valid_override_colors
 
 # Required 3rd party libraries
 try:
@@ -293,9 +293,26 @@ class GoogleCalendarInterface:
             self._url_service().url().insert(body={'longUrl': url}))
         return shortUrl['id']
 
-    def _calendar_color(self, cal):
-        if cal is None:
+    def _calendar_color(self, event, override_color=False):
+        ansi_codes = {
+            "1": "brightblue",
+            "2": "brightgreen",
+            "3": "brightmagenta",
+            "4": "magenta",
+            "5": "brightyellow",
+            "6": "brightred",
+            "7": "brightcyan",
+            "8": "brightblack",
+            "9": "blue",
+            "10": "green",
+            "11": "red"
+        }
+        if event.get('gcalcli_cal') is None:
             return 'default'
+        else:
+            cal = event['gcalcli_cal']
+        if override_color:
+            return ansi_codes[event['colorId']]
         elif cal.get('colorSpec', None):
             return cal['colorSpec']
         elif cal['accessRole'] == self.ACCESS_OWNER:
@@ -417,23 +434,11 @@ class GoogleCalendarInterface:
                     event_color = self.options['color_now_marker']
                 else:
                     if self.options['override_color'] and event.get('colorId'):
-                        ansi_codes = {
-                            "1": "brightblue",
-                            "2": "brightgreen",
-                            "3": "brightmagenta",
-                            "4": "magenta",
-                            "5": "brightyellow",
-                            "6": "brightred",
-                            "7": "brightcyan",
-                            "8": "brightblack",
-                            "9": "blue",
-                            "10": "green",
-                            "11": "red"
-                        }
-                        event_color = ansi_codes[event.get('colorId')]
+                        event_color = self._calendar_color(
+                            event, override_color=True)
                     else:
                         event_color = self._calendar_color(
-                            event['gcalcli_cal'])
+                            event)
 
                 # NOTE(slawqo): for all day events it's necessary to add event
                 # to more than one day in week_events
@@ -732,25 +737,12 @@ class GoogleCalendarInterface:
         happeningNow = event['s'] <= self.now <= event['e']
         allDay = self._isallday(event)
         if self.options['override_color'] and event.get('colorId'):
-            # maps ansi color names with utils.override_color_map vals
-            ansi_codes = {
-                "1": "brightblue",
-                "2": "brightgreen",
-                "3": "brightmagenta",
-                "4": "magenta",
-                "5": "brightyellow",
-                "6": "brightred",
-                "7": "brightcyan",
-                "8": "brightblack",
-                "9": "blue",
-                "10": "green",
-                "11": "red"
-            }
-            eventColor = ansi_codes[event.get('colorId')]
+            eventColor = self._calendar_color(
+                event, override_color=True)
         else:
             eventColor = self.options['color_now_marker'] \
                 if happeningNow and not allDay \
-                else self._calendar_color(event['gcalcli_cal'])
+                else self._calendar_color(event)
 
         if allDay:
             fmt = '  ' + timeFormat + '  %s\n'
@@ -1294,15 +1286,7 @@ class GoogleCalendarInterface:
         return new_event
 
     def AddEvent(
-            self,
-            title,
-            where,
-            start,
-            end,
-            descr,
-            who,
-            reminders,
-            color_id):
+            self, title, where, start, end, descr, who, reminders, color_id):
 
         if len(self.cals) != 1:
             # TODO: get a better name for this exception class
@@ -1664,9 +1648,6 @@ def main():
     try:
         if FLAGS.command == 'list':
             gcal.ListAllCalendars()
-
-        elif FLAGS.command == "colors":
-            gcal.GetColours()
 
         elif FLAGS.command == 'agenda':
             gcal.AgendaQuery(start=FLAGS.start, end=FLAGS.end)

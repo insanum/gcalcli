@@ -255,8 +255,7 @@ def get_argument_parser():
     add = sub.add_parser("add", parents=[details_parser, remind_parser])
     add.add_argument(
             "--color",
-            default=None,
-            type=str,
+            default=None, type=str,
             help="Color of event in browser (overrides default). Choose "
                  "from lavender, sage, grape, flamingo, banana, tangerine, "
                  "peacock, graphite, blueberry, basil, tomato."
