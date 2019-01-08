@@ -1286,7 +1286,7 @@ class GoogleCalendarInterface:
         return new_event
 
     def AddEvent(
-            self, title, where, start, end, descr, who, reminders, color_id):
+            self, title, where, start, end, descr, who, reminders, color):
 
         if len(self.cals) != 1:
             # TODO: get a better name for this exception class
@@ -1311,8 +1311,8 @@ class GoogleCalendarInterface:
         if descr:
             event['description'] = descr
 
-        if color_id:
-            event['colorId'] = override_color_map.get(color_id)
+        if color:
+            event['colorId'] = override_color_map.get(color)
 
         event['attendees'] = list(map(lambda w: {'email': w}, who))
 
