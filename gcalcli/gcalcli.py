@@ -737,8 +737,11 @@ class GoogleCalendarInterface:
         happeningNow = event['s'] <= self.now <= event['e']
         allDay = self._isallday(event)
         if self.options['override_color'] and event.get('colorId'):
-            eventColor = self._calendar_color(
-                event, override_color=True)
+            if happeningNow and not allDay:
+                eventColor = self.options['color_now_marker']
+            else:
+                eventColor = self._calendar_color(
+                    event, override_color=True)
         else:
             eventColor = self.options['color_now_marker'] \
                 if happeningNow and not allDay \
