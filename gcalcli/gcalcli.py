@@ -68,6 +68,8 @@ from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
 from collections import namedtuple
 
+from gcalcli.utils import override_color_map, valid_override_colors
+
 # Required 3rd party libraries
 try:
     from dateutil.tz import tzlocal
@@ -291,9 +293,26 @@ class GoogleCalendarInterface:
             self._url_service().url().insert(body={'longUrl': url}))
         return shortUrl['id']
 
-    def _calendar_color(self, cal):
-        if cal is None:
+    def _calendar_color(self, event, override_color=False):
+        ansi_codes = {
+            "1": "brightblue",
+            "2": "brightgreen",
+            "3": "brightmagenta",
+            "4": "magenta",
+            "5": "brightyellow",
+            "6": "brightred",
+            "7": "brightcyan",
+            "8": "brightblack",
+            "9": "blue",
+            "10": "green",
+            "11": "red"
+        }
+        if event.get('gcalcli_cal') is None:
             return 'default'
+        else:
+            cal = event['gcalcli_cal']
+        if override_color:
+            return ansi_codes[event['colorId']]
         elif cal.get('colorSpec', None):
             return cal['colorSpec']
         elif cal['accessRole'] == self.ACCESS_OWNER:
@@ -414,7 +433,12 @@ class GoogleCalendarInterface:
                 if force_now_marker:
                     event_color = self.options['color_now_marker']
                 else:
-                    event_color = self._calendar_color(event['gcalcli_cal'])
+                    if self.options['override_color'] and event.get('colorId'):
+                        event_color = self._calendar_color(
+                            event, override_color=True)
+                    else:
+                        event_color = self._calendar_color(
+                            event)
 
                 # NOTE(slawqo): for all day events it's necessary to add event
                 # to more than one day in week_events
@@ -712,9 +736,16 @@ class GoogleCalendarInterface:
 
         happeningNow = event['s'] <= self.now <= event['e']
         allDay = self._isallday(event)
-        eventColor = self.options['color_now_marker'] \
-            if happeningNow and not allDay \
-            else self._calendar_color(event['gcalcli_cal'])
+        if self.options['override_color'] and event.get('colorId'):
+            if happeningNow and not allDay:
+                eventColor = self.options['color_now_marker']
+            else:
+                eventColor = self._calendar_color(
+                    event, override_color=True)
+        else:
+            eventColor = self.options['color_now_marker'] \
+                if happeningNow and not allDay \
+                else self._calendar_color(event)
 
         if allDay:
             fmt = '  ' + timeFormat + '  %s\n'
@@ -905,17 +936,28 @@ class GoogleCalendarInterface:
         while True:
             self.printer.msg(
                     'Edit?\n[N]o [s]ave [q]uit [t]itle [l]ocation [w]hen ' +
-                    'len[g]th [r]eminder [d]escr: ', 'magenta')
+                    'len[g]th [r]eminder [c]olor [d]escr: ', 'magenta')
             val = input()
 
             if not val or val.lower() == 'n':
                 return
 
+            elif val.lower() == 'c':
+                self.printer.msg('Color: ', 'magenta')
+                val = input()
+                if val not in valid_override_colors:
+                    err_msg = "Valid colors are " + " ".join(
+                        valid_override_colors) + "."
+                    self.printer.msg(err_msg, 'red')
+                else:
+                    self.options['override_color'] = True
+                    event['colorId'] = str(override_color_map.get(val))
+
             elif val.lower() == 's':
                 # copy only editable event details for patching
                 modEvent = {}
                 keys = ['summary', 'location', 'start', 'end', 'reminders',
-                        'description']
+                        'description', 'colorId']
                 for k in keys:
                     if k in event:
                         modEvent[k] = event[k]
@@ -1246,7 +1288,8 @@ class GoogleCalendarInterface:
 
         return new_event
 
-    def AddEvent(self, title, where, start, end, descr, who, reminders):
+    def AddEvent(
+            self, title, where, start, end, descr, who, reminders, color):
 
         if len(self.cals) != 1:
             # TODO: get a better name for this exception class
@@ -1271,13 +1314,15 @@ class GoogleCalendarInterface:
         if descr:
             event['description'] = descr
 
+        if color:
+            event['colorId'] = override_color_map.get(color)
+
         event['attendees'] = list(map(lambda w: {'email': w}, who))
 
         event = self._add_reminders(event, reminders)
-
-        new_event = self._retry_with_backoff(
-            self._cal_service().events().
-            insert(calendarId=self.cals[0]['id'], body=event))
+        events = self._cal_service().events()
+        request = events.insert(calendarId=self.cals[0]['id'], body=event)
+        new_event = self._retry_with_backoff(request)
 
         if self.details.get('url'):
             hlink = self._shorten_url(new_event['htmlLink'])
@@ -1646,6 +1691,9 @@ def main():
                 if FLAGS.description is None:
                     printer.msg('Description: ', 'magenta')
                     FLAGS.description = input()
+                if FLAGS.color is None:
+                    printer.msg('Color: ', 'magenta')
+                    FLAGS.color = input()
                 if not FLAGS.reminders:
                     while True:
                         printer.msg(
@@ -1669,7 +1717,7 @@ def main():
 
             gcal.AddEvent(FLAGS.title, FLAGS.where, estart, eend,
                           FLAGS.description, FLAGS.who,
-                          FLAGS.reminders)
+                          FLAGS.reminders, FLAGS.color)
 
         elif FLAGS.command == 'search':
             gcal.TextQuery(FLAGS.text[0], start=FLAGS.start, end=FLAGS.end)

@@ -71,6 +71,9 @@ def get_output_parser(parents=[]):
     output_parser.add_argument(
             "--military", action="store_true", default=False,
             help="Use 24 hour display")
+    output_parser.add_argument(
+            "--override-color", action="store_true", default=False,
+            help="Use overridden color for event")
     return output_parser
 
 
@@ -250,6 +253,13 @@ def get_argument_parser():
     quick.add_argument("text")
 
     add = sub.add_parser("add", parents=[details_parser, remind_parser])
+    add.add_argument(
+            "--color",
+            default=None, type=str,
+            help="Color of event in browser (overrides default). Choose "
+                 "from lavender, sage, grape, flamingo, banana, tangerine, "
+                 "peacock, graphite, blueberry, basil, tomato."
+    )
     add.add_argument("--title", default=None, type=str, help="Event title")
     add.add_argument(
             "--who", default=[], type=str, action="append", help="Event title")
