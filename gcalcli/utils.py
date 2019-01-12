@@ -11,6 +11,8 @@ from parsedatetime.parsedatetime import Calendar
 locale.setlocale(locale.LC_ALL, '')
 fuzzy_date_parse = Calendar().parse
 
+REMINDER_REGEX = r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$'
+
 valid_override_colors = [
     "lavender",
     "sage",
@@ -30,7 +32,7 @@ override_color_map = {x[1]: x[0]
 
 
 def parse_reminder(rem):
-    matchObj = re.match(r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$', rem)
+    matchObj = re.match(REMINDER_REGEX, rem)
     if not matchObj:
         # Allow argparse to generate a message when parsing options
         return None

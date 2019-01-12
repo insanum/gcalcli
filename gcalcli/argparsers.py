@@ -252,9 +252,15 @@ def get_argument_parser():
     quick = sub.add_parser("quick", parents=[details_parser, remind_parser])
     quick.add_argument("text")
 
-    add = sub.add_parser("add", parents=[details_parser, remind_parser])
+    add = sub.add_parser("add", parents=[details_parser, remind_parser],
+                         description="Add an event to the calendar. Some or "
+                                     "all metadata can be passed as options "
+                                     "(see optional arguments). If incomplete,"
+                                     " will drop to an interactive prompt "
+                                     "requesting remaining data.")
     add.add_argument(
             "--color",
+            dest="event_color",
             default=None, type=str,
             help="Color of event in browser (overrides default). Choose "
                  "from lavender, sage, grape, flamingo, banana, tangerine, "

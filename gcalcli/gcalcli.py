@@ -69,6 +69,9 @@ from unicodedata import east_asian_width
 from collections import namedtuple
 
 from gcalcli.utils import override_color_map, valid_override_colors
+from gcalcli.validators import (
+    get_input, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
+    VALID_COLOURS, STR_ALLOW_EMPTY, REMINDER)
 
 # Required 3rd party libraries
 try:
@@ -915,14 +918,15 @@ class GoogleCalendarInterface:
         event['s'] = parse(start)
         event['e'] - parse(end)
 
-        if self.options['allday']:
+        try:
+            self.options['allday']
             event['start'] = {'date': start,
                               'dateTime': None,
                               'timeZone': None}
             event['end'] = {'date': end,
                             'dateTime': None,
                             'timeZone': None}
-        else:
+        except KeyError:
             event['start'] = {'date': None,
                               'dateTime': start,
                               'timeZone': event['gcalcli_cal']['timeZone']}
@@ -943,8 +947,7 @@ class GoogleCalendarInterface:
                 return
 
             elif val.lower() == 'c':
-                self.printer.msg('Color: ', 'magenta')
-                val = input()
+                val = get_input(self.printer, 'Color: ', VALID_COLOURS)
                 if val not in valid_override_colors:
                     err_msg = "Valid colors are " + " ".join(
                         valid_override_colors) + "."
@@ -975,49 +978,53 @@ class GoogleCalendarInterface:
                 sys.exit(0)
 
             elif val.lower() == 't':
-                self.printer.msg('Title: ', 'magenta')
-                val = input()
+                val = get_input(self.printer, 'Title: ', STR_NOT_EMPTY)
                 if val.strip():
                     event['summary'] = val.strip()
 
             elif val.lower() == 'l':
-                self.printer.msg('Location: ', 'magenta')
-                val = input()
+                val = get_input(self.printer, 'Location: ', STR_ALLOW_EMPTY)
                 if val.strip():
                     event['location'] = val.strip()
 
             elif val.lower() == 'w':
-                self.printer.msg('When: ', 'magenta')
-                val = input().strip()
+                val = get_input(self.printer, 'When: ', PARSABLE_DATE).strip()
                 if val:
                     td = (event['e'] - event['s'])
                     length = ((td.days * 1440) + (td.seconds / 60))
                     try:
+                        all_day = self.options.get('allday')
+                    except KeyError:
+                        all_day = None
+                    try:
                         newStart, newEnd = utils.get_times_from_duration(
-                                val, length, self.options['allday'])
+                                val, length, all_day)
                     except ValueError as exc:
                         self.printer.err_msg(str(exc))
                         sys.exit(1)
                     event = self._SetEventStartEnd(newStart, newEnd, event)
 
             elif val.lower() == 'g':
-                self.printer.msg('Length (mins): ', 'magenta')
-                val = input().strip()
+                val = get_input(
+                    self.printer, 'Length (mins): ', STR_TO_INT)
                 if val:
+                    try:
+                        all_day = self.options.get('allday')
+                    except KeyError:
+                        all_day = None
                     try:
                         newStart, newEnd = utils.get_times_from_duration(
                                 event['start']['dateTime'], val,
-                                self.options['allday'])
+                                all_day)
                     except ValueError as exc:
                         self.printer.err_msg(str(exc))
 
             elif val.lower() == 'r':
                 rem = []
                 while True:
-                    self.printer.msg(
-                            'Enter a valid reminder or \'.\' to end: ',
-                            'magenta')
-                    r = input()
+                    r = get_input(
+                        self.printer, "Enter a valid reminder or '.' to"
+                                      "end: ", REMINDER)
                     if r == '.':
                         break
                     rem.append(r)
@@ -1034,8 +1041,7 @@ class GoogleCalendarInterface:
                                           'overrides': []}
 
             elif val.lower() == 'd':
-                self.printer.msg('Description: ', 'magenta')
-                val = input()
+                val = get_input(self.printer, 'Description: ', STR_ALLOW_EMPTY)
                 if val.strip():
                     event['description'] = val.strip()
 
@@ -1673,33 +1679,29 @@ def main():
         elif FLAGS.command == 'add':
             if FLAGS.prompt:
                 if FLAGS.title is None:
-                    printer.msg('Title: ', 'magenta')
-                    FLAGS.title = input()
+                    FLAGS.title = get_input(printer, 'Title: ', STR_NOT_EMPTY)
                 if FLAGS.where is None:
-                    printer.msg('Location: ', 'magenta')
-                    FLAGS.where = input()
+                    FLAGS.where = get_input(
+                        printer, 'Location: ', STR_ALLOW_EMPTY)
                 if FLAGS.when is None:
-                    printer.msg('When: ', 'magenta')
-                    FLAGS.when = input()
+                    FLAGS.when = get_input(printer, 'When: ', PARSABLE_DATE)
                 if FLAGS.duration is None:
                     if FLAGS.allday:
                         prompt = 'Duration (days): '
                     else:
                         prompt = 'Duration (minutes): '
-                    printer.msg(prompt, 'magenta')
-                    FLAGS.duration = input()
+                    FLAGS.duration = get_input(printer, prompt, STR_TO_INT)
                 if FLAGS.description is None:
-                    printer.msg('Description: ', 'magenta')
-                    FLAGS.description = input()
-                if FLAGS.color is None:
-                    printer.msg('Color: ', 'magenta')
-                    FLAGS.color = input()
+                    FLAGS.description = get_input(
+                        printer, 'Description: ', STR_ALLOW_EMPTY)
+                if FLAGS.event_color is None:
+                    FLAGS.event_color = get_input(
+                        printer, "Color: ", VALID_COLOURS)
                 if not FLAGS.reminders:
                     while True:
-                        printer.msg(
-                                'Enter a valid reminder or \'.\' to end: ',
-                                'magenta')
-                        r = input()
+                        r = get_input(printer, "Enter a valid reminder or "
+                                               "'.' to end: ", REMINDER)
+
                         if r == '.':
                             break
                         n, m = utils.parse_reminder(str(r))
@@ -1717,7 +1719,7 @@ def main():
 
             gcal.AddEvent(FLAGS.title, FLAGS.where, estart, eend,
                           FLAGS.description, FLAGS.who,
-                          FLAGS.reminders, FLAGS.color)
+                          FLAGS.reminders, FLAGS.event_color)
 
         elif FLAGS.command == 'search':
             gcal.TextQuery(FLAGS.text[0], start=FLAGS.start, end=FLAGS.end)
