@@ -7,7 +7,6 @@ from gcalcli.validators import (STR_NOT_EMPTY,
                                 STR_ALLOW_EMPTY,
                                 REMINDER,
                                 VALID_COLOURS)
-
 import gcalcli.validators
 
 # Tests required:
