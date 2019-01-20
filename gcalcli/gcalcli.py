@@ -1370,9 +1370,10 @@ class GoogleCalendarInterface:
                     # don't remind if all reminders haven't arrived yet
                     continue
 
-            if self.options['military']:
+            try:
+                self.options['military']
                 tmpTimeStr = event['s'].strftime('%H:%M')
-            else:
+            except KeyError:
                 tmpTimeStr = \
                     event['s'].strftime('%I:%M').lstrip('0') + \
                     event['s'].strftime('%p').lower()
