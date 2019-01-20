@@ -98,6 +98,18 @@ gcalcli is a Python application that allows you to access your Google Calendar(s
                            - <mins> default is 10
                            - default command:
                               'notify-send -u critical -i appointment-soon -a gcalcli %%s'
+.SH DIAGNOSTICS
+.B "Encoding issues, wrongly printed characters, UnicodeEncodeError when using conky, in pipes or scripts"
+.RS
+ - Set an environment variable PYTHONIOENCODING=utf8
+ - Use a Unicode capable font like DejaVu Sans Mono
+ - Set option --lineart=unicode or --lineart=ascii
+ - Upgrade to Python3
+.RE
+.B "No colors or garbage characters when using inside conky"
+.RS
+ - Set option --conky
+.RE
 .SH SEE ALSO
 bash(1)
 
