@@ -6,7 +6,7 @@ from gcalcli.validators import (STR_NOT_EMPTY,
                                 STR_TO_INT,
                                 STR_ALLOW_EMPTY,
                                 REMINDER,
-                                VALID_COLOURS)
+                                VALID_COLORS)
 import gcalcli.validators
 
 # Tests required:
@@ -67,18 +67,18 @@ def test_for_valid_colour_name(monkeypatch):
     # non valid colour raises ValidationError
     monkeypatch.setattr(gcalcli.validators, "input", lambda: "purple")
     with pytest.raises(ValidationError):
-        validate_input(VALID_COLOURS) == ValidationError(
+        validate_input(VALID_COLORS) == ValidationError(
             "purple is not a valid color value to use here. Please "
             "use one of basil, peacock, grape, lavender, blueberry,"
             "tomato, safe, flamingo or banana."
         )
     # valid colour passes
     monkeypatch.setattr(gcalcli.validators, "input", lambda: "grape")
-    validate_input(VALID_COLOURS) == "grape"
+    validate_input(VALID_COLORS) == "grape"
 
     # empty str passes
     monkeypatch.setattr(gcalcli.validators, "input", lambda: "")
-    validate_input(VALID_COLOURS) == ""
+    validate_input(VALID_COLORS) == ""
 
 
 def test_any_string_and_blank(monkeypatch):

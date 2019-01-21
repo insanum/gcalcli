@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import re
 
-from builtins import input
+from six.moves import input
 
 from gcalcli.utils import valid_override_colors, REMINDER_REGEX
 from gcalcli.exceptions import ValidationError
@@ -10,7 +10,7 @@ from gcalcli.exceptions import ValidationError
 from dateutil.parser import parse
 
 
-def get_input(printer, prompt,  validator_func):
+def get_input(printer, prompt, validator_func):
     printer.msg(prompt, 'magenta')
     while True:
         try:
@@ -21,7 +21,7 @@ def get_input(printer, prompt,  validator_func):
             printer.msg(prompt, 'magenta')
 
 
-def valid_colours_validator(input_str):
+def valid_colors_validator(input_str):
     """
     A filter allowing only the following strings:
         * basil
@@ -121,5 +121,5 @@ STR_NOT_EMPTY = non_blank_str_validator
 STR_ALLOW_EMPTY = str_allow_empty_validator
 STR_TO_INT = str_to_int_validator
 PARSABLE_DATE = parsable_date_validator
-VALID_COLOURS = valid_colours_validator
+VALID_COLORS = valid_colors_validator
 REMINDER = valid_reminder_validator

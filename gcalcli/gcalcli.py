@@ -71,7 +71,7 @@ from collections import namedtuple
 from gcalcli.utils import override_color_map, valid_override_colors
 from gcalcli.validators import (
     get_input, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
-    VALID_COLOURS, STR_ALLOW_EMPTY, REMINDER)
+    VALID_COLORS, STR_ALLOW_EMPTY, REMINDER)
 
 # Required 3rd party libraries
 try:
@@ -918,15 +918,14 @@ class GoogleCalendarInterface:
         event['s'] = parse(start)
         event['e'] - parse(end)
 
-        try:
-            self.options['allday']
+        if self.options.get('allday'):
             event['start'] = {'date': start,
                               'dateTime': None,
                               'timeZone': None}
             event['end'] = {'date': end,
                             'dateTime': None,
                             'timeZone': None}
-        except KeyError:
+        else:
             event['start'] = {'date': None,
                               'dateTime': start,
                               'timeZone': event['gcalcli_cal']['timeZone']}
@@ -947,7 +946,7 @@ class GoogleCalendarInterface:
                 return
 
             elif val.lower() == 'c':
-                val = get_input(self.printer, 'Color: ', VALID_COLOURS)
+                val = get_input(self.printer, 'Color: ', VALID_COLORS)
                 if val not in valid_override_colors:
                     err_msg = "Valid colors are " + " ".join(
                         valid_override_colors) + "."
@@ -958,18 +957,18 @@ class GoogleCalendarInterface:
 
             elif val.lower() == 's':
                 # copy only editable event details for patching
-                modEvent = {}
+                mod_event = {}
                 keys = ['summary', 'location', 'start', 'end', 'reminders',
                         'description', 'colorId']
                 for k in keys:
                     if k in event:
-                        modEvent[k] = event[k]
+                        mod_event[k] = event[k]
 
                 self._retry_with_backoff(
                     self._cal_service().events().
                     patch(calendarId=event['gcalcli_cal']['id'],
                           eventId=event['id'],
-                          body=modEvent))
+                          body=mod_event))
                 self.printer.msg("Saved!\n", 'red')
                 return
 
@@ -997,27 +996,25 @@ class GoogleCalendarInterface:
                     except KeyError:
                         all_day = None
                     try:
-                        newStart, newEnd = utils.get_times_from_duration(
+                        new_start, new_end = utils.get_times_from_duration(
                                 val, length, all_day)
                     except ValueError as exc:
                         self.printer.err_msg(str(exc))
                         sys.exit(1)
-                    event = self._SetEventStartEnd(newStart, newEnd, event)
+                    event = self._SetEventStartEnd(new_start, new_end, event)
 
             elif val.lower() == 'g':
                 val = get_input(
                     self.printer, 'Length (mins): ', STR_TO_INT)
                 if val:
-                    try:
-                        all_day = self.options.get('allday')
-                    except KeyError:
-                        all_day = None
-                    try:
-                        newStart, newEnd = utils.get_times_from_duration(
-                                event['start']['dateTime'], val,
-                                all_day)
-                    except ValueError as exc:
-                        self.printer.err_msg(str(exc))
+                    all_day = self.options.get('allday')
+                try:
+                    new_start, new_end = utils.get_times_from_duration(
+                            event['start']['dateTime'], val,
+                            all_day)
+                    event = self._SetEventStartEnd(new_start, new_end, event)
+                except ValueError as exc:
+                    self.printer.err_msg(str(exc))
 
             elif val.lower() == 'r':
                 rem = []
@@ -1696,7 +1693,7 @@ def main():
                         printer, 'Description: ', STR_ALLOW_EMPTY)
                 if FLAGS.event_color is None:
                     FLAGS.event_color = get_input(
-                        printer, "Color: ", VALID_COLOURS)
+                        printer, "Color: ", VALID_COLORS)
                 if not FLAGS.reminders:
                     while True:
                         r = get_input(printer, "Enter a valid reminder or "
