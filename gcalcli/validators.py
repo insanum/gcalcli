@@ -4,10 +4,9 @@ import re
 
 from six.moves import input
 
-from gcalcli.utils import valid_override_colors, REMINDER_REGEX
+from gcalcli.utils import (valid_override_colors, REMINDER_REGEX,
+                           get_time_from_str)
 from gcalcli.exceptions import ValidationError
-
-from dateutil.parser import parse
 
 
 def get_input(printer, prompt, validator_func):
@@ -66,12 +65,13 @@ def parsable_date_validator(input_str):
     Raises ValidationError otherwise.
     """
     try:
-        parse(input_str)
+        get_time_from_str(input_str)
         return input_str
     except ValueError:
         raise ValidationError(
-            "Expected format: a date (e.g. 2019-01-01, 2nd Jan, Jan 4th, etc)"
-            " or valid time if today. (Ctrl-C to exit)\n"
+            "Expected format: a date (e.g. 2019-01-01, tomorrow 10am, "
+            "2nd Jan, Jan 4th, etc) or valid time if today. "
+            "(Ctrl-C to exit)\n"
         )
 
 

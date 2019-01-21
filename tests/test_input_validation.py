@@ -43,7 +43,9 @@ def test_any_string_parsable_by_dateutil(monkeypatch):
     monkeypatch.setattr(gcalcli.validators, "input", lambda: "NON-DATE STR")
     with pytest.raises(ValidationError):
         validate_input(PARSABLE_DATE) == ValidationError(
-            "Must be a date (e.g. 2019-01-01, 2nd Jan, Jan 4th, etc)"
+            "Expected format: a date (e.g. 2019-01-01, tomorrow 10am, "
+            "2nd Jan, Jan 4th, etc) or valid time if today. "
+            "(Ctrl-C to exit)\n"
         )
 
     # date string passes
