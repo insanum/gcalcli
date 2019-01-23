@@ -104,6 +104,30 @@ EventTitle = namedtuple('EventTitle', ['title', 'color'])
 CalName = namedtuple('CalName', ['name', 'color'])
 
 
+def edit_choice_input():
+    """
+    We need to be able to patch input() funcs at various stages of testing.
+    This input is used to capture initial choice when doing gaclcli edit
+    """
+    return input()
+
+
+def edit_description_input(printer, msg, func):
+    """
+    We need to be able to patch input() funcs at various stages of testing.
+    This input is used to capture description choice when doing gaclcli edit
+    """
+    return get_input(printer, msg, func)
+
+
+def edit_location_input(printer, msg, func):
+    """
+    We need to be able to patch input() funcs at various stages of testing.
+    This input is used to capture description choice when doing gaclcli edit
+    """
+    return get_input(printer, msg, func)
+
+
 class GoogleCalendarInterface:
 
     cache = {}
@@ -938,7 +962,10 @@ class GoogleCalendarInterface:
             self.printer.msg(
                     'Edit?\n[N]o [s]ave [q]uit [t]itle [l]ocation [w]hen ' +
                     'len[g]th [r]eminder [c]olor [d]escr: ', 'magenta')
-            val = input()
+            if os.getenv("GCALCLI_TEST_CYCLE") == "1":
+                val = 's'
+            else:
+                val = edit_choice_input()
 
             if not val or val.lower() == 'n':
                 return
@@ -976,9 +1003,18 @@ class GoogleCalendarInterface:
                     event['summary'] = val.strip()
 
             elif val.lower() == 'l':
-                val = get_input(self.printer, 'Location: ', STR_ALLOW_EMPTY)
-                if val.strip():
+                _input_func = edit_location_input
+                val = _input_func(
+                    self.printer,
+                    "Location (or '.' to delete existing): ",
+                    STR_ALLOW_EMPTY)
+                if val == ".":
+                    event['location'] = ""
+                elif val.strip():
                     event['location'] = val.strip()
+
+                if os.getenv('GCALCLI_TEST_CYCLE'):
+                    os.environ['GCALCLI_TEST_CYCLE'] = "1"
 
             elif val.lower() == 'w':
                 val = get_input(self.printer, 'When: ', PARSABLE_DATE).strip()
@@ -1029,9 +1065,18 @@ class GoogleCalendarInterface:
                                           'overrides': []}
 
             elif val.lower() == 'd':
-                val = get_input(self.printer, 'Description: ', STR_ALLOW_EMPTY)
-                if val.strip():
+                _input_func = edit_description_input
+                val = _input_func(
+                    self.printer,
+                    "Description (or '.' to delete existing): ",
+                    STR_ALLOW_EMPTY)
+                if val == ".":
+                    event['description'] = ""
+                elif val.strip():
                     event['description'] = val.strip()
+
+                if os.getenv('GCALCLI_TEST_CYCLE'):
+                    os.environ['GCALCLI_TEST_CYCLE'] = "1"
 
             else:
                 self.printer.err_msg('Error: invalid input\n')
