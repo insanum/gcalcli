@@ -985,10 +985,7 @@ class GoogleCalendarInterface:
                 if val:
                     td = (event['e'] - event['s'])
                     length = ((td.days * 1440) + (td.seconds / 60))
-                    try:
-                        all_day = self.options.get('allday')
-                    except KeyError:
-                        all_day = None
+                    all_day = self.options.get('allday')
                     try:
                         new_start, new_end = utils.get_times_from_duration(
                                 val, length, all_day)
