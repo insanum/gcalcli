@@ -8,27 +8,11 @@ from dateutil.parser import parse as dateutil_parse
 from datetime import datetime, timedelta
 from parsedatetime.parsedatetime import Calendar
 
+
 locale.setlocale(locale.LC_ALL, '')
 fuzzy_date_parse = Calendar().parse
 
 REMINDER_REGEX = r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$'
-
-valid_override_colors = [
-    "lavender",
-    "sage",
-    "grape",
-    "flamingo",
-    "banana",
-    "tangerine",
-    "peacock",
-    "graphite",
-    "blueberry",
-    "basil",
-    "tomato",
-]
-
-override_color_map = {x[1]: x[0]
-                      for x in list(enumerate(valid_override_colors, start=1))}
 
 
 def parse_reminder(rem):

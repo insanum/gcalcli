@@ -2,11 +2,19 @@ from __future__ import absolute_import
 
 import re
 
+from gcalcli.exceptions import ValidationError
+from gcalcli.utils import REMINDER_REGEX, get_time_from_str
 from six.moves import input
 
-from gcalcli.utils import (valid_override_colors, REMINDER_REGEX,
-                           get_time_from_str)
-from gcalcli.exceptions import ValidationError
+# TODO: in the future, pull these from the API
+# https://developers.google.com/calendar/v3/reference/colors
+VALID_OVERRIDE_COLORS = ["lavender", "sage", "grape", "flamingo",
+                         "banana", "tangerine", "peacock", "graphite",
+                         "blueberry", "basil", "tomato"]
+
+
+def get_override_color_id(color):
+    return VALID_OVERRIDE_COLORS.index(color) + 1
 
 
 def get_input(printer, prompt, validator_func):
@@ -20,27 +28,21 @@ def get_input(printer, prompt, validator_func):
             printer.msg(prompt, 'magenta')
 
 
-def valid_colors_validator(input_str):
+def color_validator(input_str):
     """
-    A filter allowing only the following strings:
-        * basil
-        * banana
-        * tomato
-        * lavender
-        * flamingo
-        * blueberry
-        * peacock
-        * grape
+    A filter allowing only the particular colors used by the Google Calendar
+    API
+
     Raises ValidationError otherwise.
     """
-    valid_override_colors.append("")  # allow empty
     try:
-        assert input_str in valid_override_colors
+        assert input_str in VALID_OVERRIDE_COLORS + ['']
         return input_str
     except AssertionError:
-        raise ValidationError("Expected colors are: basil, peacock, grape, "
-                              "lavender, blueberry, tomato, flamingo or "
-                              "banana. (Ctrl-C to exit)\n")
+        raise ValidationError(
+                "Expected colors are: " +
+                ', '.join(color for color in VALID_OVERRIDE_COLORS) +
+                ". (Ctrl-C to exit)\n")
 
 
 def str_to_int_validator(input_str):
@@ -96,7 +98,7 @@ def non_blank_str_validator(input_str):
         return input_str
 
 
-def valid_reminder_validator(input_str):
+def reminder_validator(input_str):
     """
     Allows a string that matches utils.REMINDER_REGEX.
     Raises ValidationError otherwise.
@@ -121,5 +123,5 @@ STR_NOT_EMPTY = non_blank_str_validator
 STR_ALLOW_EMPTY = str_allow_empty_validator
 STR_TO_INT = str_to_int_validator
 PARSABLE_DATE = parsable_date_validator
-VALID_COLORS = valid_colors_validator
-REMINDER = valid_reminder_validator
+VALID_COLORS = color_validator
+REMINDER = reminder_validator

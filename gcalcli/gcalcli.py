@@ -68,9 +68,8 @@ from datetime import datetime, timedelta, date
 from unicodedata import east_asian_width
 from collections import namedtuple
 
-from gcalcli.utils import override_color_map, valid_override_colors
 from gcalcli.validators import (
-    get_input, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
+    get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
     VALID_COLORS, STR_ALLOW_EMPTY, REMINDER)
 
 # Required 3rd party libraries
@@ -883,7 +882,7 @@ class GoogleCalendarInterface:
 
     def _delete_event(self, event):
 
-        if self.iamaExpert:
+        if self.expert:
             self._retry_with_backoff(
                 self._cal_service().events().
                 delete(calendarId=event['gcalcli_cal']['id'],
@@ -946,13 +945,9 @@ class GoogleCalendarInterface:
 
             elif val.lower() == 'c':
                 val = get_input(self.printer, 'Color: ', VALID_COLORS)
-                if val not in valid_override_colors:
-                    err_msg = "Valid colors are " + " ".join(
-                        valid_override_colors) + "."
-                    self.printer.msg(err_msg, 'red')
-                else:
+                if val:
                     self.options['override_color'] = True
-                    event['colorId'] = str(override_color_map.get(val))
+                    event['colorId'] = get_override_color_id(val)
 
             elif val.lower() == 's':
                 # copy only editable event details for patching
@@ -1050,29 +1045,29 @@ class GoogleCalendarInterface:
                     event, event['s'].strftime('\n%Y-%m-%d'))
 
     def _iterate_events(
-            self, startDateTime, eventList, yearDate=False, work=None):
+            self, start_datetime, event_list, year_date=False, work=None):
 
         selected = 0
 
-        if len(eventList) == 0:
+        if len(event_list) == 0:
             self.printer.msg('\nNo Events Found...\n', 'yellow')
             return selected
 
         # 10 chars for day and length must match 'indent' in _PrintEvent
-        dayFormat = '\n%Y-%m-%d' if yearDate else '\n%a %b %d'
+        day_format = '\n%Y-%m-%d' if year_date else '\n%a %b %d'
         day = ''
 
-        for event in eventList:
+        for event in event_list:
             if self.options['ignore_started'] and (event['s'] < self.now):
                 continue
             if self.options['ignore_declined'] and self._DeclinedEvent(event):
                 continue
 
             selected += 1
-            tmpDayStr = event['s'].strftime(dayFormat)
+            tmp_day_str = event['s'].strftime(day_format)
             prefix = None
-            if yearDate or tmpDayStr != day:
-                day = prefix = tmpDayStr
+            if year_date or tmp_day_str != day:
+                day = prefix = tmp_day_str
 
             self._PrintEvent(event, prefix)
 
@@ -1186,13 +1181,14 @@ class GoogleCalendarInterface:
                     format % (cal['accessRole'], cal['summary']),
                     self._calendar_color(cal))
 
-    def _display_queried_events(self, start, end, search=None, yearDate=False):
+    def _display_queried_events(
+            self, start, end, search=None, year_date=False):
         event_list = self._search_for_events(start, end, search)
 
         if self.options.get('tsv'):
             return self._tsv(start, event_list)
         else:
-            return self._iterate_events(start, event_list, yearDate=yearDate)
+            return self._iterate_events(start, event_list, year_date=year_date)
 
     def TextQuery(self, search_text='', start=None, end=None):
         if not search_text:
@@ -1317,7 +1313,7 @@ class GoogleCalendarInterface:
             event['description'] = descr
 
         if color:
-            event['colorId'] = override_color_map.get(color)
+            event['colorId'] = get_override_color_id(color)
 
         event['attendees'] = list(map(lambda w: {'email': w}, who))
 
@@ -1337,10 +1333,10 @@ class GoogleCalendarInterface:
         if not search_text:
             raise GcalcliError('The empty string would get *ALL* events')
 
-        eventList = self._search_for_events(start, end, search_text)
-        self.iamaExpert = expert
+        event_list = self._search_for_events(start, end, search_text)
+        self.expert = expert
         return self._iterate_events(
-                self.now, eventList, yearDate=True, work=work)
+                self.now, event_list, year_date=True, work=work)
 
     def Remind(self, minutes, command, use_reminders=False):
         """Check for events between now and now+minutes.  If use_reminders then
