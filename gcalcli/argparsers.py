@@ -297,7 +297,7 @@ def get_argument_parser():
     remind = sub.add_parser("remind")
     default_cmd = "notify-send -u critical -i appointment-soon -a gcalcli %s"
     remind.add_argument("minutes", nargs="?", type=int, default=10)
-    remind.add_argument("cmd", nargs="*", type=str, default=default_cmd)
+    remind.add_argument("cmd", nargs="?", type=str, default=default_cmd)
 
     remind.add_argument(
             "--use_reminders", action="store_true",
