@@ -116,7 +116,6 @@ class GoogleCalendarInterface:
     authHttp = None
     calService = None
     urlService = None
-    command = 'notify-send -u critical -i appointment-soon -a gcalcli %s'
 
     ACCESS_OWNER = 'owner'
     ACCESS_WRITER = 'writer'
@@ -1343,12 +1342,9 @@ class GoogleCalendarInterface:
         return self._iterate_events(
                 self.now, eventList, yearDate=True, work=work)
 
-    def Remind(self, minutes=10, command=None, use_reminders=False):
+    def Remind(self, minutes, command, use_reminders=False):
         """Check for events between now and now+minutes.  If use_reminders then
            only remind if now >= event['start'] - reminder"""
-
-        if command is None:
-            command = self.command
 
         # perform a date query for now + minutes + slip
         start = self.now

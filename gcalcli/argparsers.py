@@ -295,8 +295,10 @@ def get_argument_parser():
             help="Print events and don't import")
 
     remind = sub.add_parser("remind")
-    remind.add_argument("minutes", type=int)
-    remind.add_argument("cmd", type=str)
+    default_cmd = "notify-send -u critical -i appointment-soon -a gcalcli %s"
+    remind.add_argument("minutes", nargs="?", type=int, default=10)
+    remind.add_argument("cmd", nargs="*", type=str, default=default_cmd)
+
     remind.add_argument(
             "--use_reminders", action="store_true",
             help="Honour the remind time when running remind command")
