@@ -283,7 +283,7 @@ def get_argument_parser():
             "time part of the --when will be ignored.")
     add.add_argument(
             "--noprompt", action="store_false", dest="prompt", default=True,
-            help="Prompt for missing data when adding events")
+            help="Don't prompt for missing data when adding events")
 
     _import = sub.add_parser("import", parents=[remind_parser])
     _import.add_argument(
