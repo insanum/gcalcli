@@ -227,12 +227,14 @@ def get_argument_parser():
             dest="command")
     sub.required = True
 
-    sub.add_parser("list", parents=[color_parser])
+    sub.add_parser(
+            "list", parents=[color_parser], help="list available calendars")
 
     sub.add_parser(
             "search", parents=[details_parser, output_parser, search_parser])
     sub.add_parser(
-            "edit", parents=[details_parser, output_parser, search_parser])
+            "edit", parents=[details_parser, output_parser, search_parser],
+            help="edit calendar events")
 
     delete = sub.add_parser("delete", parents=[output_parser, search_parser])
     delete.add_argument(
@@ -240,24 +242,30 @@ def get_argument_parser():
 
     sub.add_parser(
             "agenda",
-            parents=[details_parser, output_parser, start_end_parser])
+            parents=[details_parser, output_parser, start_end_parser],
+            help="get an agenda for a time period")
 
     calw = sub.add_parser(
-            "calw", parents=[details_parser, output_parser, cal_query_parser])
+            "calw", parents=[details_parser, output_parser, cal_query_parser],
+            help="get a week-based agenda in calendar format")
     calw.add_argument("weeks", type=int, default=1, nargs="?")
 
     sub.add_parser(
-            "calm", parents=[details_parser, output_parser, cal_query_parser])
+            "calm", parents=[details_parser, output_parser, cal_query_parser],
+            help="get a month agenda in calendar format")
 
-    quick = sub.add_parser("quick", parents=[details_parser, remind_parser])
+    quick = sub.add_parser(
+            "quick", parents=[details_parser, remind_parser],
+            help="quick-add an event to a calendar")
     quick.add_argument("text")
 
-    add = sub.add_parser("add", parents=[details_parser, remind_parser],
-                         description="Add an event to the calendar. Some or "
-                                     "all metadata can be passed as options "
-                                     "(see optional arguments). If incomplete,"
-                                     " will drop to an interactive prompt "
-                                     "requesting remaining data.")
+    add = sub.add_parser(
+            "add", parents=[details_parser, remind_parser],
+            help="add a detailed event to the calendar",
+            description="Add an event to the calendar. Some or all metadata "
+            "can be passed as options (see optional arguments).  If "
+            "incomplete, will drop to an interactive prompt requesting "
+            "remaining data.")
     add.add_argument(
             "--color",
             dest="event_color",
@@ -285,7 +293,9 @@ def get_argument_parser():
             "--noprompt", action="store_false", dest="prompt", default=True,
             help="Don't prompt for missing data when adding events")
 
-    _import = sub.add_parser("import", parents=[remind_parser])
+    _import = sub.add_parser(
+            "import", parents=[remind_parser],
+            help="import an ics/vcal file to a calendar")
     _import.add_argument(
             "file", type=argparse.FileType('r'), nargs="?", default=None)
     _import.add_argument(
@@ -294,7 +304,9 @@ def get_argument_parser():
             "--dump", "-d", action="store_true",
             help="Print events and don't import")
 
-    remind = sub.add_parser("remind")
+    remind = sub.add_parser(
+            "remind",
+            help="execute command if event occurs within <mins> time")
     default_cmd = "notify-send -u critical -i appointment-soon -a gcalcli %s"
     remind.add_argument("minutes", nargs="?", type=int, default=10)
     remind.add_argument("cmd", nargs="?", type=str, default=default_cmd)

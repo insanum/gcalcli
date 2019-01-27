@@ -6,98 +6,74 @@ gcalcli \- interact with a Google Calendar
 gcalcli [options] command [command args or options]
 .SH DESCRIPTION
 gcalcli is a Python application that allows you to access your Google Calendar(s) from a command line. It's easy to get your agenda, search for events, add new events, delete events, edit events, and even import those annoying ICS/vCal invites from Microsoft Exchange and/or other sources. Additionally, gcalcli can be used as a reminder service and execute any application you want when an event is coming up.
-.SH OPTIONS
+.SH USAGE
 
- Commands:
+gcalcli [-h] [--auth_host_name AUTH_HOST_NAME]
+        [--noauth_local_webserver]
+        [--auth_host_port [AUTH_HOST_PORT [AUTH_HOST_PORT ...]]]
+        [--logging_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
+        [--version] [--client_id CLIENT_ID]
+        [--client_secret CLIENT_SECRET] [--configFolder CONFIGFOLDER]
+        [--noincluderc] [--calendar CALENDAR]
+        [--defaultCalendar DEFAULTCALENDAR] [--locale LOCALE]
+        [--refresh] [--nocache] [--conky] [--nocolor]
+        [--lineart {fancy,unicode,ascii}]
+        {list,search,edit,delete,agenda,calw,calm,quick,add,import,remind}
+         ...
 
-  list                     list all calendars
+Positional arguments:
+  {list,search,edit,delete,agenda,calw,calm,quick,add,import,remind}
+                        Invoking a subcommand with --help prints subcommand
+                        usage.
+    list                list available calendars
+    edit                edit calendar events
+    agenda              get an agenda for a time period
+    calw                get a week-based agenda in calendar format
+    calm                get a month agenda in calendar format
+    quick               quick-add an event to a calendar
+    add                 add a detailed event to the calendar
+    import              import an ics/vcal file to a calendar
+    remind              execute command if event occurs within <mins> time
 
-  search <text> [start] [end]
-                           search for events within an optional time period
-                           - case insensitive search terms to find events that
-                             match these terms in any field, like traditional
-                             Google search with quotes, exclusion, etc.
-                           - for example to get just games: "soccer -practice"
-                           - [start] and [end] use the same formats as agenda
+Optional arguments:
+  -h, --help            show this help message and exit
+  --auth_host_name AUTH_HOST_NAME
+                        Hostname when running a local web server. (default:
+                        localhost)
+  --noauth_local_webserver
+                        Do not run a local web server. (default: False)
+  --auth_host_port [AUTH_HOST_PORT [AUTH_HOST_PORT ...]]
+                        Port web server should listen on. (default: [8080,
+                        8090])
+  --logging_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Set the logging level of detail. (default: ERROR)
+  --version             show program's version number and exit
+  --client_id CLIENT_ID
+                        API client_id (default:
+                        232867676714.apps.googleusercontent.com)
+  --client_secret CLIENT_SECRET
+                        API client_secret (default: 3tZSxItw6_VnZMezQwC8lUqy)
+  --configFolder CONFIGFOLDER
+                        Optional directory to load/store all configuration
+                        information (default: None)
+  --noincluderc         Whether to include ~/.gcalclirc when using
+                        configFolder (default: True)
+  --calendar CALENDAR   Which calendars to use (default: [])
+  --defaultCalendar DEFAULTCALENDAR
+                        Optional default calendar to use if no --calendar
+                        optionsare given (default: [])
+  --locale LOCALE       System locale (default: )
+  --refresh             Delete and refresh cached data (default: False)
+  --nocache             Execute command without using cache (default: True)
+  --conky               Use Conky color codes (default: False)
+  --nocolor             Enable/Disable all color output (default: True)
+  --lineart {fancy,unicode,ascii}
+                        Choose line art style for calendars: "fancy":
+                        forVTcodes, "unicode" for Unicode box drawing
+                        characters,"ascii" for old-school plusses, hyphens and
+                        pipes. (default: fancy)
 
-  agenda [start] [end]     get an agenda for a time period
-                           - start time default is 12am today
-                           - end time default is 5 days from start
-                           - example time strings:
-                              '9/24/2007'
-                              '24/09/2007'
-                              '24/9/07'
-                              'Sep 24 2007 3:30pm'
-                              '2007-09-24T15:30'
-                              '2007-09-24T15:30-8:00'
-                              '20070924T15'
-                              '8am'
 
-  calw <weeks> [start]     get a week based agenda in a nice calendar format
-                           - weeks is the number of weeks to display
-                           - start time default is beginning of this week
-                           - note that all events for the week(s) are displayed
-
-  calm [start]             get a month agenda in a nice calendar format
-                           - start time default is the beginning of this month
-                           - note that all events for the month are displayed
-                             and only one month will be displayed
-
-  quick <text>             quick add an event to a calendar
-                           - a single --calendar must specified
-                           - the "--details url" option will show the event url
-                           - example text:
-                              'Dinner with Eric 7pm tomorrow'
-                              '5pm 10/31 Trick or Treat'
-
-  add                      add a detailed event to a calendar
-                           - a single --calendar must specified
-                           - the "--details url" option will show the event url
-                           - example:
-                              gcalcli --calendar 'Eric Davis'
-                                      --title 'Analysis of Algorithms Final'
-                                      --where UCI
-                                      --when '12/14/2012 10:00'
-                                      --who 'foo@bar.com'
-                                      --who 'baz@bar.com'
-                                      --duration 60
-                                      --description 'It is going to be hard!'
-                                      --reminder 30
-                                      add
-
-  delete <text> [start] [end]
-                           delete event(s) within the optional time period
-                           - case insensitive search terms to find and delete
-                             events, just like the 'search' command
-                           - deleting is interactive
-                             use the --iamaexpert option to auto delete
-                             THINK YOU'RE AN EXPERT? USE AT YOUR OWN RISK!!!
-                           - use the --details options to show event details
-                           - [start] and [end] use the same formats as agenda
-
-  edit <text>              edit event(s)
-                           - case insensitive search terms to find and edit
-                             events, just like the 'search' command
-                           - editing is interactive
-
-  import [file]            import an ics/vcal file to a calendar
-                           - a single --calendar must specified
-                           - if a file is not specified then the data is read
-                             from standard input
-                           - if -v is given then each event in the file is
-                             displayed and you're given the option to import
-                             or skip it, by default everything is imported
-                             quietly without any interaction
-                           - if -d is given then each event in the file is
-                             displayed and is not imported, a --calendar does
-                             not need to be specified for this option
-
-  remind <mins> <command>  execute command if event occurs within <mins>
-                           minutes time ('%%s' in <command> is replaced with
-                           event start time and title text)
-                           - <mins> default is 10
-                           - default command:
-                              'notify-send -u critical -i appointment-soon -a gcalcli %%s'
 .SH DIAGNOSTICS
 .B "Encoding issues, wrongly printed characters, UnicodeEncodeError when using conky, in pipes or scripts"
 .RS
