@@ -228,35 +228,49 @@ def get_argument_parser():
     sub.required = True
 
     sub.add_parser(
-            "list", parents=[color_parser], help="list available calendars")
+            "list", parents=[color_parser], help="list available calendars",
+            description="List available calendars.")
 
     sub.add_parser(
-            "search", parents=[details_parser, output_parser, search_parser])
+            "search", parents=[details_parser, output_parser, search_parser],
+            help="search for events within an optional time period",
+            description="Provides case insenstive search for calendar events.")
     sub.add_parser(
             "edit", parents=[details_parser, output_parser, search_parser],
-            help="edit calendar events")
+            help="edit calendar events",
+            description="Case insensitive search for items to find and edit "
+            "interactively.")
 
-    delete = sub.add_parser("delete", parents=[output_parser, search_parser])
+    delete = sub.add_parser(
+            "delete", parents=[output_parser, search_parser],
+            help="delete events from the calendar",
+            description="Case insensitive search for items to delete "
+            "interactively.")
     delete.add_argument(
             "--iamaexpert", action="store_true", help="Probably not")
 
     sub.add_parser(
             "agenda",
             parents=[details_parser, output_parser, start_end_parser],
-            help="get an agenda for a time period")
+            help="get an agenda for a time period",
+            description="Get an agenda for a time period.")
 
     calw = sub.add_parser(
             "calw", parents=[details_parser, output_parser, cal_query_parser],
-            help="get a week-based agenda in calendar format")
+            help="get a week-based agenda in calendar format",
+            description="Get a week-based agenda in calendar format.")
     calw.add_argument("weeks", type=int, default=1, nargs="?")
 
     sub.add_parser(
             "calm", parents=[details_parser, output_parser, cal_query_parser],
-            help="get a month agenda in calendar format")
+            help="get a month agenda in calendar format",
+            description="Get a month agenda in calendar format.")
 
     quick = sub.add_parser(
             "quick", parents=[details_parser, remind_parser],
-            help="quick-add an event to a calendar")
+            help="quick-add an event to a calendar",
+            description="`quick-add' an event to a calendar. A single "
+            "--calendar must be specified.")
     quick.add_argument("text")
 
     add = sub.add_parser(
@@ -295,7 +309,10 @@ def get_argument_parser():
 
     _import = sub.add_parser(
             "import", parents=[remind_parser],
-            help="import an ics/vcal file to a calendar")
+            help="import an ics/vcal file to a calendar",
+            description="Import from an ics/vcal file; a single --calendar "
+            "must be specified.  Reads from stdin when no file argument is "
+            "provided.")
     _import.add_argument(
             "file", type=argparse.FileType('r'), nargs="?", default=None)
     _import.add_argument(
@@ -304,15 +321,18 @@ def get_argument_parser():
             "--dump", "-d", action="store_true",
             help="Print events and don't import")
 
+    default_cmd = "notify-send -u critical -i appointment-soon -a gcalcli %s"
     remind = sub.add_parser(
             "remind",
-            help="execute command if event occurs within <mins> time")
-    default_cmd = "notify-send -u critical -i appointment-soon -a gcalcli %s"
+            help="execute command if event occurs within <mins> time",
+            description="Execute <cmd> if event occurs within <mins>; the %s "
+            "in <command> is replaced with event start time and title text."
+            "default command: '" + default_cmd + "'")
     remind.add_argument("minutes", nargs="?", type=int, default=10)
     remind.add_argument("cmd", nargs="?", type=str, default=default_cmd)
 
     remind.add_argument(
             "--use_reminders", action="store_true",
-            help="Honour the remind time when running remind command")
+            help="Honor the remind time when running remind command")
 
     return parser
