@@ -1623,9 +1623,27 @@ def main():
             conky=FLAGS.conky, use_color=FLAGS.color, art_style=FLAGS.lineart)
 
     if junk:
+        prog_level_opts_msg = (
+            "\nPlease note that the following options MUST be given before the"
+            " subcommand ('list', 'edit', etc):\n"
+            "    --client_id\n"
+            "    --client_secret\n"
+            "    --configFolder\n"
+            "    --noincluderc\n"
+            "    --calendar\n"
+            "    --defaultCalendar\n"
+            "    --locale\n"
+            "    --refresh\n"
+            "    --nocache\n"
+            "    --conky\n"
+            "    --nocolor\n"
+            "    --linart\n"
+        )
         printer.err_msg(
-                "The following options are either no longer valid globally "
-                "or just plain invalid:\n  %s\n" % "\n  ".join(junk))
+            "WARNING: The following options are either no longer valid "
+            "globally or just plain invalid:\n  %s\n" % "\n  ".join(junk))
+        printer.msg(prog_level_opts_msg, "yellow")
+        printer.msg("(continuing to process your request using defaults...)\n")
 
     if FLAGS.locale:
         try:
