@@ -1,6 +1,13 @@
 from gcalcli import argparsers
+from gcalcli.decorators import parser_allow_deprecated
 import shlex
 import pytest
+
+
+def test_parser_decorator():
+    color_parser = parser_allow_deprecated(argparsers.get_color_parser)
+    parser = color_parser()
+    assert parser.parse_args(["--color-owner", "default"])
 
 
 def test_get_argparser():

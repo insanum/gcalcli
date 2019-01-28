@@ -1623,6 +1623,8 @@ def main():
     parser = get_argument_parser()
     try:
         argv = sys.argv[1:]
+        if "--color_owner" in argv:
+            print("Some message")
         gcalclirc = os.path.expanduser('~/.gcalclirc')
         if os.path.exists(gcalclirc):
             # We want .gcalclirc to be sourced before any other --flagfile

@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import argparse
 import gcalcli
 from gcalcli import utils
+from gcalcli.decorators import parser_allow_deprecated
 from gcalcli.printer import valid_color_name
 from oauth2client import tools
 import copy as _copy
@@ -116,31 +117,33 @@ def get_output_parser(parents=[]):
     return output_parser
 
 
+@parser_allow_deprecated
 def get_color_parser():
-    color_parser = argparse.ArgumentParser(add_help=False)
+    color_parser = argparse.ArgumentParser(add_help=False,
+                                           conflict_handler="resolve")
     color_parser.add_argument(
-            "--color_owner", default="cyan", type=valid_color_name,
+            "--color-owner", default="cyan", type=valid_color_name,
             help="Color for owned calendars")
     color_parser.add_argument(
-            "--color_writer", default="green", type=valid_color_name,
+            "--color-writer", default="green", type=valid_color_name,
             help="Color for writable calendars")
     color_parser.add_argument(
-            "--color_reader", default="magenta", type=valid_color_name,
+            "--color-reader", default="magenta", type=valid_color_name,
             help="Color for read-only calendars")
     color_parser.add_argument(
-            "--color_freebusy", default="default", type=valid_color_name,
+            "--color-freebusy", default="default", type=valid_color_name,
             help="Color for free/busy calendars")
     color_parser.add_argument(
-            "--color_date", default="yellow", type=valid_color_name,
+            "--color-date", default="yellow", type=valid_color_name,
             help="Color for the date")
     color_parser.add_argument(
-            "--color_now_marker", default="brightred", type=valid_color_name,
+            "--color-now_marker", default="brightred", type=valid_color_name,
             help="Color for the now marker")
     color_parser.add_argument(
-            "--color_border", default="white", type=valid_color_name,
+            "--color-border", default="white", type=valid_color_name,
             help="Color of line borders")
     color_parser.add_argument(
-            "--color_title", default="brightyellow", type=valid_color_name,
+            "--color-title", default="brightyellow", type=valid_color_name,
             help="Color of the agenda column titles")
     return color_parser
 
