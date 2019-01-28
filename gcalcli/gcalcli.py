@@ -1596,11 +1596,11 @@ def main():
             # We want .gcalclirc to be sourced before any other --flagfile
             # params since we may be told to use a specific config folder, we
             # need to store generated argv in temp variable
-            tmpArgv = ["@%s" % gcalclirc, ] + argv
+            tmp_argv = ["@%s" % gcalclirc, ] + argv
         else:
-            tmpArgv = argv
+            tmp_argv = argv
         # TODO: In 4.1 change this to just parse_args
-        (FLAGS, junk) = parser.parse_known_args(tmpArgv)
+        (FLAGS, junk) = parser.parse_known_args(tmp_argv)
     except Exception as e:
         sys.stderr.write(str(e))
         parser.print_usage()
@@ -1612,38 +1612,18 @@ def main():
         if os.path.exists(os.path.expanduser("%s/gcalclirc" %
                                              FLAGS.configFolder)):
             if not FLAGS.includeRc:
-                tmpArgv = ["@%s/gcalclirc" % FLAGS.configFolder, ] + argv
+                tmp_argv = ["@%s/gcalclirc" % FLAGS.configFolder, ] + argv
             else:
-                tmpArgv = ["@%s/gcalclirc" % FLAGS.configFolder, ] + tmpArgv
+                tmp_argv = ["@%s/gcalclirc" % FLAGS.configFolder, ] + tmp_argv
 
         # TODO: In 4.1 change this to just parse_args
-        (FLAGS, junk) = parser.parse_known_args(tmpArgv)
+        (FLAGS, junk) = parser.parse_known_args(tmp_argv)
 
     printer = Printer(
             conky=FLAGS.conky, use_color=FLAGS.color, art_style=FLAGS.lineart)
 
     if junk:
-        prog_level_opts_msg = (
-            "\nPlease note that the following options MUST be given before the"
-            " subcommand ('list', 'edit', etc):\n"
-            "    --client_id\n"
-            "    --client_secret\n"
-            "    --configFolder\n"
-            "    --noincluderc\n"
-            "    --calendar\n"
-            "    --defaultCalendar\n"
-            "    --locale\n"
-            "    --refresh\n"
-            "    --nocache\n"
-            "    --conky\n"
-            "    --nocolor\n"
-            "    --linart\n"
-        )
-        printer.err_msg(
-            "WARNING: The following options are either no longer valid "
-            "globally or just plain invalid:\n  %s\n" % "\n  ".join(junk))
-        printer.msg(prog_level_opts_msg, "yellow")
-        printer.msg("(continuing to process your request using defaults...)\n")
+        parser.handle_junk(junk, printer, FLAGS)
 
     if FLAGS.locale:
         try:

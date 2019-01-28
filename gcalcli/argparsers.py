@@ -12,6 +12,45 @@ DETAILS = ['all', 'calendar', 'location', 'length', 'reminders', 'description',
 BOOL_DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
                 'attendees', 'email', 'attachments']
 
+PROGRAM_OPTIONS = {
+        "--client_id": {'default': gcalcli.__API_CLIENT_ID__,
+                        'type': str,
+                        'help': "API client_id"},
+        "--client_secret": {'default': gcalcli.__API_CLIENT_SECRET__,
+                            'type': str,
+                            'help': "API client_secret"},
+        "--configFolder": {'default': None, 'type': str,
+                           'help': "Optional directory to load/store all " +
+                                   "configuration information"},
+        "--noincluderc": {'action': "store_false",
+                          'dest': "includeRc",
+                          'help': "Whether to include ~/.gcalclirc when " +
+                                  "using configFolder"},
+        "--calendar": {'default': [], 'type': str, 'action': "append",
+                       'help': "Which calendars to use"},
+        "--defaultCalendar": {'default': [], 'type': str, 'action': "append",
+                              'help': "Optional default calendar to use if " +
+                                      "no --calendar options are given"},
+        "--locale": {'default': '', 'type': str, 'help': "System locale"},
+        "--refresh": {'action': "store_true", 'dest': "refresh_cache",
+                      'default': False,
+                      'help': "Delete and refresh cached data"},
+        "--nocache": {'action': "store_false", 'dest': "use_cache",
+                      'default': True,
+                      'help': "Execute command without using cache"},
+        "--conky": {'action': "store_true", 'default': False,
+                    'help': "Use Conky color codes"},
+        "--nocolor": {'action': "store_false", 'default': True,
+                      'dest': "color",
+                      'help': "Enable/Disable all color output"},
+        "--lineart": {'default': "fancy",
+                      'choices': ["fancy", "unicode", "ascii"],
+                      'help': "Choose line art style for calendars: " +
+                              "\"fancy\": for VTcodes, \"unicode\" for " +
+                              "Unicode box drawing characters, \"ascii\" " +
+                              "for old-school plusses, hyphens and pipes."}
+        }
+
 
 class DetailsAction(argparse._AppendAction):
 
@@ -153,6 +192,25 @@ def get_search_parser():
     return search_parser
 
 
+# TODO: make this an actual parser?
+def handle_junk(junk, printer, FLAGS):
+    """Be as helpful as we can when people say things bad."""
+    for bad_opt in junk:
+        if bad_opt in PROGRAM_OPTIONS:
+            printer.err_msg(
+                '%s is a gcalcli option, not valid on subcommands.\n' %
+                (bad_opt))
+            if FLAGS.command:
+                printer.err_msg(
+                    'Try: \'gcalcli %s %s ...\'\n' % (bad_opt, FLAGS.command))
+            import sys
+            sys.exit(1)
+    else:
+        printer.msg('WARNING: Unparsed information: \n%s\n' % '\n  '.join(junk),
+                    'yellow')
+        printer.msg('(will attempt to continue)\n', 'yellow')
+
+
 def get_argument_parser():
     parser = argparse.ArgumentParser(
             description='Google Calendar Command Line Interface',
@@ -165,46 +223,8 @@ def get_argument_parser():
             (gcalcli.__version__, gcalcli.__author__))
 
     # Program level options
-    parser.add_argument(
-            "--client_id", default=gcalcli.__API_CLIENT_ID__, type=str,
-            help="API client_id")
-    parser.add_argument(
-            "--client_secret", default=gcalcli.__API_CLIENT_SECRET__, type=str,
-            help="API client_secret")
-    parser.add_argument(
-            "--configFolder", default=None, type=str,
-            help="Optional directory to load/store all configuration " +
-            "information")
-    parser.add_argument(
-            "--noincluderc", action="store_false", dest="includeRc",
-            help="Whether to include ~/.gcalclirc when using configFolder")
-    parser.add_argument(
-            "--calendar", default=[], type=str, action="append",
-            help="Which calendars to use")
-    parser.add_argument(
-            "--defaultCalendar", default=[], type=str, action="append",
-            help="Optional default calendar to use if no --calendar options" +
-            "are given")
-    parser.add_argument(
-            "--locale", default='', type=str, help="System locale")
-    parser.add_argument(
-            "--refresh", action="store_true", dest="refresh_cache",
-            default=False, help="Delete and refresh cached data")
-    parser.add_argument(
-            "--nocache", action="store_false", dest="use_cache", default=True,
-            help="Execute command without using cache")
-    parser.add_argument(
-            "--conky", action="store_true", default=False,
-            help="Use Conky color codes")
-    parser.add_argument(
-            "--nocolor", action="store_false", default=True, dest="color",
-            help="Enable/Disable all color output")
-    parser.add_argument(
-            "--lineart", default="fancy",
-            choices=["fancy", "unicode", "ascii"],
-            help="Choose line art style for calendars: \"fancy\": for" +
-            "VTcodes, \"unicode\" for Unicode box drawing characters," +
-            "\"ascii\" for old-school plusses, hyphens and pipes.")
+    for option, definition in PROGRAM_OPTIONS.items():
+        parser.add_argument(option, **definition)
 
     # parent parser types used for subcommands
     details_parser = get_details_parser()
@@ -335,4 +355,5 @@ def get_argument_parser():
             "--use_reminders", action="store_true",
             help="Honor the remind time when running remind command")
 
+    setattr(parser, handle_junk.__name__, handle_junk)
     return parser
