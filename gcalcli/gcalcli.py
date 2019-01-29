@@ -94,7 +94,7 @@ except ImportError as exc:  # pragma: no cover
 from gcalcli import __program__, __version__
 from gcalcli import utils
 
-from gcalcli.argparsers import get_argument_parser
+from gcalcli.argparsers import get_argument_parser, handle_unparsed
 from gcalcli.utils import _u, days_since_epoch
 from gcalcli.printer import Printer, valid_color_name
 from gcalcli.exceptions import GcalcliError
@@ -1599,7 +1599,7 @@ def main():
             tmp_argv = ["@%s" % gcalclirc, ] + argv
         else:
             tmp_argv = argv
-        # TODO: In 4.1 change this to just parse_args
+
         (FLAGS, junk) = parser.parse_known_args(tmp_argv)
     except Exception as e:
         sys.stderr.write(str(e))
@@ -1623,7 +1623,12 @@ def main():
             conky=FLAGS.conky, use_color=FLAGS.color, art_style=FLAGS.lineart)
 
     if junk:
-        parser.handle_junk(junk, printer, FLAGS)
+        try:
+            FLAGS = handle_unparsed(junk, FLAGS)
+        except Exception as e:
+            sys.stderr.write(str(e))
+            parser.print_usage()
+            sys.exit(1)
 
     if FLAGS.locale:
         try:

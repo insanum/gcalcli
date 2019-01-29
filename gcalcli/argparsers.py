@@ -192,23 +192,16 @@ def get_search_parser():
     return search_parser
 
 
-# TODO: make this an actual parser?
-def handle_junk(junk, printer, FLAGS):
-    """Be as helpful as we can when people say things bad."""
-    for bad_opt in junk:
-        if bad_opt in PROGRAM_OPTIONS:
-            printer.err_msg(
-                '%s is a gcalcli option, not valid on subcommands.\n' %
-                (bad_opt))
-            if FLAGS.command:
-                printer.err_msg(
-                    'Try: \'gcalcli %s %s ...\'\n' % (bad_opt, FLAGS.command))
-            import sys
-            sys.exit(1)
-    else:
-        printer.msg('WARNING: Unparsed information: \n%s\n' % '\n  '.join(junk),
-                    'yellow')
-        printer.msg('(will attempt to continue)\n', 'yellow')
+def handle_unparsed(unparsed, namespace):
+    # Attempt a reparse against the program options.
+    # Provides some robustness for misplaced global options
+
+    # make a new parser with only the global opts
+    parser = argparse.ArgumentParser()
+    for option, definition in PROGRAM_OPTIONS.items():
+        parser.add_argument(option, **definition)
+
+    return parser.parse_args(unparsed, namespace=namespace)
 
 
 def get_argument_parser():
@@ -355,5 +348,4 @@ def get_argument_parser():
             "--use_reminders", action="store_true",
             help="Honor the remind time when running remind command")
 
-    setattr(parser, handle_junk.__name__, handle_junk)
     return parser
