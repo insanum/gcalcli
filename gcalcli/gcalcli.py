@@ -1203,8 +1203,8 @@ class GoogleCalendarInterface:
 
         return self._display_queried_events(start, end)
 
-    def CalQuery(self, cmd, startText='', count=1):
-        if not startText:
+    def CalQuery(self, cmd, start_text='', count=1):
+        if not start_text:
             # convert now to midnight this morning and use for default
             start = self.now.replace(hour=0,
                                      minute=0,
@@ -1212,7 +1212,7 @@ class GoogleCalendarInterface:
                                      microsecond=0)
         else:
             try:
-                start = utils.get_time_from_str(startText)
+                start = utils.get_time_from_str(start_text)
                 start = start.replace(hour=0, minute=0, second=0,
                                       microsecond=0)
             except Exception:
@@ -1587,6 +1587,38 @@ def parse_cal_names(cal_names):
     return [CalName(name=k, color=cal_colors[k]) for k in cal_colors.keys()]
 
 
+def run_add_prompt(parsed_args, printer):
+    if parsed_args.title is None:
+        parsed_args.title = get_input(printer, 'Title: ', STR_NOT_EMPTY)
+    if parsed_args.where is None:
+        parsed_args.where = get_input(
+            printer, 'Location: ', STR_ALLOW_EMPTY)
+    if parsed_args.when is None:
+        parsed_args.when = get_input(printer, 'When: ', PARSABLE_DATE)
+    if parsed_args.duration is None:
+        if parsed_args.allday:
+            prompt = 'Duration (days): '
+        else:
+            prompt = 'Duration (minutes): '
+        parsed_args.duration = get_input(printer, prompt, STR_TO_INT)
+    if parsed_args.description is None:
+        parsed_args.description = get_input(
+            printer, 'Description: ', STR_ALLOW_EMPTY)
+    if parsed_args.event_color is None:
+        parsed_args.event_color = get_input(
+            printer, "Color: ", VALID_COLORS)
+    if not parsed_args.reminders:
+        while True:
+            r = get_input(
+                    printer, "Enter a valid reminder or " "'.' to end: ",
+                    REMINDER)
+
+            if r == '.':
+                break
+            n, m = utils.parse_reminder(str(r))
+            parsed_args.reminders.append(str(n) + ' ' + m)
+
+
 def main():
     parser = get_argument_parser()
     try:
@@ -1600,137 +1632,118 @@ def main():
         else:
             tmp_argv = argv
 
-        (FLAGS, junk) = parser.parse_known_args(tmp_argv)
+        (parsed_args, junk) = parser.parse_known_args(tmp_argv)
     except Exception as e:
         sys.stderr.write(str(e))
         parser.print_usage()
         sys.exit(1)
 
-    if FLAGS.configFolder:
-        if not os.path.exists(os.path.expanduser(FLAGS.configFolder)):
-            os.makedirs(os.path.expanduser(FLAGS.configFolder))
+    if parsed_args.configFolder:
+        if not os.path.exists(os.path.expanduser(parsed_args.configFolder)):
+            os.makedirs(os.path.expanduser(parsed_args.configFolder))
         if os.path.exists(os.path.expanduser("%s/gcalclirc" %
-                                             FLAGS.configFolder)):
-            if not FLAGS.includeRc:
-                tmp_argv = ["@%s/gcalclirc" % FLAGS.configFolder, ] + argv
+                                             parsed_args.configFolder)):
+            rc_path = ["@%s/gcalclirc" % parsed_args.configFolder, ]
+            if not parsed_args.includeRc:
+                tmp_argv = rc_path + argv
             else:
-                tmp_argv = ["@%s/gcalclirc" % FLAGS.configFolder, ] + tmp_argv
+                tmp_argv = rc_path + tmp_argv
 
-        # TODO: In 4.1 change this to just parse_args
-        (FLAGS, junk) = parser.parse_known_args(tmp_argv)
+        (parsed_args, unparsed) = parser.parse_known_args(tmp_argv)
 
     printer = Printer(
-            conky=FLAGS.conky, use_color=FLAGS.color, art_style=FLAGS.lineart)
+            conky=parsed_args.conky, use_color=parsed_args.color,
+            art_style=parsed_args.lineart)
 
-    if junk:
+    if unparsed:
         try:
-            FLAGS = handle_unparsed(junk, FLAGS)
+            parsed_args = handle_unparsed(unparsed, parsed_args)
         except Exception as e:
             sys.stderr.write(str(e))
             parser.print_usage()
             sys.exit(1)
 
-    if FLAGS.locale:
+    if parsed_args.locale:
         try:
-            utils.set_locale(FLAGS.locale)
+            utils.set_locale(parsed_args.locale)
         except ValueError as exc:
             printer.err_msg(str(exc))
 
-    if len(FLAGS.calendar) == 0:
-        FLAGS.calendar = FLAGS.defaultCalendar
+    if len(parsed_args.calendar) == 0:
+        parsed_args.calendar = parsed_args.defaultCalendar
 
-    cal_names = parse_cal_names(FLAGS.calendar)
+    cal_names = parse_cal_names(parsed_args.calendar)
     gcal = GoogleCalendarInterface(
-            cal_names=cal_names, printer=printer, **vars(FLAGS))
+            cal_names=cal_names, printer=printer, **vars(parsed_args))
 
     try:
-        if FLAGS.command == 'list':
+        if parsed_args.command == 'list':
             gcal.ListAllCalendars()
 
-        elif FLAGS.command == 'agenda':
-            gcal.AgendaQuery(start=FLAGS.start, end=FLAGS.end)
+        elif parsed_args.command == 'agenda':
+            gcal.AgendaQuery(start=parsed_args.start, end=parsed_args.end)
 
-        elif FLAGS.command == 'calw':
+        elif parsed_args.command == 'calw':
             gcal.CalQuery(
-                    FLAGS.command, count=FLAGS.weeks, startText=FLAGS.start)
+                    parsed_args.command, count=parsed_args.weeks,
+                    start_text=parsed_args.start)
 
-        elif FLAGS.command == 'calm':
-            gcal.CalQuery(FLAGS.command, startText=FLAGS.start)
+        elif parsed_args.command == 'calm':
+            gcal.CalQuery(parsed_args.command, start_text=parsed_args.start)
 
-        elif FLAGS.command == 'quick':
-            if not FLAGS.text:
+        elif parsed_args.command == 'quick':
+            if not parsed_args.text:
                 printer.err_msg('Error: invalid event text\n')
                 sys.exit(1)
 
             # allow unicode strings for input
-            gcal.QuickAddEvent(_u(FLAGS.text), reminders=FLAGS.reminders)
+            gcal.QuickAddEvent(
+                    _u(parsed_args.text), reminders=parsed_args.reminders)
 
-        elif FLAGS.command == 'add':
-            if FLAGS.prompt:
-                if FLAGS.title is None:
-                    FLAGS.title = get_input(printer, 'Title: ', STR_NOT_EMPTY)
-                if FLAGS.where is None:
-                    FLAGS.where = get_input(
-                        printer, 'Location: ', STR_ALLOW_EMPTY)
-                if FLAGS.when is None:
-                    FLAGS.when = get_input(printer, 'When: ', PARSABLE_DATE)
-                if FLAGS.duration is None:
-                    if FLAGS.allday:
-                        prompt = 'Duration (days): '
-                    else:
-                        prompt = 'Duration (minutes): '
-                    FLAGS.duration = get_input(printer, prompt, STR_TO_INT)
-                if FLAGS.description is None:
-                    FLAGS.description = get_input(
-                        printer, 'Description: ', STR_ALLOW_EMPTY)
-                if FLAGS.event_color is None:
-                    FLAGS.event_color = get_input(
-                        printer, "Color: ", VALID_COLORS)
-                if not FLAGS.reminders:
-                    while True:
-                        r = get_input(printer, "Enter a valid reminder or "
-                                               "'.' to end: ", REMINDER)
-
-                        if r == '.':
-                            break
-                        n, m = utils.parse_reminder(str(r))
-                        FLAGS.reminders.append(str(n) + ' ' + m)
+        elif parsed_args.command == 'add':
+            if parsed_args.prompt:
+                run_add_prompt(parsed_args, printer)
 
             # calculate "when" time:
             try:
                 estart, eend = utils.get_times_from_duration(
-                        FLAGS.when, FLAGS.duration, FLAGS.allday)
+                        parsed_args.when, parsed_args.duration,
+                        parsed_args.allday)
             except ValueError as exc:
                 printer.err_msg(str(exc))
                 # Since we actually need a valid start and end time in order to
                 # add the event, we cannot proceed.
                 raise
 
-            gcal.AddEvent(FLAGS.title, FLAGS.where, estart, eend,
-                          FLAGS.description, FLAGS.who,
-                          FLAGS.reminders, FLAGS.event_color)
+            gcal.AddEvent(parsed_args.title, parsed_args.where, estart, eend,
+                          parsed_args.description, parsed_args.who,
+                          parsed_args.reminders, parsed_args.event_color)
 
-        elif FLAGS.command == 'search':
-            gcal.TextQuery(FLAGS.text[0], start=FLAGS.start, end=FLAGS.end)
+        elif parsed_args.command == 'search':
+            gcal.TextQuery(
+                    parsed_args.text[0], start=parsed_args.start,
+                    end=parsed_args.end)
 
-        elif FLAGS.command == 'delete':
+        elif parsed_args.command == 'delete':
             gcal.ModifyEvents(
-                    gcal._delete_event, FLAGS.text[0],
-                    start=FLAGS.start, end=FLAGS.end, expert=FLAGS.iamaexpert)
+                    gcal._delete_event, parsed_args.text[0],
+                    start=parsed_args.start, end=parsed_args.end,
+                    expert=parsed_args.iamaexpert)
 
-        elif FLAGS.command == 'edit':
+        elif parsed_args.command == 'edit':
             gcal.ModifyEvents(
-                    gcal._edit_event, FLAGS.text[0], start=FLAGS.start,
-                    end=FLAGS.end)
+                    gcal._edit_event, parsed_args.text[0],
+                    start=parsed_args.start, end=parsed_args.end)
 
-        elif FLAGS.command == 'remind':
+        elif parsed_args.command == 'remind':
             gcal.Remind(
-                    FLAGS.minutes, FLAGS.cmd,
-                    use_reminders=FLAGS.use_reminders)
+                    parsed_args.minutes, parsed_args.cmd,
+                    use_reminders=parsed_args.use_reminders)
 
-        elif FLAGS.command == 'import':
+        elif parsed_args.command == 'import':
             gcal.ImportICS(
-                    FLAGS.verbose, FLAGS.dump, FLAGS.reminders, FLAGS.file)
+                    parsed_args.verbose, parsed_args.dump,
+                    parsed_args.reminders, parsed_args.file)
 
     except GcalcliError as exc:
         printer.err_msg(str(exc))
