@@ -148,6 +148,7 @@ def get_color_parser():
     return color_parser
 
 
+@parser_allow_deprecated
 def get_remind_parser():
     remind_parser = argparse.ArgumentParser(add_help=False)
     remind_parser.add_argument(
@@ -159,7 +160,7 @@ def get_remind_parser():
             "minutes) and default to minutes.  METH is a string "
             "'popup', 'email', or 'sms' and defaults to popup.")
     remind_parser.add_argument(
-            "--default_reminders", action="store_true",
+            "--default-reminders", action="store_true",
             dest="default_reminders", default=False,
             help="If no --reminder is given, use the defaults.  If this is "
             "false, do not create any reminders.")

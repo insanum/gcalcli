@@ -72,6 +72,8 @@ from gcalcli.validators import (
     get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
     VALID_COLORS, STR_ALLOW_EMPTY, REMINDER)
 
+from gcalcli.decorators import ALL_DEPRECATED_OPTS
+
 # Required 3rd party libraries
 try:
     from dateutil.tz import tzlocal
@@ -1619,12 +1621,24 @@ def run_add_prompt(parsed_args, printer):
             parsed_args.reminders.append(str(n) + ' ' + m)
 
 
+def _warn_deprecated_opts(argv):
+    """
+    Tests whether options are in ALL_DEPRECATED_OPT.
+    Prints clear warning message to user if so.
+    """
+    for arg in argv:
+        if arg in ALL_DEPRECATED_OPTS.keys():
+            printer = Printer()
+            printer.err_msg("WARNING: {} is deprecated and will "
+                            "be removed. Please use {}\n".format(
+                                arg, arg.replace("_", "-")))
+
+
 def main():
     parser = get_argument_parser()
     try:
         argv = sys.argv[1:]
-        if "--color_owner" in argv:
-            print("Some message")
+        _warn_deprecated_opts(argv)
         gcalclirc = os.path.expanduser('~/.gcalclirc')
         if os.path.exists(gcalclirc):
             # We want .gcalclirc to be sourced before any other --flagfile
@@ -1634,7 +1648,7 @@ def main():
         else:
             tmp_argv = argv
 
-        (parsed_args, junk) = parser.parse_known_args(tmp_argv)
+        (parsed_args, unparsed) = parser.parse_known_args(tmp_argv)
     except Exception as e:
         sys.stderr.write(str(e))
         parser.print_usage()
