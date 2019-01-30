@@ -1632,7 +1632,7 @@ def main():
         else:
             tmp_argv = argv
 
-        (parsed_args, junk) = parser.parse_known_args(tmp_argv)
+        (parsed_args, unparsed) = parser.parse_known_args(tmp_argv)
     except Exception as e:
         sys.stderr.write(str(e))
         parser.print_usage()
