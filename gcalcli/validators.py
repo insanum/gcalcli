@@ -14,7 +14,7 @@ VALID_OVERRIDE_COLORS = ["lavender", "sage", "grape", "flamingo",
 
 
 def get_override_color_id(color):
-    return VALID_OVERRIDE_COLORS.index(color) + 1
+    return str(VALID_OVERRIDE_COLORS.index(color) + 1)
 
 
 def get_input(printer, prompt, validator_func):
