@@ -52,3 +52,13 @@ def test_details_parser():
     argv = shlex.split('--details all --details longurl')
     parsed_details = details_parser.parse_args(argv).details
     assert parsed_details['url'] == 'long'
+
+
+def test_handle_unparsed():
+    # minimal test showing that we can parse a global option after the
+    # subcommand (in some cases)
+    parser = argparsers.get_argument_parser()
+    argv = shlex.split('delete --calendar=test "search text"')
+    parsed, unparsed = parser.parse_known_args(argv)
+    parsed = argparsers.handle_unparsed(unparsed, parsed)
+    assert parsed.calendar == ['test']
