@@ -117,7 +117,7 @@ def get_output_parser(parents=[]):
     return output_parser
 
 
-@parser_allow_deprecated
+@parser_allow_deprecated(name='color')
 def get_color_parser():
     color_parser = argparse.ArgumentParser(add_help=False,
                                            conflict_handler="resolve")
@@ -148,7 +148,7 @@ def get_color_parser():
     return color_parser
 
 
-@parser_allow_deprecated
+@parser_allow_deprecated(name='remind')
 def get_remind_parser():
     remind_parser = argparse.ArgumentParser(add_help=False)
     remind_parser.add_argument(
