@@ -14,24 +14,24 @@ BOOL_DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
                 'attendees', 'email', 'attachments']
 
 PROGRAM_OPTIONS = {
-        "--client_id": {'default': gcalcli.__API_CLIENT_ID__,
+        "--client-id": {'default': gcalcli.__API_CLIENT_ID__,
                         'type': str,
                         'help': "API client_id"},
-        "--client_secret": {'default': gcalcli.__API_CLIENT_SECRET__,
+        "--client-secret": {'default': gcalcli.__API_CLIENT_SECRET__,
                             'type': str,
                             'help': "API client_secret"},
-        "--configFolder": {'default': None, 'type': str,
-                           'help': "Optional directory to load/store all " +
-                                   "configuration information"},
+        "--config-folder": {'default': None, 'type': str,
+                            'help': "Optional directory to load/store all " +
+                                    "configuration information"},
         "--noincluderc": {'action': "store_false",
                           'dest': "includeRc",
                           'help': "Whether to include ~/.gcalclirc when " +
                                   "using configFolder"},
         "--calendar": {'default': [], 'type': str, 'action': "append",
                        'help': "Which calendars to use"},
-        "--defaultCalendar": {'default': [], 'type': str, 'action': "append",
-                              'help': "Optional default calendar to use if " +
-                                      "no --calendar options are given"},
+        "--default-calendar": {'default': [], 'type': str, 'action': "append",
+                               'help': "Optional default calendar to use if " +
+                                       "no --calendar options are given"},
         "--locale": {'default': '', 'type': str, 'help': "System locale"},
         "--refresh": {'action': "store_true", 'dest': "refresh_cache",
                       'default': False,
@@ -119,8 +119,7 @@ def get_output_parser(parents=[]):
 
 @parser_allow_deprecated(name='color')
 def get_color_parser():
-    color_parser = argparse.ArgumentParser(add_help=False,
-                                           conflict_handler="resolve")
+    color_parser = argparse.ArgumentParser(add_help=False)
     color_parser.add_argument(
             "--color-owner", default="cyan", type=valid_color_name,
             help="Color for owned calendars")
@@ -137,7 +136,7 @@ def get_color_parser():
             "--color-date", default="yellow", type=valid_color_name,
             help="Color for the date")
     color_parser.add_argument(
-            "--color-now_marker", default="brightred", type=valid_color_name,
+            "--color-now-marker", default="brightred", type=valid_color_name,
             help="Color for the now marker")
     color_parser.add_argument(
             "--color-border", default="white", type=valid_color_name,
@@ -208,6 +207,7 @@ def handle_unparsed(unparsed, namespace):
     return parser.parse_args(unparsed, namespace=namespace)
 
 
+@parser_allow_deprecated(name='program')
 def get_argument_parser():
     parser = argparse.ArgumentParser(
             description='Google Calendar Command Line Interface',
