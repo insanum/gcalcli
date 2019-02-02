@@ -348,6 +348,7 @@ def get_argument_parser():
     remind.add_argument("minutes", nargs="?", type=int, default=10)
     remind.add_argument("cmd", nargs="?", type=str, default=default_cmd)
 
+    # TODO DEPRECATION
     remind.add_argument(
             "--use_reminders", action="store_true",
             help="Honor the remind time when running remind command")

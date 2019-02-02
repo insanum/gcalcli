@@ -3,33 +3,84 @@ import argparse
 import functools
 
 import gcalcli
-from gcalcli.printer import valid_color_name
+from gcalcli.printer import valid_color_name, Printer
 
 
-BASE_OPTS = {'color': {'type': valid_color_name,
-                       'help': argparse.SUPPRESS},
-             'program': {'type': str, 'help': argparse.SUPPRESS},
-             'remind': {'type': str, 'help': argparse.SUPPRESS}}
+printer = Printer()
+
+
+def warn_deprecated_opt(option_string):
+    msg = ('WARNING: {} has been deprecated and will be removed in a future '
+           'release.\n')
+    printer.err_msg(msg.format(option_string))
+
+
+class DeprecatedStore(argparse._StoreAction):
+    def __call__(
+            self, parser, namespace, values, option_string=None, **kwargs):
+        warn_deprecated_opt(option_string)
+        setattr(namespace, self.dest, values)
+
+
+class DeprecatedStoreTrue(argparse._StoreConstAction):
+
+    def __init__(self,
+                 option_strings,
+                 dest,
+                 default=False,
+                 required=False,
+                 help=None):
+        super(DeprecatedStoreTrue, self).__init__(
+            option_strings=option_strings,
+            dest=dest,
+            const=True,
+            default=default,
+            required=required,
+            help=help)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        warn_deprecated_opt(option_string)
+        setattr(namespace, self.dest, self.const)
+
+
+class DeprecatedAppend(argparse._AppendAction):
+    def __call__(self, parser, namespace, values, option_string=None):
+        warn_deprecated_opt(option_string)
+        items = argparse._copy.copy(
+                argparse._ensure_value(namespace, self.dest, []))
+        items.append(values)
+        setattr(namespace, self.dest, items)
+
+
+BASE_OPTS = {'program': {'type': str,
+                         'help': argparse.SUPPRESS,
+                         'action': DeprecatedStore},
+             'color': {'type': valid_color_name,
+                       'help': argparse.SUPPRESS,
+                       'action': DeprecatedStore},
+             'remind': {'help': argparse.SUPPRESS,
+                        'action': DeprecatedStoreTrue}}
+
 
 OPTIONS = {
     'program': {
         "--client_id": {'default': gcalcli.__API_CLIENT_ID__},
         "--client_secret": {'default': gcalcli.__API_CLIENT_SECRET__},
         "--configFolder": {'default': None},
-        "--defaultCalendar": {'default': [], 'action': 'append'}
+        "--defaultCalendar": {'default': [], 'action': DeprecatedAppend}
     },
     'color': {
-        '--color_owner': {'default': 'cyan'},
-        '--color_writer': {'default': 'cyan'},
-        '--color_reader': {'default': 'magenta'},
-        '--color_freebusy': {'default': 'default'},
-        '--color_date': {'default': 'yellow'},
-        '--color_now-marker': {'default': 'brightred'},
-        '--color_border': {'default': 'white'},
-        '--color_title': {'default': 'brightyellow'},
+        "--color_owner": {"default": "cyan"},
+        "--color_writer": {"default": "cyan"},
+        "--color_reader": {"default": "magenta"},
+        "--color_freebusy": {"default": "default"},
+        "--color_date": {"default": "yellow"},
+        "--color_now_marker": {"default": "brightred"},
+        "--color_border": {"default": "white"},
+        "--color_title": {"default": "brightyellow"},
     },
     'remind': {
-        '--default_reminders': {'action': 'store_true',
+        '--default_reminders': {'action': DeprecatedStoreTrue,
                                 'default': False}}
 }
 
@@ -39,10 +90,9 @@ def parser_allow_deprecated(getter_func=None, name=None):
         @functools.wraps(getter_func)
         def wrapped(*args, **kwargs):
             parser = getter_func()
-            for opt in OPTIONS[name].items():
+            for arg, options in OPTIONS[name].items():
                 parser.add_argument(
-                    opt[0], default=opt[1]['default'], **BASE_OPTS[name]
-                )
+                        arg, default=options['default'], **BASE_OPTS[name])
             return parser
         return wrapped
 
