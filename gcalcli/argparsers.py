@@ -157,10 +157,6 @@ def get_remind_parser():
             dest="default_reminders", default=False,
             help="If no --reminder is given, use the defaults.  If this is "
             "false, do not create any reminders.")
-    # deprecations / feb 4, 2019
-    remind_parser.add_argument(
-            "--default_reminders", action="store_true",
-            dest="default_reminders", default=False, help=argparse.SUPPRESS)
     return remind_parser
 
 
@@ -352,6 +348,6 @@ def get_argument_parser():
 
     remind.add_argument(
             "--use_reminders", action=DeprecatedStoreTrue,
-            help=argparse.SUPRESS)
+            help=argparse.SUPPRESS)
 
     return parser

@@ -1,38 +1,5 @@
 #!/usr/bin/env python
-
-# ** The MIT License **
 #
-# Copyright (c) 2007 Eric Davis (aka Insanum)
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
-# Dude... just buy us a beer. :-)
-#
-
-# XXX Todo/Cleanup XXX
-# threading is currently broken when getting event list
-# if threading works then move pageToken processing from GetAllEvents to thread
-# support different types of reminders plus multiple ones (popup, sms, email)
-# add caching, should be easy (dump all calendar JSON data to file)
-# add support for multiline description input in the 'add' and 'edit' commands
-# maybe add support for freebusy ?
-
 #############################################################################
 #                                                                           #
 #                                      (           (     (                  #
@@ -44,9 +11,9 @@
 #                | (_ | | (__  / _ \  | |__ | (__ | |__  | |                #
 #                 \___|  \___|/_/ \_\ |____| \___||____||___|               #
 #                                                                           #
-# Author: Eric Davis <http://www.insanum.com>                               #
-#         Brian Hartvigsen <http://github.com/tresni>                       #
-#         Joshua Crowgey                                                    #
+# Authors: Eric Davis <http://www.insanum.com>                              #
+#          Brian Hartvigsen <http://github.com/tresni>                      #
+#          Joshua Crowgey <http://github.com/jcrowgey>                      #
 # Home: https://github.com/insanum/gcalcli                                  #
 #                                                                           #
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
@@ -71,8 +38,6 @@ from collections import namedtuple
 from gcalcli.validators import (
     get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
     VALID_COLORS, STR_ALLOW_EMPTY, REMINDER)
-
-from gcalcli.decorators import ALL_DEPRECATED_OPTS
 
 # Required 3rd party libraries
 try:
@@ -1621,34 +1586,10 @@ def run_add_prompt(parsed_args, printer):
             parsed_args.reminders.append(str(n) + ' ' + m)
 
 
-def _warn_deprecated_opts(argv):
-    """
-    Tests whether options are in ALL_DEPRECATED_OPT.
-    Prints clear warning message to user if so.
-    """
-    known_deprecations = (
-        "--color_",
-        "--default_reminders"
-    )
-    _depr_args = []
-    for arg in argv:
-        if arg.startswith(known_deprecations):
-            _depr_args.append(arg)
-
-    if _depr_args:
-        printer = Printer()
-        for arg in _depr_args:
-            printer.err_msg(
-                "WARNING: {} is deprecated and will be removed. "
-                "Please use {}\n".format(arg, arg.replace("_", "-"))
-            )
-
-
 def main():
     parser = get_argument_parser()
     try:
         argv = sys.argv[1:]
-        _warn_deprecated_opts(argv)
         gcalclirc = os.path.expanduser('~/.gcalclirc')
         if os.path.exists(gcalclirc):
             # We want .gcalclirc to be sourced before any other --flagfile

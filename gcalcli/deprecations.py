@@ -8,10 +8,19 @@ from gcalcli.printer import valid_color_name, Printer
 
 printer = Printer()
 
+CAMELS = {"--configFolder": "--config-folder",
+          "--defaultCalendar": "--default-calendar"}
+
 
 def warn_deprecated_opt(option_string):
+    suggestion = 'Please use "{}", instead.\n'
+
+    suggestion = (suggestion.format(CAMELS[option_string])
+                  if option_string in CAMELS
+                  else suggestion.format(option_string.replace('_', '-')))
+
     msg = ('WARNING: {} has been deprecated and will be removed in a future '
-           'release.\n')
+           'release.\n' + suggestion)
     printer.err_msg(msg.format(option_string))
 
 
@@ -101,10 +110,6 @@ def parser_allow_deprecated(getter_func=None, name=None):
             return parser_allow_deprecated(getter_func, name=name)
         return partial_parser_allow_deprecated
 
-
-    remind.add_argument(
-            "--use_reminders", action="store_true",
-            help="Honor the remind time when running remind command")
 
 ALL_DEPRECATED_OPTS = {}
 ALL_DEPRECATED_OPTS.update(OPTIONS['program'])
