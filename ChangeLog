@@ -1,3 +1,7 @@
+v4.0.0
+  * Major code refactor: modularity, testing, PEP8 compliance
+  * Bugfixes for issues reported during alpha phase
+
 v4.0.0a4
   * Multiday events support #277
   * Fix textwrap for widechar at cut index #308

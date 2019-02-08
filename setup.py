@@ -13,7 +13,7 @@ except ImportError:
     long_description = ''
 
 setup(name='gcalcli',
-      version='4.0.1',
+      version='4.0.0',
       author='Eric Davis, Brian Hartvigsen, Joshua Crowgey',
       maintainer='Joshua Crowgey',
       maintainer_email='jcrowgey@uw.edu',
