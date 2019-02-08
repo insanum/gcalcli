@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from setuptools import setup
 
 try:
@@ -16,7 +17,7 @@ author_emails = ['edavis@insanum.com',
                  'jcrowgey@uw.edu']
 
 setup(name='gcalcli',
-      version='4.0.1',
+      version='4.0.2',
       author='Eric Davis, Brian Hartvigsen, Joshua Crowgey',
       author_email=', '.join(author_emails),
       maintainer='Joshua Crowgey',
