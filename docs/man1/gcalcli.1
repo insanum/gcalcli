@@ -12,14 +12,15 @@ gcalcli [-h] [--auth_host_name AUTH_HOST_NAME]
         [--noauth_local_webserver]
         [--auth_host_port [AUTH_HOST_PORT [AUTH_HOST_PORT ...]]]
         [--logging_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
-        [--version] [--client_id CLIENT_ID]
-        [--client_secret CLIENT_SECRET] [--configFolder CONFIGFOLDER]
-        [--noincluderc] [--calendar CALENDAR]
-        [--defaultCalendar DEFAULTCALENDAR] [--locale LOCALE]
-        [--refresh] [--nocache] [--conky] [--nocolor]
+        [--version] [--default-calendar DEFAULT_CALENDAR]
+        [--calendar CALENDAR] [--refresh] [--client-id CLIENT_ID]
+        [--conky] [--nocache] [--locale LOCALE] [--noincluderc]
         [--lineart {fancy,unicode,ascii}]
+        [--config-folder CONFIG_FOLDER] [--nocolor]
+        [--client-secret CLIENT_SECRET]
         {list,search,edit,delete,agenda,calw,calm,quick,add,import,remind}
          ...
+
 
 Positional arguments:
   {list,search,edit,delete,agenda,calw,calm,quick,add,import,remind}
@@ -48,30 +49,30 @@ Optional arguments:
   --logging_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
                         Set the logging level of detail. (default: ERROR)
   --version             show program's version number and exit
-  --client_id CLIENT_ID
+  --default-calendar DEFAULT_CALENDAR
+                        Optional default calendar to use if no --calendar
+                        options are given (default: [])
+  --calendar CALENDAR   Which calendars to use (default: [])
+  --refresh             Delete and refresh cached data (default: False)
+  --client-id CLIENT_ID
                         API client_id (default:
                         232867676714.apps.googleusercontent.com)
-  --client_secret CLIENT_SECRET
-                        API client_secret (default: 3tZSxItw6_VnZMezQwC8lUqy)
-  --configFolder CONFIGFOLDER
-                        Optional directory to load/store all configuration
-                        information (default: None)
+  --conky               Use Conky color codes (default: False)
+  --nocache             Execute command without using cache (default: True)
+  --locale LOCALE       System locale (default: )
   --noincluderc         Whether to include ~/.gcalclirc when using
                         configFolder (default: True)
-  --calendar CALENDAR   Which calendars to use (default: [])
-  --defaultCalendar DEFAULTCALENDAR
-                        Optional default calendar to use if no --calendar
-                        optionsare given (default: [])
-  --locale LOCALE       System locale (default: )
-  --refresh             Delete and refresh cached data (default: False)
-  --nocache             Execute command without using cache (default: True)
-  --conky               Use Conky color codes (default: False)
-  --nocolor             Enable/Disable all color output (default: True)
   --lineart {fancy,unicode,ascii}
-                        Choose line art style for calendars: "fancy":
-                        forVTcodes, "unicode" for Unicode box drawing
-                        characters,"ascii" for old-school plusses, hyphens and
-                        pipes. (default: fancy)
+                        Choose line art style for calendars: "fancy": for
+                        VTcodes, "unicode" for Unicode box drawing characters,
+                        "ascii" for old-school plusses, hyphens and pipes.
+                        (default: fancy)
+  --config-folder CONFIG_FOLDER
+                        Optional directory to load/store all configuration
+                        information (default: None)
+  --nocolor             Enable/Disable all color output (default: True)
+  --client-secret CLIENT_SECRET
+                        API client_secret (default: 3tZSxItw6_VnZMezQwC8lUqy)
 
 
 .SH DIAGNOSTICS
