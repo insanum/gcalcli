@@ -1,8 +1,5 @@
 #!/usr/bin/env python
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup
 
 try:
     import pypandoc
@@ -10,11 +7,18 @@ try:
                                         format='markdown_github',
                                         extra_args=("--wrap=none",))
 except ImportError:
+    import sys
+    print('Warning: No long description generated.', file=sys.stderr)
     long_description = ''
 
+author_emails = ['edavis@insanum.com',
+                 'brian.andrew@brianandjenny.com',
+                 'jcrowgey@uw.edu']
+
 setup(name='gcalcli',
-      version='4.0.0',
+      version='4.0.1',
       author='Eric Davis, Brian Hartvigsen, Joshua Crowgey',
+      author_email=', '.join(author_emails),
       maintainer='Joshua Crowgey',
       maintainer_email='jcrowgey@uw.edu',
       description='Google Calendar Command Line Interface',
