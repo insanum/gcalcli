@@ -4,7 +4,7 @@ from io import StringIO
 
 import pytest
 from gcalcli.printer import COLOR_NAMES, Printer, valid_color_name
-from gcalcli.gcalcli import _u  # handles py2/py3 text compatibility
+from gcalcli.utils import _u
 
 
 def test_init():

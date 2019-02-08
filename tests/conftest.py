@@ -11,7 +11,7 @@ from apiclient.discovery import HttpMock, build
 from gcalcli.argparsers import (get_color_parser,
                                 get_cal_query_parser,
                                 get_output_parser)
-from gcalcli.gcalcli import GoogleCalendarInterface
+from gcalcli.gcal import GoogleCalendarInterface
 from gcalcli.printer import Printer
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'

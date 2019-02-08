@@ -13,9 +13,10 @@ except ImportError:
     long_description = ''
 
 setup(name='gcalcli',
-      version='4.0.0a5',
-      maintainer='Eric Davis, Brian Hartvigsen, Joshua Crowgey',
-      maintainer_email='edavis@insanum.com, brian.andrew@brianandjenny.com',
+      version='4.0.1',
+      author='Eric Davis, Brian Hartvigsen, Joshua Crowgey',
+      maintainer='Joshua Crowgey',
+      maintainer_email='jcrowgey@uw.edu',
       description='Google Calendar Command Line Interface',
       long_description=long_description,
       url='https://github.com/insanum/gcalcli',
@@ -36,7 +37,7 @@ setup(name='gcalcli',
       },
       entry_points={
           'console_scripts':
-              ['gcalcli=gcalcli.gcalcli:main'],
+              ['gcalcli=gcalcli.cli:main'],
       },
       classifiers=[
           "Development Status :: 5 - Production/Stable",

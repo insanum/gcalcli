@@ -12,8 +12,8 @@ from gcalcli.argparsers import (get_start_end_parser,
                                 get_cal_query_parser,
                                 get_output_parser,
                                 get_search_parser)
-from gcalcli.gcalcli import (GoogleCalendarInterface,
-                             parse_cal_names)
+from gcalcli.gcal import GoogleCalendarInterface
+from gcalcli.cli import parse_cal_names
 
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
