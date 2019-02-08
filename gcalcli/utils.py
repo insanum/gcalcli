@@ -47,7 +47,7 @@ def set_locale(new_locale):
 
 def _u(text):
     encoding = locale.getlocale()[1] or \
-            locale.getpreferredencoding(False) or "UTF-8"
+            locale.getpreferredencoding(False) or 'UTF-8'
     if issubclass(type(text), six.text_type):
         return text
     if not issubclass(type(text), six.string_types):
@@ -96,7 +96,8 @@ def get_times_from_duration(when, duration=0, allday=False):
 
 def get_time_from_str(when):
     """Convert a string to a time: first uses the dateutil parser, falls back
-    on fuzzy matching with parsedatetime"""
+    on fuzzy matching with parsedatetime
+    """
     zero_oclock_today = datetime.now(tzlocal()).replace(
             hour=0, minute=0, second=0, microsecond=0)
 
@@ -105,7 +106,7 @@ def get_time_from_str(when):
     except ValueError:
         struct, result = fuzzy_date_parse(when)
         if not result:
-            raise ValueError("Date and time is invalid: %s" % (when))
+            raise ValueError('Date and time is invalid: %s' % (when))
         event_time = datetime.fromtimestamp(time.mktime(struct), tzlocal())
 
     return event_time
