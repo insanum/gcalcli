@@ -1621,10 +1621,34 @@ def run_add_prompt(parsed_args, printer):
             parsed_args.reminders.append(str(n) + ' ' + m)
 
 
+def _warn_deprecated_opts(argv):
+    """
+    Tests whether options are in ALL_DEPRECATED_OPT.
+    Prints clear warning message to user if so.
+    """
+    known_deprecations = (
+        "--color_",
+        "--default_reminders"
+    )
+    _depr_args = []
+    for arg in argv:
+        if arg.startswith(known_deprecations):
+            _depr_args.append(arg)
+
+    if _depr_args:
+        printer = Printer()
+        for arg in _depr_args:
+            printer.err_msg(
+                "WARNING: {} is deprecated and will be removed. "
+                "Please use {}\n".format(arg, arg.replace("_", "-"))
+            )
+
+
 def main():
     parser = get_argument_parser()
     try:
         argv = sys.argv[1:]
+        _warn_deprecated_opts(argv)
         gcalclirc = os.path.expanduser('~/.gcalclirc')
         if os.path.exists(gcalclirc):
             # We want .gcalclirc to be sourced before any other --flagfile

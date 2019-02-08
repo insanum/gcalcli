@@ -120,30 +120,30 @@ def get_output_parser(parents=[]):
 @parser_allow_deprecated(name='color')
 def get_color_parser():
     color_parser = argparse.ArgumentParser(add_help=False)
-    color_parser.add_argument(
-            "--color-owner", default="cyan", type=valid_color_name,
-            help="Color for owned calendars")
-    color_parser.add_argument(
-            "--color-writer", default="green", type=valid_color_name,
-            help="Color for writable calendars")
-    color_parser.add_argument(
-            "--color-reader", default="magenta", type=valid_color_name,
-            help="Color for read-only calendars")
-    color_parser.add_argument(
-            "--color-freebusy", default="default", type=valid_color_name,
-            help="Color for free/busy calendars")
-    color_parser.add_argument(
-            "--color-date", default="yellow", type=valid_color_name,
-            help="Color for the date")
-    color_parser.add_argument(
-            "--color-now-marker", default="brightred", type=valid_color_name,
-            help="Color for the now marker")
-    color_parser.add_argument(
-            "--color-border", default="white", type=valid_color_name,
-            help="Color of line borders")
-    color_parser.add_argument(
-            "--color-title", default="brightyellow", type=valid_color_name,
-            help="Color of the agenda column titles")
+
+    COLOR_PARSER_OPTIONS = [
+        ("owner", "cyan", "Color for owned calendars"),
+        ("writer", "cyan", "Color for writeable calendars"),
+        ("reader", "magenta", "Color for read-only calendars"),
+        ("freebusy", "default", "Color for free/busy calendars"),
+        ("date", "yellow", "Color for the date"),
+        ("now-marker", "brightred", "Color for the now marker"),
+        ("border", "white", "Color of line borders"),
+        ("title", "brightyellow", "Color of the agenda column titles"),
+    ]
+
+    for arg, color, msg in COLOR_PARSER_OPTIONS:
+        arg = "--color-" + arg
+        color_parser.add_argument(
+            arg, default=color, type=valid_color_name, help=msg
+        )
+    # deprecations / feb 4, 2019
+    for arg, color, msg in COLOR_PARSER_OPTIONS:
+        arg = "--color_" + arg
+        color_parser.add_argument(
+            arg, default=color, type=valid_color_name, help=argparse.SUPPRESS
+        )
+
     return color_parser
 
 
@@ -163,6 +163,10 @@ def get_remind_parser():
             dest="default_reminders", default=False,
             help="If no --reminder is given, use the defaults.  If this is "
             "false, do not create any reminders.")
+    # deprecations / feb 4, 2019
+    remind_parser.add_argument(
+            "--default_reminders", action="store_true",
+            dest="default_reminders", default=False, help=argparse.SUPPRESS)
     return remind_parser
 
 
