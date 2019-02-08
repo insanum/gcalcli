@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import argparse
 import gcalcli
 from gcalcli import utils
-from gcalcli.decorators import parser_allow_deprecated
+from gcalcli.deprecations import parser_allow_deprecated, DeprecatedStoreTrue
 from gcalcli.printer import valid_color_name
 from oauth2client import tools
 import copy as _copy
@@ -136,12 +136,6 @@ def get_color_parser():
         arg = "--color-" + arg
         color_parser.add_argument(
             arg, default=color, type=valid_color_name, help=msg
-        )
-    # deprecations / feb 4, 2019
-    for arg, color, msg in COLOR_PARSER_OPTIONS:
-        arg = "--color_" + arg
-        color_parser.add_argument(
-            arg, default=color, type=valid_color_name, help=argparse.SUPPRESS
         )
 
     return color_parser
@@ -352,9 +346,12 @@ def get_argument_parser():
     remind.add_argument("minutes", nargs="?", type=int, default=10)
     remind.add_argument("cmd", nargs="?", type=str, default=default_cmd)
 
-    # TODO DEPRECATION
     remind.add_argument(
-            "--use_reminders", action="store_true",
+            "--use-reminders", action="store_true",
             help="Honor the remind time when running remind command")
+
+    remind.add_argument(
+            "--use_reminders", action=DeprecatedStoreTrue,
+            help=argparse.SUPRESS)
 
     return parser

@@ -102,6 +102,10 @@ def parser_allow_deprecated(getter_func=None, name=None):
         return partial_parser_allow_deprecated
 
 
+    remind.add_argument(
+            "--use_reminders", action="store_true",
+            help="Honor the remind time when running remind command")
+
 ALL_DEPRECATED_OPTS = {}
 ALL_DEPRECATED_OPTS.update(OPTIONS['program'])
 ALL_DEPRECATED_OPTS.update(OPTIONS['color'])
