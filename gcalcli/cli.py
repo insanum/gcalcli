@@ -107,12 +107,12 @@ def main():
         parser.print_usage()
         sys.exit(1)
 
-    if parsed_args.configFolder:
-        if not os.path.exists(os.path.expanduser(parsed_args.configFolder)):
-            os.makedirs(os.path.expanduser(parsed_args.configFolder))
+    if parsed_args.config_folder:
+        if not os.path.exists(os.path.expanduser(parsed_args.config_folder)):
+            os.makedirs(os.path.expanduser(parsed_args.config_folder))
         if os.path.exists(os.path.expanduser('%s/gcalclirc' %
-                                             parsed_args.configFolder)):
-            rc_path = ['@%s/gcalclirc' % parsed_args.configFolder, ]
+                                             parsed_args.config_folder)):
+            rc_path = ['@%s/gcalclirc' % parsed_args.config_folder, ]
             if not parsed_args.includeRc:
                 tmp_argv = rc_path + argv
             else:

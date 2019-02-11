@@ -126,10 +126,10 @@ class GoogleCalendarInterface:
     def _google_auth(self):
         from argparse import Namespace
         if not self.authHttp:
-            if self.options['configFolder']:
+            if self.options['config_folder']:
                 storage = Storage(
                         os.path.expanduser(
-                                '%s/oauth' % self.options['configFolder']
+                                '%s/oauth' % self.options['config_folder']
                         )
                 )
             else:
@@ -173,9 +173,9 @@ class GoogleCalendarInterface:
         return self.urlService
 
     def _get_cached(self):
-        if self.options['configFolder']:
+        if self.options['config_folder']:
             cacheFile = os.path.expanduser(
-                    '%s/cache' % self.options['configFolder']
+                    '%s/cache' % self.options['config_folder']
             )
         else:
             cacheFile = os.path.expanduser('~/.gcalcli_cache')

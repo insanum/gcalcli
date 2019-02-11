@@ -30,6 +30,7 @@ PROGRAM_OPTIONS = {
         '--calendar': {'default': [], 'type': str, 'action': 'append',
                        'help': 'Which calendars to use'},
         '--default-calendar': {'default': [], 'type': str, 'action': 'append',
+                               'dest': 'defaultCalendar',
                                'help': 'Optional default calendar to use if ' +
                                        'no --calendar options are given'},
         '--locale': {'default': '', 'type': str, 'help': 'System locale'},
