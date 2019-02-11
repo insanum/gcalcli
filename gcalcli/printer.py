@@ -59,7 +59,7 @@ class Printer(object):
         self.use_color = use_color
         self.conky = conky
         self.colors = {
-                'default': '' if conky else '\033[0m',
+                'default': '${color}' if conky else '\033[0m',
                 'black': '${color black}' if conky else '\033[0;30m',
                 'brightblack': '${color black}' if conky else '\033[30;1m',
                 'red': '${color red}' if conky else '\033[0;31m',
@@ -76,7 +76,7 @@ class Printer(object):
                 'brightcyan': '${color cyan}' if conky else '\033[36;1m',
                 'white': '${color white}' if conky else '\033[0;37m',
                 'brightwhite': '${color white}' if conky else '\033[37;1m',
-                None: '' if conky else '\033[0m'}
+                None: '${color}' if conky else '\033[0m'}
         self.colorset = set(self.colors.keys())
 
         self.art_style = art_style

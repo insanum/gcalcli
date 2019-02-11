@@ -650,7 +650,7 @@ class GoogleCalendarInterface:
 
     def _PrintEvent(self, event, prefix):
 
-        def _formatDescr(descr, indent, box):
+        def _format_descr(descr, indent, box):
             wrapper = textwrap.TextWrapper()
             if box:
                 wrapper.initial_indent = (indent + '  ')
@@ -663,29 +663,29 @@ class GoogleCalendarInterface:
             new_descr = ''
             for line in descr.split('\n'):
                 if box:
-                    tmpLine = wrapper.fill(line)
-                    for singleLine in tmpLine.split('\n'):
-                        singleLine = singleLine.ljust(
+                    tmp_line = wrapper.fill(line)
+                    for single_line in tmp_line.split('\n'):
+                        single_line = single_line.ljust(
                                 self.details.get('width'), ' '
                         )
-                        new_descr += singleLine[:len(indent)] + \
+                        new_descr += single_line[:len(indent)] + \
                             self.printer.art['vrt'] + \
-                            singleLine[(len(indent) + 1):
-                                       (self.details.get('width') - 1)] + \
+                            single_line[(len(indent) + 1):
+                                        (self.details.get('width') - 1)] + \
                             self.printer.art['vrt'] + '\n'
                 else:
                     new_descr += wrapper.fill(line) + '\n'
             return new_descr.rstrip()
 
         indent = 10 * ' '
-        detailsIndent = 19 * ' '
+        details_indent = 19 * ' '
 
         if self.options['military']:
-            timeFormat = '%-5s'
-            tmpTimeStr = event['s'].strftime('%H:%M')
+            time_format = '%-5s'
+            tmp_time_str = event['s'].strftime('%H:%M')
         else:
-            timeFormat = '%-7s'
-            tmpTimeStr = \
+            time_format = '%-7s'
+            tmp_time_str = \
                 event['s'].strftime('%I:%M').lstrip('0').rjust(5) + \
                 event['s'].strftime('%p').lower()
 
@@ -694,63 +694,63 @@ class GoogleCalendarInterface:
 
         self.printer.msg(prefix, self.options['color_date'])
 
-        happeningNow = event['s'] <= self.now <= event['e']
-        allDay = self._isallday(event)
+        happening_now = event['s'] <= self.now <= event['e']
+        all_day = self._isallday(event)
         if self.options['override_color'] and event.get('colorId'):
-            if happeningNow and not allDay:
-                eventColor = self.options['color_now_marker']
+            if happening_now and not all_day:
+                event_color = self.options['color_now_marker']
             else:
-                eventColor = self._calendar_color(event, override_color=True)
+                event_color = self._calendar_color(event, override_color=True)
         else:
-            eventColor = self.options['color_now_marker'] \
-                if happeningNow and not allDay \
+            event_color = self.options['color_now_marker'] \
+                if happening_now and not all_day \
                 else self._calendar_color(event)
 
-        if allDay:
-            fmt = '  ' + timeFormat + '  %s\n'
+        if all_day:
+            fmt = '  ' + time_format + '  %s\n'
             self.printer.msg(
                     fmt % ('', self._valid_title(event).strip()),
-                    eventColor
+                    event_color
             )
         else:
-            fmt = '  ' + timeFormat + '  %s\n'
+            fmt = '  ' + time_format + '  %s\n'
             self.printer.msg(
-                    fmt % (tmpTimeStr, self._valid_title(event).strip()),
-                    eventColor
+                    fmt % (tmp_time_str, self._valid_title(event).strip()),
+                    event_color
             )
 
         if self.details.get('calendar'):
             xstr = '%s  Calendar: %s\n' % (
-                    detailsIndent, event['gcalcli_cal']['summary']
+                    details_indent, event['gcalcli_cal']['summary']
             )
             self.printer.msg(xstr, 'default')
 
         if self.details.get('url') and 'htmlLink' in event:
-            hLink = self._shorten_url(event['htmlLink'])
-            xstr = '%s  Link: %s\n' % (detailsIndent, hLink)
+            hlink = self._shorten_url(event['htmlLink'])
+            xstr = '%s  Link: %s\n' % (details_indent, hlink)
             self.printer.msg(xstr, 'default')
 
         if self.details.get('url') and 'hangoutLink' in event:
-            hLink = self._shorten_url(event['hangoutLink'])
-            xstr = '%s  Hangout Link: %s\n' % (detailsIndent, hLink)
+            hlink = self._shorten_url(event['hangoutLink'])
+            xstr = '%s  Hangout Link: %s\n' % (details_indent, hlink)
             self.printer.msg(xstr, 'default')
 
-        if self.details.get('location') and \
-           'location' in event and \
-           event['location'].strip():
+        if self.details.get('location') \
+                and 'location' in event \
+                and event['location'].strip():
             xstr = '%s  Location: %s\n' % (
-                detailsIndent,
+                details_indent,
                 event['location'].strip()
             )
             self.printer.msg(xstr, 'default')
 
         if self.details.get('attendees') and 'attendees' in event:
-            xstr = '%s  Attendees:\n' % (detailsIndent)
+            xstr = '%s  Attendees:\n' % (details_indent)
             self.printer.msg(xstr, 'default')
 
             if 'self' not in event['organizer']:
                 xstr = '%s    %s: <%s>\n' % (
-                    detailsIndent,
+                    details_indent,
                     event['organizer'].get('displayName', 'Not Provided')
                                       .strip(),
                     event['organizer'].get('email', 'Not Provided').strip()
@@ -760,82 +760,90 @@ class GoogleCalendarInterface:
             for attendee in event['attendees']:
                 if 'self' not in attendee:
                     xstr = '%s    %s: <%s>\n' % (
-                        detailsIndent,
+                        details_indent,
                         attendee.get('displayName', 'Not Provided').strip(),
                         attendee.get('email', 'Not Provided').strip()
                     )
                     self.printer.msg(xstr, 'default')
 
         if self.details.get('attachments') and 'attachments' in event:
-            xstr = '%s  Attachments:\n' % (detailsIndent)
+            xstr = '%s  Attachments:\n' % (details_indent)
             self.printer.msg(xstr, 'default')
 
             for attendee in event['attachments']:
                 xstr = '%s    %s\n%s    -> %s\n' % (
-                    detailsIndent,
+                    details_indent,
                     attendee.get('title', 'Not Provided').strip(),
-                    detailsIndent,
+                    details_indent,
                     attendee.get('fileUrl', 'Not Provided').strip()
                 )
                 self.printer.msg(xstr, 'default')
 
         if self.details.get('length'):
-            diffDateTime = (event['e'] - event['s'])
-            xstr = '%s  Length: %s\n' % (detailsIndent, diffDateTime)
+            diff_date_time = (event['e'] - event['s'])
+            xstr = '%s  Length: %s\n' % (details_indent, diff_date_time)
             self.printer.msg(xstr, 'default')
 
         if self.details.get('reminders') and 'reminders' in event:
             if event['reminders']['useDefault'] is True:
-                xstr = '%s  Reminder: (default)\n' % (detailsIndent)
+                xstr = '%s  Reminder: (default)\n' % (details_indent)
                 self.printer.msg(xstr, 'default')
             elif 'overrides' in event['reminders']:
                 for rem in event['reminders']['overrides']:
                     xstr = '%s  Reminder: %s %d minutes\n' % \
-                           (detailsIndent, rem['method'], rem['minutes'])
+                           (details_indent, rem['method'], rem['minutes'])
                     self.printer.msg(xstr, 'default')
 
-        if self.details.get('email') and \
-           'email' in event['creator'] and \
-           event['creator']['email'].strip():
+        if self.details.get('email') \
+                and 'email' in event['creator'] \
+                and event['creator']['email'].strip():
             xstr = '%s  Email: %s\n' % (
-                detailsIndent,
+                details_indent,
                 event['creator']['email'].strip()
             )
             self.printer.msg(xstr, 'default')
 
-        if self.details.get('description') and \
-           'description' in event and \
-           event['description'].strip():
-            descrIndent = detailsIndent + '  '
+        if self.details.get('description') \
+                and 'description' in event \
+                and event['description'].strip():
+            descr_indent = details_indent + '  '
             box = True  # leave old non-box code for option later
             if box:
-                topMarker = (descrIndent +
-                             self.printer.art['ulc'] +
-                             (self.printer.art['hrz'] *
-                              ((self.details.get('width') - len(descrIndent)) -
-                               2)) +
-                             self.printer.art['urc'])
-                botMarker = (descrIndent +
-                             self.printer.art['llc'] +
-                             (self.printer.art['hrz'] *
-                              ((self.details.get('width') - len(descrIndent)) -
-                               2)) +
-                             self.printer.art['lrc'])
+                top_marker = (
+                        descr_indent +
+                        self.printer.art['ulc'] +
+                        (self.printer.art['hrz'] *
+                            ((self.details.get('width') - len(descr_indent))
+                             - 2
+                             )
+                         ) +
+                        self.printer.art['urc']
+                )
+                bot_marker = (
+                        descr_indent +
+                        self.printer.art['llc'] +
+                        (self.printer.art['hrz'] *
+                            ((self.details.get('width') - len(descr_indent))
+                             - 2
+                             )
+                         ) +
+                        self.printer.art['lrc']
+                )
                 xstr = '%s  Description:\n%s\n%s\n%s\n' % (
-                    detailsIndent,
-                    topMarker,
-                    _formatDescr(event['description'].strip(),
-                                 descrIndent, box),
-                    botMarker
+                    details_indent,
+                    top_marker,
+                    _format_descr(event['description'].strip(),
+                                  descr_indent, box),
+                    bot_marker
                 )
             else:
-                marker = descrIndent + '-' * \
-                    (self.details.get('width') - len(descrIndent))
+                marker = descr_indent + '-' * \
+                    (self.details.get('width') - len(descr_indent))
                 xstr = '%s  Description:\n%s\n%s\n%s\n' % (
-                    detailsIndent,
+                    details_indent,
                     marker,
-                    _formatDescr(event['description'].strip(),
-                                 descrIndent, box),
+                    _format_descr(event['description'].strip(),
+                                  descr_indent, box),
                     marker
                 )
             self.printer.msg(xstr, 'default')

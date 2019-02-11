@@ -58,7 +58,7 @@ def test_conky_red_msg():
     out = StringIO()
     cp.msg(_u('msg'), 'red', file=out)
     out.seek(0)
-    assert out.read() == _u('${color red}msg')
+    assert out.read() == _u('${color red}msg${color}')
 
 
 def test_conky_err_msg(monkeypatch):
@@ -67,7 +67,7 @@ def test_conky_err_msg(monkeypatch):
     cp = Printer(conky=True)
     cp.err_msg(_u('error'))
     err.seek(0)
-    assert err.read() == _u('${color red}error')
+    assert err.read() == _u('${color red}error${color}')
 
 
 def test_conky_debug_msg(monkeypatch):
@@ -76,7 +76,7 @@ def test_conky_debug_msg(monkeypatch):
     cp = Printer(conky=True)
     cp.debug_msg(_u('debug'))
     err.seek(0)
-    assert err.read() == _u('${color yellow}debug')
+    assert err.read() == _u('${color yellow}debug${color}')
 
 
 def test_no_color():
