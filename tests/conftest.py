@@ -71,21 +71,21 @@ def PatchedGCalIForEvents(monkeypatch):
         http = HttpMock(
                 TEST_DATA_DIR + '/cal_service_discovery.json',
                 {'status': '200'})
-        if not self.calService:
-            self.calService = build(
+        if not self.cal_service:
+            self.cal_service = build(
                     serviceName='calendar', version='v3', http=http)
-        return self.calService
+        return self.cal_service
 
     def mocked_calendar_list(self):
         http = HttpMock(
                 TEST_DATA_DIR + '/cal_list.json', {'status': '200'})
-        request = self._cal_service().calendarList().list()
+        request = self.get_cal_service().calendarList().list()
         cal_list = request.execute(http=http)
-        self.allCals = [cal for cal in cal_list['items']]
-        if not self.calService:
-            self.calService = build(
+        self.all_cals = [cal for cal in cal_list['items']]
+        if not self.cal_service:
+            self.cal_service = build(
                  serviceName='calendar', version='v3', http=http)
-        return self.calService
+        return self.cal_service
 
     def mocked_msg(self, msg, colorname='default', file=sys.stdout):
         # ignores file and always writes to stdout
@@ -95,11 +95,14 @@ def PatchedGCalIForEvents(monkeypatch):
 
     monkeypatch.setattr(
             GoogleCalendarInterface, '_search_for_events',
-            mocked_search_for_events)
+            mocked_search_for_events
+    )
     monkeypatch.setattr(
-            GoogleCalendarInterface, '_cal_service', mocked_calendar_service)
+            GoogleCalendarInterface, 'get_cal_service', mocked_calendar_service
+    )
     monkeypatch.setattr(
-            GoogleCalendarInterface, '_get_cached', mocked_calendar_list)
+            GoogleCalendarInterface, '_get_cached', mocked_calendar_list
+    )
     monkeypatch.setattr(Printer, 'msg', mocked_msg)
 
     def _init(**opts):
@@ -114,21 +117,21 @@ def PatchedGCalI(monkeypatch):
         http = HttpMock(
                 TEST_DATA_DIR + '/cal_service_discovery.json',
                 {'status': '200'})
-        if not self.calService:
-            self.calService = build(
+        if not self.cal_service:
+            self.cal_service = build(
                     serviceName='calendar', version='v3', http=http)
-        return self.calService
+        return self.cal_service
 
     def mocked_calendar_list(self):
         http = HttpMock(
                 TEST_DATA_DIR + '/cal_list.json', {'status': '200'})
-        request = self._cal_service().calendarList().list()
+        request = self.get_cal_service().calendarList().list()
         cal_list = request.execute(http=http)
-        self.allCals = [cal for cal in cal_list['items']]
-        if not self.calService:
-            self.calService = build(
+        self.all_cals = [cal for cal in cal_list['items']]
+        if not self.cal_service:
+            self.cal_service = build(
                  serviceName='calendar', version='v3', http=http)
-        return self.calService
+        return self.cal_service
 
     def mocked_msg(self, msg, colorname='default', file=sys.stdout):
         # ignores file and always writes to stdout
@@ -137,9 +140,11 @@ def PatchedGCalI(monkeypatch):
         sys.stdout.write(msg)
 
     monkeypatch.setattr(
-            GoogleCalendarInterface, '_cal_service', mocked_calendar_service)
+            GoogleCalendarInterface, 'get_cal_service', mocked_calendar_service
+    )
     monkeypatch.setattr(
-            GoogleCalendarInterface, '_get_cached', mocked_calendar_list)
+            GoogleCalendarInterface, '_get_cached', mocked_calendar_list
+    )
     monkeypatch.setattr(Printer, 'msg', mocked_msg)
 
     def _init(**opts):

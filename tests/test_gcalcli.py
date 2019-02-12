@@ -27,7 +27,7 @@ def test_list(capsys, PatchedGCalI):
         cal_count = len(load(cl)['items'])
 
     # test data has 6 cals
-    assert cal_count == len(gcal.allCals)
+    assert cal_count == len(gcal.all_cals)
     expected_header = gcal.printer.get_colorcode(
             gcal.options['color_title']) + ' Access  Title\n'
 
