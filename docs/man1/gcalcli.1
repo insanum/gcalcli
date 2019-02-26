@@ -1,11 +1,16 @@
 .\" Manpage for gcalcli.
-.TH man 1 "12 June 2018" "1.0" "gcalcli Manual"
+.TH man 1 "25 February 2019" "4.0.4" "gcalcli Manual"
 .SH NAME
 gcalcli \- interact with a Google Calendar
 .SH SYNOPSIS
 gcalcli [options] command [command args or options]
 .SH DESCRIPTION
-gcalcli is a Python application that allows you to access your Google Calendar(s) from a command line. It's easy to get your agenda, search for events, add new events, delete events, edit events, and even import those annoying ICS/vCal invites from Microsoft Exchange and/or other sources. Additionally, gcalcli can be used as a reminder service and execute any application you want when an event is coming up.
+gcalcli is a Python application that allows you to access your Google
+Calendar(s) from a command line. It's easy to get your agenda, search for
+events, add new events, delete events, edit events, and even import those
+annoying ICS/vCal invites from Microsoft Exchange and/or other sources.
+Additionally, gcalcli can be used as a reminder service and execute any
+application you want when an event is coming up.
 .SH USAGE
 
 gcalcli [-h] [--auth_host_name AUTH_HOST_NAME]
@@ -76,7 +81,8 @@ Optional arguments:
 
 
 .SH DIAGNOSTICS
-.B "Encoding issues, wrongly printed characters, UnicodeEncodeError when using conky, in pipes or scripts"
+.B "Encoding issues, wrongly printed characters, UnicodeEncodeError when using
+conky, in pipes or scripts"
 .RS
  - Set an environment variable PYTHONIOENCODING=utf8
  - Use a Unicode capable font like DejaVu Sans Mono

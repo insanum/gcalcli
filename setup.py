@@ -27,7 +27,7 @@ setup(name='gcalcli',
       url='https://github.com/insanum/gcalcli',
       license='MIT',
       packages=['gcalcli'],
-      data_files=[('man/man1', ['docs/man1/gcalcli.1'])],
+      data_files=[('share/man/man1', ['docs/man1/gcalcli.1'])],
       install_requires=[
           'python-dateutil',
           'google-api-python-client>=1.4',
