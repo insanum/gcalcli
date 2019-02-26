@@ -1,3 +1,6 @@
+v4.0.4
+  * Minor bugfixes: conky colors, issues with setup.py
+
 v4.0.0
   * Major code refactor: modularity, testing, PEP8 compliance
   * Bugfixes for issues reported during alpha phase
@@ -5,7 +8,7 @@ v4.0.0
 v4.0.0a4
   * Multiday events support #277
   * Fix textwrap for widechar at cut index #308
-  * Fix errors attempting to import eventus #325
+  * Fix errors attempting to import events #325
 
 v4.0.0a3
   * No weekend option #264
