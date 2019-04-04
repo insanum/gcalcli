@@ -38,7 +38,6 @@ setup(name='gcalcli',
       ],
       extras_require={
           'vobject': ["vobject"],
-          'parsedatetime': ["parsedatetime"],
       },
       entry_points={
           'console_scripts':
