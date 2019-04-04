@@ -29,9 +29,6 @@ Requirements
 
 * [vobject](http://vobject.skyhouseconsulting.com) Python module
   Used for ics/vcal importing.
-* [parsedatetime](http://github.com/bear/parsedatetime) Python module
-  Used for fuzzy dates/times like "now", "today", "eod tomorrow", etc.
-
 
 Installation
 ------------
@@ -64,10 +61,10 @@ cd gcalcli
 python setup.py install
 ```
 
-### Install optional packages
+### Install optional package
 
 ```sh
-pip install vobject parsedatetime
+pip install vobject
 ```
 
 Features
