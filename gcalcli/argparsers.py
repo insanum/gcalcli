@@ -60,7 +60,12 @@ class DetailsAction(argparse._AppendAction):
         details = _copy.copy(getattr(namespace, self.dest, {}))
 
         if value == 'all':
-            details = {d: True for d in BOOL_DETAILS}
+            details.update({d: True for d in BOOL_DETAILS})
+            if 'url' not in details:
+                # url isn't boolean, but should be included in 'all'
+                # but we don't want to override this if they specifically ask
+                # for longurl (ie --details=longurl --details=all should work)
+                details['url'] = 'short'
         elif value in BOOL_DETAILS:
             details[value] = True
         elif value in ['shorturl', 'url']:
