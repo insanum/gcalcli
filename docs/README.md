@@ -166,19 +166,22 @@ Note that these environment variables must be lowercase.
 
 #### Flag File
 
-gcalcli is able to read default configuration information from a flag file.
+`gcalcli` is able to read default configuration information from a flag file.
 This file is located, by default, at '~/.gcalclirc'.  The flag file takes one
 command line parameter per line.
+
+In the current version, the flag file only supports the global options (options
+against the `gcalcli` program itself).  The plan, longer term, is to support a
+a configuration formation (probably toml or ini), which will allow for
+configuration of subcommands (such as `add`, `agenda`, `calw`, etc.)
 
 Example:
 
 ```
---military
---duration=55
---details=calendar
---details=location
---details=length
--w 10
+--nocache
+--nocolor
+--default-calendar=CALENDAR_NAME
+--client-secret=API_KEY
 ```
 
 Note that long options require an equal sign if specifying a parameter.  With
