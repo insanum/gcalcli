@@ -429,20 +429,25 @@ class GoogleCalendarInterface:
             if stop >= self.options['cal_width']:
                 return stop, i + 1
 
-    def _next_cut(self, string, cur_print_len):
+    def _next_cut(self, string):
         print_len = 0
 
         words = _u(string).split()
+        word_lens = []
         for i, word in enumerate(words):
-            word_len = self._printed_len(word)
-            if (cur_print_len + word_len + print_len) >= \
-                    self.options['cal_width']:
+            word_lens.append(self._printed_len(word))
+
+            if (word_lens[-1] + print_len) >= self.options['cal_width']:
+                # this many words is too many, try to cut at the prev word
                 cut_idx = len(' '.join(words[:i]))
-                # if the first word is too long, we cannot cut between words
+
+                # first word is too long, we must cut inside it
                 if cut_idx == 0:
                     return self._word_cut(word)
+
                 return (print_len, cut_idx)
-            print_len += word_len + i  # +i for the space between words
+            print_len = sum(word_lens) + i  # +i for the space between words
+
         return (print_len, len(' '.join(words[:i])))
 
     def _get_cut_index(self, event_string):
@@ -459,7 +464,7 @@ class GoogleCalendarInterface:
 
         else:
             # we must cut: _next_cut will loop until we find the right spot
-            return self._next_cut(event_string, 0)
+            return self._next_cut(event_string)
 
     def _GraphEvents(self, cmd, start_datetime, count, event_list):
         # ignore started events (i.e. events that start previous day and end

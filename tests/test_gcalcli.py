@@ -201,3 +201,24 @@ def test_iterate_events(capsys, PatchedGCalI):
     assert gcal._iterate_events(gcal.now, []) == 0
 
     # TODO: add some events to a list and assert their selection
+
+
+def test_next_cut(PatchedGCalI):
+    gcal = PatchedGCalI()
+    # default width is 10
+    test_cal_width = 10
+    gcal.options['cal_width'] = test_cal_width
+    event_title = "first looooong"
+    assert gcal._next_cut(event_title) == (5, 5)
+
+    event_title = "tooooooloooong"
+    assert gcal._next_cut(event_title) == (test_cal_width, test_cal_width)
+
+    event_title = "one two three four"
+    assert gcal._next_cut(event_title) == (7, 7)
+
+    # event_title = "& G NSW VIM Project"
+    # assert gcal._next_cut(event_title) == (7, 7)
+
+    event_title = "樹貞 fun fun fun"
+    assert gcal._next_cut(event_title) == (8, 6)
