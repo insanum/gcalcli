@@ -17,7 +17,7 @@ author_emails = ['edavis@insanum.com',
                  'jcrowgey@uw.edu']
 
 setup(name='gcalcli',
-      version='4.0.4',
+      version='4.1.0',
       author='Eric Davis, Brian Hartvigsen, Joshua Crowgey',
       author_email=', '.join(author_emails),
       maintainer='Joshua Crowgey',

@@ -47,7 +47,6 @@ class GoogleCalendarInterface:
     max_retries = 5
     auth_http = None
     cal_service = None
-    url_service = None
 
     ACCESS_OWNER = 'owner'
     ACCESS_WRITER = 'writer'
@@ -140,8 +139,7 @@ class GoogleCalendarInterface:
                     OAuth2WebServerFlow(
                         client_id=self.options['client_id'],
                         client_secret=self.options['client_secret'],
-                        scope=['https://www.googleapis.com/auth/calendar',
-                               'https://www.googleapis.com/auth/urlshortener'],
+                        scope=['https://www.googleapis.com/auth/calendar'],
                         user_agent=__program__ + '/' + __version__
                     ),
                     storage,
@@ -159,15 +157,6 @@ class GoogleCalendarInterface:
                                      http=self._google_auth())
 
         return self.cal_service
-
-    def get_url_service(self):
-        if not self.url_service:
-            self._google_auth()
-            self.url_service = build(serviceName='urlshortener',
-                                     version='v1',
-                                     http=self._google_auth())
-
-        return self.url_service
 
     def _get_cached(self):
         if self.options['config_folder']:
@@ -223,16 +212,6 @@ class GoogleCalendarInterface:
             self.cache['all_cals'] = self.all_cals
             with open(cache_file, 'wb') as _cache_:
                 pickle.dump(self.cache, _cache_)
-
-    def _shorten_url(self, url):
-        if self.details.get('url', False) != 'short':
-            return url
-        # Note that when authenticated to a google account different shortUrls
-        # can be returned for the same longUrl. See: http://goo.gl/Ya0A9
-        shortUrl = self._retry_with_backoff(
-                self.get_url_service().url().insert(body={'longUrl': url})
-        )
-        return shortUrl['id']
 
     def _calendar_color(self, event, override_color=False):
         ansi_codes = {
@@ -626,9 +605,9 @@ class GoogleCalendarInterface:
                                          _u(event['e'].strftime('%H:%M')))
 
             if self.details.get('url'):
-                output += '\t%s' % (self._shorten_url(event['htmlLink'])
+                output += '\t%s' % (event['htmlLink']
                                     if 'htmlLink' in event else '')
-                output += '\t%s' % (self._shorten_url(event['hangoutLink'])
+                output += '\t%s' % (event['hangoutLink']
                                     if 'hangoutLink' in event else '')
 
             output += '\t%s' % _u(self._valid_title(event).strip())
@@ -729,12 +708,12 @@ class GoogleCalendarInterface:
             self.printer.msg(xstr, 'default')
 
         if self.details.get('url') and 'htmlLink' in event:
-            hlink = self._shorten_url(event['htmlLink'])
+            hlink = event['htmlLink']
             xstr = '%s  Link: %s\n' % (details_indent, hlink)
             self.printer.msg(xstr, 'default')
 
         if self.details.get('url') and 'hangoutLink' in event:
-            hlink = self._shorten_url(event['hangoutLink'])
+            hlink = event['hangoutLink']
             xstr = '%s  Hangout Link: %s\n' % (details_indent, hlink)
             self.printer.msg(xstr, 'default')
 
@@ -1287,7 +1266,7 @@ class GoogleCalendarInterface:
                         )
 
         if self.details.get('url'):
-            hlink = self._shorten_url(new_event['htmlLink'])
+            hlink = new_event['htmlLink']
             self.printer.msg('New event added: %s\n' % hlink, 'green')
 
         return new_event
@@ -1328,7 +1307,7 @@ class GoogleCalendarInterface:
         new_event = self._retry_with_backoff(request)
 
         if self.details.get('url'):
-            hlink = self._shorten_url(new_event['htmlLink'])
+            hlink = new_event['htmlLink']
             self.printer.msg('New event added: %s\n' % hlink, 'green')
 
         return new_event
@@ -1562,7 +1541,7 @@ class GoogleCalendarInterface:
                                             body=event
                                         )
                                 )
-                    hlink = self._shorten_url(new_event.get('htmlLink'))
+                    hlink = new_event.get('htmlLink')
                     self.printer.msg(
                             'New event added: %s\n' % hlink, 'green'
                     )
@@ -1581,7 +1560,7 @@ class GoogleCalendarInterface:
                                             body=event
                                         )
                                 )
-                    hlink = self._shorten_url(new_event.get('htmlLink'))
+                    hlink = new_event.get('htmlLink')
                     self.printer.msg('New event added: %s\n' % hlink, 'green')
                 elif val.lower() == 'q':
                     sys.exit(0)
