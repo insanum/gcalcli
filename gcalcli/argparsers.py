@@ -7,11 +7,9 @@ from gcalcli.printer import valid_color_name
 from oauth2client import tools
 import copy as _copy
 
-DETAILS = ['all', 'calendar', 'location', 'length', 'reminders', 'description',
-           'longurl', 'shorturl', 'url', 'attendees', 'email', 'attachments']
+DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
+           'url', 'attendees', 'email', 'attachments']
 
-BOOL_DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
-                'attendees', 'email', 'attachments']
 
 PROGRAM_OPTIONS = {
         '--client-id': {'default': gcalcli.__API_CLIENT_ID__,
@@ -60,18 +58,9 @@ class DetailsAction(argparse._AppendAction):
         details = _copy.copy(getattr(namespace, self.dest, {}))
 
         if value == 'all':
-            details.update({d: True for d in BOOL_DETAILS})
-            if 'url' not in details:
-                # url isn't boolean, but should be included in 'all'
-                # but we don't want to override this if they specifically ask
-                # for longurl (ie --details=longurl --details=all should work)
-                details['url'] = 'short'
-        elif value in BOOL_DETAILS:
+            details.update({d: True for d in DETAILS})
+        else:
             details[value] = True
-        elif value in ['shorturl', 'url']:
-            details['url'] = 'short'
-        elif value == 'longurl':
-            details['url'] = 'long'
 
         setattr(namespace, self.dest, details)
 
@@ -95,7 +84,7 @@ def get_details_parser():
     details_parser = argparse.ArgumentParser(add_help=False)
     details_parser.add_argument(
             '--details', default={}, action=DetailsAction,
-            choices=DETAILS,
+            choices=DETAILS + ['all'],
             help='Which parts to display, can be: ' + ', '.join(DETAILS))
     return details_parser
 

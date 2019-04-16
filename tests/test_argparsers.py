@@ -42,16 +42,11 @@ def test_details_parser():
     parsed_details = details_parser.parse_args(argv).details
     assert parsed_details['attendees']
     assert parsed_details['location']
-    assert parsed_details['url'] == 'short'
+    assert parsed_details['url']
 
     argv = shlex.split('--details all')
     parsed_details = details_parser.parse_args(argv).details
-    assert all(parsed_details[d] for d in argparsers.BOOL_DETAILS)
-
-    # ensure we can specify url type even with details=all
-    argv = shlex.split('--details all --details longurl')
-    parsed_details = details_parser.parse_args(argv).details
-    assert parsed_details['url'] == 'long'
+    assert all(parsed_details[d] for d in argparsers.DETAILS)
 
 
 def test_handle_unparsed():
