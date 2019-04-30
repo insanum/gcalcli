@@ -80,7 +80,6 @@ Features
  * "delete" event(s) from a calendar(s) (interactively or automatically)
  * "edit" event(s) interactively
  * import events from ICS/vCal files to a specified calendar
- * support for URL shortening via goo.gl
  * easy integration with your favorite mail client (attachment handler)
  * run as a cron job and execute a command for reminders
  * work against specific calendars (by calendar name w/ regex)
