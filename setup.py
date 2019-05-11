@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from setuptools import setup
+from gcalcli import __version__
 
 try:
     import pypandoc
@@ -17,7 +18,7 @@ author_emails = ['edavis@insanum.com',
                  'jcrowgey@uw.edu']
 
 setup(name='gcalcli',
-      version='4.1.0',
+      version=__version__,
       author='Eric Davis, Brian Hartvigsen, Joshua Crowgey',
       author_email=', '.join(author_emails),
       maintainer='Joshua Crowgey',
