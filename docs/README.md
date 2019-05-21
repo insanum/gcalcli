@@ -256,6 +256,10 @@ that supports libnotify so it should automagically just work. If you're like
 me and use nothing that is common I highly recommend the
 [dunst](https://github.com/knopwob/dunst) dmenu'ish notification daemon.
 
+Note that each time you run this you will get a reminder if you're still inside
+the event duration.  Also note that due to time slip between machines, gcalcli
+will give you a ~5 minute margin of error.  Plan your cron jobs accordingly.
+
 #### Agenda On Your Root Desktop
 
 Put your agenda on your desktop using
