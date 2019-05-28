@@ -296,6 +296,7 @@ class GoogleCalendarInterface:
         week_events = [[] for _ in range(7)]
 
         now_in_week = True
+        now_marker_printed = False
         if self.now < start_dt or self.now > end_dt:
             now_in_week = False
 
@@ -323,28 +324,18 @@ class GoogleCalendarInterface:
             # events which was started before current period of time and are
             # still continue in current period of time
             if event_is_today or (event_allday and event_continues_today):
-                force_now_marker = False
+                color_as_now_marker = False
 
-                if now_in_week:
+                if now_in_week and not now_marker_printed:
                     if (days_since_epoch(self.now) <
                             days_since_epoch(event['s'])):
-                        force_now_marker = False
-                        week_events[event_daynum - 1].append(
-                                EventTitle(
-                                    '\n' + self.options['cal_width'] * '-',
-                                    self.options['color_now_marker']
-                                )
-                        )
-
-                    elif self.now <= event['s']:
-                        # add a line marker before next event
-                        force_now_marker = False
                         week_events[event_daynum].append(
                                 EventTitle(
                                     '\n' + self.options['cal_width'] * '-',
                                     self.options['color_now_marker']
                                 )
                         )
+                        now_marker_printed = True
 
                     # We don't want to recolor all day events, but ignoring
                     # them leads to issues where the 'now' marker misprints
@@ -355,9 +346,10 @@ class GoogleCalendarInterface:
                             self.now <= event_end_date and \
                             not event_allday:
                         # line marker is during the event (recolor event)
-                        force_now_marker = True
+                        color_as_now_marker = True
+                        now_marker_printed = True
 
-                if force_now_marker:
+                if color_as_now_marker:
                     event_color = self.options['color_now_marker']
                 else:
                     if self.options['override_color'] and event.get('colorId'):
