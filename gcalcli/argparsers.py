@@ -6,7 +6,8 @@ from gcalcli.deprecations import parser_allow_deprecated, DeprecatedStoreTrue
 from gcalcli.printer import valid_color_name
 from oauth2client import tools
 import copy as _copy
-from subprocess import check_output, CalledProcessError
+import datetime
+import locale
 
 DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
            'url', 'attendees', 'email', 'attachments']
@@ -91,13 +92,9 @@ def get_details_parser():
 
 
 def locale_has_24_hours():
-    try:
-        time_format = check_output(['locale', 't_fmt']).strip()
-        formatted = check_output(['date', '--date', '20:00:00',
-                                  b'+' + time_format])
-        return b'20' in formatted
-    except CalledProcessError:
-        return False
+    t = datetime.time(20)
+    formatted = t.strftime(locale.nl_langinfo(locale.T_FMT))
+    return '20' in formatted
 
 
 def get_output_parser(parents=[]):
