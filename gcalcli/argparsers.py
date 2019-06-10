@@ -120,7 +120,7 @@ def get_output_parser(parents=[]):
             help='Use 24 hour display')
     output_parser.add_argument(
             '--no-military', action='store_false', default=has_24_hours,
-            help='Use 12 hour display')
+            help='Use 12 hour display', dest='military')
     output_parser.add_argument(
             '--override-color', action='store_true', default=False,
             help='Use overridden color for event')
