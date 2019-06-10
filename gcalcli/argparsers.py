@@ -6,6 +6,7 @@ from gcalcli.deprecations import parser_allow_deprecated, DeprecatedStoreTrue
 from gcalcli.printer import valid_color_name
 from oauth2client import tools
 import copy as _copy
+from subprocess import check_output, CalledProcessError
 
 DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
            'url', 'attendees', 'email', 'attachments']
@@ -89,6 +90,16 @@ def get_details_parser():
     return details_parser
 
 
+def locale_has_24_hours():
+    try:
+        time_format = check_output(['locale', 't_fmt']).strip()
+        formatted = check_output(['date', '--date', '20:00:00',
+                                  b'+' + time_format])
+        return b'20' in formatted
+    except CalledProcessError:
+        return False
+
+
 def get_output_parser(parents=[]):
     output_parser = argparse.ArgumentParser(add_help=False, parents=parents)
     output_parser.add_argument(
@@ -103,9 +114,13 @@ def get_output_parser(parents=[]):
     output_parser.add_argument(
             '--width', '-w', default=10, dest='cal_width', type=validwidth,
             help='Set output width')
+    has_24_hours = locale_has_24_hours()
     output_parser.add_argument(
-            '--military', action='store_true', default=False,
+            '--military', action='store_true', default=has_24_hours,
             help='Use 24 hour display')
+    output_parser.add_argument(
+            '--no-military', action='store_false', default=has_24_hours,
+            help='Use 12 hour display')
     output_parser.add_argument(
             '--override-color', action='store_true', default=False,
             help='Use overridden color for event')
