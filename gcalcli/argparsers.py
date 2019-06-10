@@ -9,6 +9,7 @@ import copy as _copy
 import datetime
 import locale
 from subprocess import check_output, CalledProcessError
+import datetime
 
 DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
            'url', 'attendees', 'email', 'attachments']
@@ -170,9 +171,14 @@ def get_remind_parser():
 
 def locale_has_first_monday():
     try:
-        first_weekday = check_output(['locale', 'first_weekday'])
-        return first_weekday.strip() == b'2'
-    except CalledProcessError:
+        output = check_output(['locale', 'first_weekday', 'week-1stday'])
+        first_weekday, week_first_day = output.splitlines()
+        d = datetime.date(int(week_first_day[:4]),
+                          int(week_first_day[4:6]),
+                          int(week_first_day[6:]))
+        d += datetime.timedelta(int(first_weekday) - 1)
+        return d.weekday() == 0
+    except (CalledProcessError, ValueError):
         return False
 
 
