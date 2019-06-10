@@ -8,6 +8,7 @@ from oauth2client import tools
 import copy as _copy
 import datetime
 import locale
+from subprocess import check_output, CalledProcessError
 
 DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
            'url', 'attendees', 'email', 'attachments']
@@ -167,12 +168,24 @@ def get_remind_parser():
     return remind_parser
 
 
+def locale_has_first_monday():
+    try:
+        first_weekday = check_output(['locale', 'first_weekday'])
+        return first_weekday.strip() == b'2'
+    except CalledProcessError:
+        return False
+
+
 def get_cal_query_parser():
     cal_query_parser = argparse.ArgumentParser(add_help=False)
     cal_query_parser.add_argument('start', type=str, nargs='?')
+    start_with_monday = locale_has_first_monday()
     cal_query_parser.add_argument(
-            '--monday', action='store_true', dest='cal_monday', default=False,
-            help='Start the week on Monday')
+            '--monday', action='store_true', dest='cal_monday',
+            default=start_with_monday, help='Start the week on Monday')
+    cal_query_parser.add_argument(
+            '--sunday', action='store_false', dest='cal_monday',
+            default=start_with_monday, help='Start the week on Sunday')
     cal_query_parser.add_argument(
             '--noweekend', action='store_false', dest='cal_weekend',
             default=True,  help='Hide Saturday and Sunday')
