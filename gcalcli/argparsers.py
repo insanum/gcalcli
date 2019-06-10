@@ -172,10 +172,8 @@ def get_remind_parser():
 def locale_has_first_monday():
     try:
         output = check_output(['locale', 'first_weekday', 'week-1stday'])
-        first_weekday, week_first_day = output.splitlines()
-        d = datetime.date(int(week_first_day[:4]),
-                          int(week_first_day[4:6]),
-                          int(week_first_day[6:]))
+        first_weekday, week_first_day = str(output, 'ascii').splitlines()
+        d = datetime.datetime.strptime(week_first_day, '%Y%m%d').date()
         d += datetime.timedelta(int(first_weekday) - 1)
         return d.weekday() == 0
     except (CalledProcessError, ValueError):
