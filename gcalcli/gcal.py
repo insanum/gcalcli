@@ -10,6 +10,7 @@ import random
 import sys
 from unicodedata import east_asian_width
 
+from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta, date
 from gcalcli import __program__, __version__
 from gcalcli import utils
@@ -1165,6 +1166,18 @@ class GoogleCalendarInterface:
             raise GcalcliError('Search text is required.')
 
         return self._display_queried_events(start, end, search_text, True)
+
+    def UpdatesQuery(self, last_updated_datetime, start=None, end=None):
+        if not start:
+            start = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if not end:
+            end = (start + relativedelta(months=+1)).replace(day=1)
+
+        event_list = self._search_for_events(start, end, None)
+        event_list = [e for e in event_list if (utils.get_time_from_str(e['updated']) >= last_updated_datetime)]
+        print("Updates since:", last_updated_datetime, "events starting", start, "until", end)
+        return self._iterate_events(start, event_list, year_date=False)
 
     def AgendaQuery(self, start=None, end=None):
         if not start:
