@@ -7,6 +7,7 @@ class ValidationError(Exception):
         super(ValidationError, self).__init__(message)
         self.message = message
 
+
 def raise_one_cal_error(cals):
     raise GcalcliError(
         'You must only specify a single calendar\n'
