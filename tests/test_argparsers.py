@@ -34,6 +34,7 @@ def test_search_parser():
     with pytest.raises(SystemExit):
         search_parser.parse_args([])
 
+
 def test_updates_parser():
     updates_parser = argparsers.get_updates_parser()
 

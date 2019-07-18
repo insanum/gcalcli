@@ -55,8 +55,13 @@ def test_updates(PatchedGCalI):
     since = datetime(2019, 7, 10)
     assert PatchedGCalI().UpdatesQuery(since) == 0
 
-    opts = get_updates_parser().parse_args(['2019-07-10', '2019-07-19', '2019-08-01'])
-    assert PatchedGCalI().UpdatesQuery(last_updated_datetime = opts.since, start=opts.start, end=opts.end) == 0
+    opts = get_updates_parser().parse_args(
+            ['2019-07-10', '2019-07-19', '2019-08-01'])
+    assert PatchedGCalI().UpdatesQuery(
+            last_updated_datetime=opts.since,
+            start=opts.start,
+            end=opts.end) == 0
+
 
 def test_cal_query(capsys, PatchedGCalI):
     opts = vars(get_cal_query_parser().parse_args([]))
