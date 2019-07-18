@@ -1175,8 +1175,15 @@ class GoogleCalendarInterface:
             end = (start + relativedelta(months=+1)).replace(day=1)
 
         event_list = self._search_for_events(start, end, None)
-        event_list = [e for e in event_list if (utils.get_time_from_str(e['updated']) >= last_updated_datetime)]
-        print("Updates since:", last_updated_datetime, "events starting", start, "until", end)
+        event_list = [e for e in event_list
+                      if (utils.get_time_from_str(e['updated']) >=
+                          last_updated_datetime)]
+        print("Updates since:",
+              last_updated_datetime,
+              "events starting",
+              start,
+              "until",
+              end)
         return self._iterate_events(start, event_list, year_date=False)
 
     def AgendaQuery(self, start=None, end=None):

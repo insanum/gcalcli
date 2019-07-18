@@ -182,7 +182,9 @@ def get_cal_query_parser():
 def get_updates_parser():
     updates_parser = argparse.ArgumentParser(add_help=False)
     updates_parser.add_argument('since', type=utils.get_time_from_str)
-    updates_parser.add_argument('start', type=utils.get_time_from_str, nargs='?')
+    updates_parser.add_argument(
+            'start',
+            type=utils.get_time_from_str, nargs='?')
     updates_parser.add_argument('end', type=utils.get_time_from_str, nargs='?')
     return updates_parser
 
@@ -285,8 +287,10 @@ def get_argument_parser():
     sub.add_parser(
             'updates',
             parents=[details_parser, output_parser, updates_parser],
-            help='get updates since a datetime for a time period (defaults to through end of current month)',
-            description='Get updates since a datetime for a time period (default to through end of current month).')
+            help='get updates since a datetime for a time period '
+            '(defaults to through end of current month)',
+            description='Get updates since a datetime for a time period '
+            '(default to through end of current month).')
 
     calw = sub.add_parser(
             'calw', parents=[details_parser, output_parser, cal_query_parser],
