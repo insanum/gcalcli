@@ -6,10 +6,10 @@ gcalcli
 
 gcalcli is a Python application that allows you to access your Google
 Calendar(s) from a command line. It's easy to get your agenda, search for
-events, add new events, delete events, edit events, and even import those
-annoying ICS/vCal invites from Microsoft Exchange and/or other sources.
-Additionally, gcalcli can be used as a reminder service and execute any
-application you want when an event is coming up.
+events, add new events, delete events, edit events, see recently updated 
+events, and even import those annoying ICS/vCal invites from Microsoft 
+Exchange and/or other sources. Additionally, gcalcli can be used as a reminder
+service and execute any application you want when an event is coming up.
 
 gcalcli uses the [Google Calendar API version 3](https://developers.google.com/google-apps/calendar/).
 
@@ -73,6 +73,7 @@ Features
  * OAuth2 authention with your Google account
  * list your calendars
  * show an agenda using a specified start/end date and time
+ * show updates since a specified datetime for events between a start/end date and time
  * ascii text graphical calendar display with variable width
  * search for past and/or future events
  * "quick add" new events to a specified calendar
@@ -110,6 +111,7 @@ HowTo
     list                list available calendars
     edit                edit calendar events
     agenda              get an agenda for a time period
+    updates             get updates since a datetime for a time period
     calw                get a week-based agenda in calendar format
     calm                get a month agenda in calendar format
     quick               quick-add an event to a calendar
