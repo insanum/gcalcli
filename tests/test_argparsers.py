@@ -34,6 +34,15 @@ def test_search_parser():
     with pytest.raises(SystemExit):
         search_parser.parse_args([])
 
+def test_updates_parser():
+    updates_parser = argparsers.get_updates_parser()
+
+    argv = shlex.split('2019-07-18 2019-08-01 2019-09-01')
+    parsed_updates = updates_parser.parse_args(argv)
+    assert parsed_updates.since
+    assert parsed_updates.start
+    assert parsed_updates.end
+
 
 def test_details_parser():
     details_parser = argparsers.get_details_parser()
