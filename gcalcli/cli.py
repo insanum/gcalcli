@@ -154,6 +154,12 @@ def main():
         elif parsed_args.command == 'agenda':
             gcal.AgendaQuery(start=parsed_args.start, end=parsed_args.end)
 
+        elif parsed_args.command == 'updates':
+            gcal.UpdatesQuery(
+                    last_updated_datetime=parsed_args.since,
+                    start=parsed_args.start,
+                    end=parsed_args.end)
+
         elif parsed_args.command == 'calw':
             gcal.CalQuery(
                     parsed_args.command, count=parsed_args.weeks,

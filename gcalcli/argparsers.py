@@ -179,6 +179,16 @@ def get_cal_query_parser():
     return cal_query_parser
 
 
+def get_updates_parser():
+    updates_parser = argparse.ArgumentParser(add_help=False)
+    updates_parser.add_argument('since', type=utils.get_time_from_str)
+    updates_parser.add_argument(
+            'start',
+            type=utils.get_time_from_str, nargs='?')
+    updates_parser.add_argument('end', type=utils.get_time_from_str, nargs='?')
+    return updates_parser
+
+
 def get_start_end_parser():
     se_parser = argparse.ArgumentParser(add_help=False)
     se_parser.add_argument('start', type=utils.get_time_from_str, nargs='?')
@@ -233,6 +243,7 @@ def get_argument_parser():
 
     remind_parser = get_remind_parser()
     cal_query_parser = get_cal_query_parser()
+    updates_parser = get_updates_parser()
 
     # parsed start and end times
     start_end_parser = get_start_end_parser()
@@ -272,6 +283,14 @@ def get_argument_parser():
             parents=[details_parser, output_parser, start_end_parser],
             help='get an agenda for a time period',
             description='Get an agenda for a time period.')
+
+    sub.add_parser(
+            'updates',
+            parents=[details_parser, output_parser, updates_parser],
+            help='get updates since a datetime for a time period '
+            '(defaults to through end of current month)',
+            description='Get updates since a datetime for a time period '
+            '(default to through end of current month).')
 
     calw = sub.add_parser(
             'calw', parents=[details_parser, output_parser, cal_query_parser],
