@@ -664,7 +664,7 @@ class GoogleCalendarInterface:
                 event['s'].strftime('%I:%M').lstrip('0').rjust(5) + \
                 event['s'].strftime('%p').lower()
             if self.options['show_end_time']:
-                tmp_end_time_str =  event['e'].strftime('%I:%M').lstrip('0').rjust(5) + \
+                tmp_end_time_str =  event['e'].strftime('%I:%M').lstrip('0').ljust(5) + \
                     event['e'].strftime('%p').lower()
                 time_fmt = '  ' + time_format + '-' + time_format + '  %s\n'
             else:
