@@ -663,6 +663,13 @@ class GoogleCalendarInterface:
             tmp_time_str = \
                 event['s'].strftime('%I:%M').lstrip('0').rjust(5) + \
                 event['s'].strftime('%p').lower()
+            if self.options['show_end_time']:
+                tmp_end_time_str =  event['e'].strftime('%I:%M').lstrip('0').rjust(5) + \
+                    event['e'].strftime('%p').lower()
+                time_fmt = '  ' + time_format + '-' + time_format + '  %s\n'
+            else:
+                tmp_end_time_str = ''
+                time_fmt = '  ' + time_format + '' + time_format + '  %s\n'
 
         if not prefix:
             prefix = indent
@@ -690,7 +697,7 @@ class GoogleCalendarInterface:
         else:
             fmt = '  ' + time_format + '  %s\n'
             self.printer.msg(
-                    fmt % (tmp_time_str, self._valid_title(event).strip()),
+                    time_fmt % (tmp_time_str, tmp_end_time_str, self._valid_title(event).strip()),
                     event_color
             )
 

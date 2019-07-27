@@ -50,7 +50,10 @@ PROGRAM_OPTIONS = {
                       'help': 'Choose line art style for calendars: ' +
                               '"fancy": for VTcodes, "unicode" for ' +
                               'Unicode box drawing characters, "ascii" ' +
-                              'for old-school plusses, hyphens and pipes.'}
+                              'for old-school plusses, hyphens and pipes.'},
+        '--show-end-time': {'action': 'store_true', 'dest': 'show_end_time',
+                            'default': False,
+                            'help': 'Show start and end times of events'},
         }
 
 
