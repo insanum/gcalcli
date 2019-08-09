@@ -1,4 +1,5 @@
 from gcalcli import argparsers
+from collections import namedtuple
 import shlex
 import pytest
 
@@ -19,7 +20,15 @@ def test_reminder_parser():
     assert len(remind_parser.parse_args(argv).reminders) == 1
 
 
-def test_output_parser():
+def test_output_parser(monkeypatch):
+    def sub_terminal_size(columns):
+        ts = namedtuple('terminal_size', ['lines', 'columns'])
+
+        def fake_get_terminal_size():
+            return ts(123, columns)
+
+        return fake_get_terminal_size
+
     output_parser = argparsers.get_output_parser()
     argv = shlex.split('-w 9')
     with pytest.raises(SystemExit):
@@ -27,6 +36,17 @@ def test_output_parser():
 
     argv = shlex.split('-w 10')
     assert output_parser.parse_args(argv).cal_width == 10
+
+    argv = shlex.split('')
+    monkeypatch.setattr(argparsers, 'get_terminal_size', sub_terminal_size(70))
+    output_parser = argparsers.get_output_parser()
+    assert output_parser.parse_args(argv).cal_width == 10
+
+    argv = shlex.split('')
+    monkeypatch.setattr(argparsers, 'get_terminal_size',
+                        sub_terminal_size(100))
+    output_parser = argparsers.get_output_parser()
+    assert output_parser.parse_args(argv).cal_width == 13
 
 
 def test_search_parser():
