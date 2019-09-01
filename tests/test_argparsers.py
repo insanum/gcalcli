@@ -48,11 +48,13 @@ def test_updates_parser():
 def test_details_parser():
     details_parser = argparsers.get_details_parser()
 
-    argv = shlex.split('--details attendees --details url --details location')
+    argv = shlex.split('--details attendees --details url '
+                       '--details location --details end-time')
     parsed_details = details_parser.parse_args(argv).details
     assert parsed_details['attendees']
     assert parsed_details['location']
     assert parsed_details['url']
+    assert parsed_details['end-time']
 
     argv = shlex.split('--details all')
     parsed_details = details_parser.parse_args(argv).details

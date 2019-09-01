@@ -10,7 +10,7 @@ import datetime
 import locale
 
 DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
-           'url', 'attendees', 'email', 'attachments']
+           'url', 'attendees', 'email', 'attachments', 'end-time']
 
 
 PROGRAM_OPTIONS = {
@@ -51,9 +51,6 @@ PROGRAM_OPTIONS = {
                               '"fancy": for VTcodes, "unicode" for ' +
                               'Unicode box drawing characters, "ascii" ' +
                               'for old-school plusses, hyphens and pipes.'},
-        '--show-end-time': {'action': 'store_true', 'dest': 'show_end_time',
-                            'default': False,
-                            'help': 'Show start and end times of events'},
         }
 
 
