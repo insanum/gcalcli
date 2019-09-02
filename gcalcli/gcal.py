@@ -1288,15 +1288,19 @@ class GoogleCalendarInterface:
 
         if len(self.cals) != 1:
             # Calendar not specified. Prompt the user to select it
+            writers = (self.ACCESS_OWNER, self.ACCESS_WRITER)
+            cals_with_write_perms = [cal for cal in self.cals
+                                     if cal['accessRole'] in writers]
+
             cal_names_with_idx = []
-            for idx, cal in enumerate(self.cals):
+            for idx, cal in enumerate(cals_with_write_perms):
                 cal_names_with_idx.append(str(idx) + ' ' + cal['summary'])
             cal_names_with_idx = '\n'.join(cal_names_with_idx)
             print(cal_names_with_idx)
             val = get_input(self.printer, 'Specify calendar from above: ',
                             STR_TO_INT)
             try:
-                self.cals = [self.cals[int(val)]]
+                self.cals = [cals_with_write_perms[int(val)]]
             except IndexError:
                 raise GcalcliError('The entered number doesn\'t appear on the '
                                    'list above\n')
