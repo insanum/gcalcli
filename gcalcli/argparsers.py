@@ -11,7 +11,7 @@ import datetime
 import locale
 
 DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
-           'url', 'attendees', 'email', 'attachments']
+           'url', 'attendees', 'email', 'attachments', 'end']
 
 
 PROGRAM_OPTIONS = {
@@ -51,7 +51,7 @@ PROGRAM_OPTIONS = {
                       'help': 'Choose line art style for calendars: ' +
                               '"fancy": for VTcodes, "unicode" for ' +
                               'Unicode box drawing characters, "ascii" ' +
-                              'for old-school plusses, hyphens and pipes.'}
+                              'for old-school plusses, hyphens and pipes.'},
         }
 
 

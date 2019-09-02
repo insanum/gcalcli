@@ -115,3 +115,9 @@ def get_time_from_str(when):
 def days_since_epoch(dt):
     __DAYS_IN_SECONDS__ = 24 * 60 * 60
     return calendar.timegm(dt.timetuple()) / __DAYS_IN_SECONDS__
+
+
+def agenda_time_fmt(dt, military):
+    hour_min_fmt = '%H:%M' if military else '%I:%M'
+    ampm = '' if military else dt.strftime('%p').lower()
+    return dt.strftime(hour_min_fmt).lstrip('0') + ampm
