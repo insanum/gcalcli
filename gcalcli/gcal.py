@@ -1286,9 +1286,19 @@ class GoogleCalendarInterface:
     def AddEvent(self, title, where, start, end, descr, who, reminders, color):
 
         if len(self.cals) != 1:
-            # TODO: get a better name for this exception class
-            # and use it elsewhere
-            raise GcalcliError('You must only specify a single calendar\n')
+            # Calendar not specified. Prompt the user to select it
+            cal_names_with_idx = []
+            for idx, cal in enumerate(self.cals):
+                cal_names_with_idx.append(str(idx) + ' ' + cal['summary'])
+            cal_names_with_idx = '\n'.join(cal_names_with_idx)
+            print(cal_names_with_idx)
+            val = get_input(self.printer, 'Specify calendar from above: ',
+                            STR_TO_INT)
+            try:
+                self.cals = [self.cals[int(val)]]
+            except IndexError:
+                raise GcalcliError('The entered number doesn\'t appear on the '
+                                   'list above\n')
 
         event = {}
         event['summary'] = title
