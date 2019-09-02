@@ -655,25 +655,8 @@ class GoogleCalendarInterface:
         indent = 10 * ' '
         details_indent = 19 * ' '
 
-        if self.options['military']:
-            time_format = '%-5s'
-            tmp_time_str = event['s'].strftime('%H:%M')
-        else:
-            time_format = '%-7s'
-            tmp_time_str = \
-                event['s'].strftime('%H:%M').lstrip('0').rjust(5) + \
-                event['s'].strftime('%p').lower()
-            if self.details.get('end'):
-                tmp_end_time_str = event['e'].strftime('%I:%M').lstrip('0') + \
-                    event['e'].strftime('%p').lower()
-                time_fmt = '  ' + time_format + '-' + time_format + '  %s\n'
-            else:
-                tmp_end_time_str = ''
-                time_fmt = '  ' + time_format + '' + time_format + '  %s\n'
-
         if not prefix:
             prefix = indent
-
         self.printer.msg(prefix, self.options['color_date'])
 
         happening_now = event['s'] <= self.now <= event['e']
@@ -688,17 +671,27 @@ class GoogleCalendarInterface:
                 if happening_now and not all_day \
                 else self._calendar_color(event)
 
+        time_width = '%-5s' if self.options['military'] else '%-7s'
         if all_day:
-            fmt = '  ' + time_format + '  %s\n'
+            fmt = '  ' + time_width + '  %s\n'
             self.printer.msg(
                     fmt % ('', self._valid_title(event).strip()),
                     event_color
             )
         else:
-            fmt = '  ' + time_format + '  %s\n'
+            tmp_start_time_str = \
+                utils.agenda_time_fmt(event['s'], self.options['military'])
+            tmp_end_time_str = ''
+            fmt = '  ' + time_width + '   ' + time_width + '  %s\n'
+
+            if self.details.get('end'):
+                tmp_end_time_str = \
+                    utils.agenda_time_fmt(event['e'], self.options['military'])
+                fmt = '  ' + time_width + ' - ' + time_width + '  %s\n'
+
             self.printer.msg(
-                    time_fmt % (tmp_time_str, tmp_end_time_str,
-                                self._valid_title(event).strip()),
+                    fmt % (tmp_start_time_str, tmp_end_time_str,
+                           self._valid_title(event).strip()),
                     event_color
             )
 
