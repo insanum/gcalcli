@@ -5,6 +5,7 @@ from gcalcli import utils
 from gcalcli.deprecations import parser_allow_deprecated, DeprecatedStoreTrue
 from gcalcli.printer import valid_color_name
 from oauth2client import tools
+from shutil import get_terminal_size
 import copy as _copy
 import datetime
 import locale
@@ -97,6 +98,12 @@ def locale_has_24_hours():
     return '20' in formatted
 
 
+def get_auto_width():
+    console_width = get_terminal_size().columns
+    day_width = int((console_width - 8) / 7)
+    return day_width if day_width > 9 else 10
+
+
 def get_output_parser(parents=[]):
     output_parser = argparse.ArgumentParser(add_help=False, parents=parents)
     output_parser.add_argument(
@@ -108,9 +115,10 @@ def get_output_parser(parents=[]):
     output_parser.add_argument(
             '--nodeclined', action='store_true', dest='ignore_declined',
             default=False, help='Hide events that have been declined')
+    auto_width = get_auto_width()
     output_parser.add_argument(
-            '--width', '-w', default=10, dest='cal_width', type=validwidth,
-            help='Set output width')
+            '--width', '-w', default=auto_width, dest='cal_width',
+            type=validwidth, help='Set output width')
     has_24_hours = locale_has_24_hours()
     output_parser.add_argument(
             '--military', action='store_true', default=has_24_hours,
