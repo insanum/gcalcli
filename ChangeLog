@@ -1,3 +1,9 @@
+v4.2.0
+  * Prompt user for calendar on `add' when it isn't specified
+  * Add `end' time to details view
+  * New `updates' command
+  * Automatically use available console width
+
 v4.1.1
   * Fixed regression on now marking
   * Fixed version string management
