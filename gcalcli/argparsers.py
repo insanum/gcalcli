@@ -94,8 +94,12 @@ def get_details_parser():
 
 def locale_has_24_hours():
     t = datetime.time(20)
-    formatted = t.strftime(locale.nl_langinfo(locale.T_FMT))
-    return '20' in formatted
+    try:
+        formatted = t.strftime(locale.nl_langinfo(locale.T_FMT))
+        return '20' in formatted
+    except AttributeError:
+        # Some locales don't support nl_langinfo (see #481)
+        return False
 
 
 def get_auto_width():
