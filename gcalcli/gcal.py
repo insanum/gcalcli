@@ -1120,9 +1120,9 @@ class GoogleCalendarInterface:
 
     def _DeclinedEvent(self, event):
         if 'attendees' in event:
-            attendee = [a for a in event['attendees']
-                        if a['email'] == event['gcalcli_cal']['id']][0]
-            if attendee and attendee['responseStatus'] == 'declined':
+            attendees = [a for a in event['attendees']
+                        if a['email'] == event['gcalcli_cal']['id']]
+            if attendees and and attendees[0]['responseStatus'] == 'declined':
                 return True
         return False
 
