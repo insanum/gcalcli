@@ -159,6 +159,7 @@ def test_declined_event_non_matching_attendees(PatchedGCalI):
     }
     assert not gcal._DeclinedEvent(event)
 
+
 def test_declined_event_matching_attendee_declined(PatchedGCalI):
     gcal = PatchedGCalI()
     event = {
