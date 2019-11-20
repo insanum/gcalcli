@@ -135,6 +135,71 @@ def test_text_query(PatchedGCalI):
     assert gcal.TextQuery(opts.text, opts.start, opts.end) == 0
 
 
+def test_declined_event_no_attendees(PatchedGCalI):
+    gcal = PatchedGCalI()
+    event = {
+        'gcalcli_cal': {
+            'id': 'user@email.com',
+        },
+        'attendees': []
+    }
+    assert not gcal._DeclinedEvent(event)
+
+
+def test_declined_event_non_matching_attendees(PatchedGCalI):
+    gcal = PatchedGCalI()
+    event = {
+        'gcalcli_cal': {
+            'id': 'user@email.com',
+        },
+        'attendees': [{
+            'email': 'user2@otheremail.com',
+            'responseStatus': 'declined',
+        }]
+    }
+    assert not gcal._DeclinedEvent(event)
+
+
+def test_declined_event_matching_attendee_declined(PatchedGCalI):
+    gcal = PatchedGCalI()
+    event = {
+        'gcalcli_cal': {
+            'id': 'user@email.com',
+        },
+        'attendees': [
+            {
+                'email': 'user@email.com',
+                'responseStatus': 'declined',
+            },
+            {
+                'email': 'user2@otheremail.com',
+                'responseStatus': 'accepted',
+            },
+        ]
+    }
+    assert gcal._DeclinedEvent(event)
+
+
+def test_declined_event_matching_attendee_accepted(PatchedGCalI):
+    gcal = PatchedGCalI()
+    event = {
+        'gcalcli_cal': {
+            'id': 'user@email.com',
+        },
+        'attendees': [
+            {
+                'email': 'user@email.com',
+                'responseStatus': 'accepted',
+            },
+            {
+                'email': 'user2@otheremail.com',
+                'responseStatus': 'declined',
+            },
+        ]
+    }
+    assert not gcal._DeclinedEvent(event)
+
+
 def test_modify_event(PatchedGCalI):
     opts = get_search_parser().parse_args(['test'])
     gcal = PatchedGCalI(**vars(opts))
