@@ -79,19 +79,9 @@ def CreateEventFromVOBJ(
             print('Location.....%s' % ve.location.value)
         event['location'] = ve.location.value
 
-    if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
-        printer.err_msg('Error: event does not have a dtstart and dtend!\n')
+    if not hasattr(ve, 'dtstart'):
+        printer.err_msg('Error: event does not have a dtstart!\n')
         return EventData(body=None, source=ve)
-
-    if verbose:
-        if ve.dtstart.value:
-            print('Start........%s' % ve.dtstart.value.isoformat())
-        if ve.dtend.value:
-            print('End..........%s' % ve.dtend.value.isoformat())
-        if ve.dtstart.value:
-            print('Local Start..%s' % localize_datetime(ve.dtstart.value))
-        if ve.dtend.value:
-            print('Local End....%s' % localize_datetime(ve.dtend.value))
 
     if hasattr(ve, 'rrule'):
         if verbose:
@@ -100,6 +90,10 @@ def CreateEventFromVOBJ(
         event['recurrence'] = ['RRULE:' + ve.rrule.value]
 
     if hasattr(ve, 'dtstart') and ve.dtstart.value:
+        if verbose:
+            print('Start........%s' % ve.dtstart.value.isoformat())
+            print('Local Start..%s' % localize_datetime(ve.dtstart.value))
+
         # XXX
         # Timezone madness! Note that we're using the timezone for the
         # calendar being added to. This is OK if the event is in the
@@ -123,14 +117,34 @@ def CreateEventFromVOBJ(
 
         # NOTE: Reminders added by GoogleCalendarInterface caller.
 
-        # Can only have an end if we have a start, but not the other
-        # way around apparently...  If there is no end, use the start
+        # Can only have an end if we have a start, but not the other way around
+        # apparently...  If there is no end, use the duration if available, or
+        # the start otherwise.
         if hasattr(ve, 'dtend') and ve.dtend.value:
+            if verbose:
+                print('End..........%s' % ve.dtend.value.isoformat())
+                print('Local End....%s' % localize_datetime(ve.dtend.value))
+
             end = ve.dtend.value.isoformat()
             if isinstance(ve.dtend.value, datetime):
                 event['end'] = {'dateTime': end, 'timeZone': default_tz}
             else:
                 event['end'] = {'date': end}
+
+        elif hasattr(ve, 'duration') and ve.duration.value:
+            if verbose:
+                print('Duration.....%s' % ve.duration.value)
+            end = ve.dtstart.value + ve.duration.value
+            if verbose:
+                print('Calculated End........%s' % end.isoformat())
+                print('Calculated Local End..%s' % localize_datetime(end))
+            # Decide based on dtstart; that's what we base our calculation on.
+            # TODO: correct?
+            if isinstance(ve.dtstart.value, datetime):
+                event['end'] = {'dateTime': end.isoformat(),
+                                'timeZone': default_tz}
+            else:
+                event['end'] = {'date': end.isoformat()}
 
         else:
             event['end'] = event['start']
