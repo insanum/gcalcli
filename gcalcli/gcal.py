@@ -1424,25 +1424,17 @@ class GoogleCalendarInterface:
                     print('Location.....%s' % ve.location.value)
                 event['location'] = ve.location.value
 
-            if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
+            if not hasattr(ve, 'dtstart'):
                 self.printer.err_msg(
-                        'Error: event does not have a dtstart and dtend!\n'
+                    'Error: event does not have a dtstart!\n'
                 )
                 return None
 
-            if verbose:
-                if ve.dtstart.value:
-                    print('Start........%s' % ve.dtstart.value.isoformat())
-                if ve.dtend.value:
-                    print('End..........%s' % ve.dtend.value.isoformat())
-                if ve.dtstart.value:
-                    print('Local Start..%s' %
-                          self._localize_datetime(ve.dtstart.value)
-                          )
-                if ve.dtend.value:
-                    print('Local End....%s' %
-                          self._localize_datetime(ve.dtend.value)
-                          )
+            #if not hasattr(ve, 'dtend') and not hasattr(ve, 'duration'):
+            #    self.printer.err_msg(
+            #        'Error: event does not have a dtend or duration!\n'
+            #    )
+            #    return None
 
             if hasattr(ve, 'rrule'):
                 if verbose:
@@ -1451,6 +1443,9 @@ class GoogleCalendarInterface:
                 event['recurrence'] = ['RRULE:' + ve.rrule.value]
 
             if hasattr(ve, 'dtstart') and ve.dtstart.value:
+                if verbose:
+                    print('Start........%s' % ve.dtstart.value.isoformat())
+                    print('Local Start..%s' % self._localize_datetime(ve.dtstart.value))
                 # XXX
                 # Timezone madness! Note that we're using the timezone for the
                 # calendar being added to. This is OK if the event is in the
@@ -1476,8 +1471,13 @@ class GoogleCalendarInterface:
                 event = self._add_reminders(event, reminders)
 
                 # Can only have an end if we have a start, but not the other
-                # way around apparently...  If there is no end, use the start
+                # way around apparently...  If there is no end, use the duration
+                # if available, or the start otherwise.
                 if hasattr(ve, 'dtend') and ve.dtend.value:
+                    if verbose:
+                        if ve.dtend.value:
+                            print('End..........%s' % ve.dtend.value.isoformat())
+                            print('Local End....%s' % self._localize_datetime(ve.dtend.value))
                     end = ve.dtend.value.isoformat()
                     if isinstance(ve.dtend.value, datetime):
                         event['end'] = {'dateTime': end,
@@ -1485,8 +1485,25 @@ class GoogleCalendarInterface:
                     else:
                         event['end'] = {'date': end}
 
+                elif hasattr(ve, 'duration') and ve.duration.value:
+                    if verbose:
+                        print('Duration.....%s' % ve.duration.value)
+                    end = ve.dtstart.value + ve.duration.value
+                    if verbose:
+                        print('Calculated End........%s' % end.isoformat())
+                        print('Calculated Local End..%s' % self._localize_datetime(end))
+                    # Decide based on dtstart; that's what we base our
+                    # calculation on.  TODO: correct?
+                    if isinstance(ve.dtstart.value, datetime):
+                        event['end'] = {'dateTime': end.isoformat(),
+                                        'timeZone': self.cals[0]['timeZone']}
+                    else:
+                        event['end'] = {'date': end.isoformat()}
+
                 else:
                     event['end'] = event['start']
+                #DebugPrint('event['start']: %s\n' % event['start'])
+                #DebugPrint('event['end']: %s\n' % event['end'])
 
             if hasattr(ve, 'description') and ve.description.value.strip():
                 descr = ve.description.value.strip()
