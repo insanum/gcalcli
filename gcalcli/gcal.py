@@ -1303,7 +1303,8 @@ class GoogleCalendarInterface:
 
         return new_event
 
-    def AddEvent(self, title, where, start, end, descr, who, reminders, color):
+    def AddEvent(self, title, where, start, end, descr, who, reminders, color,
+                 transparent):
 
         if len(self.cals) != 1:
             # Calendar not specified. Prompt the user to select it
@@ -1346,6 +1347,8 @@ class GoogleCalendarInterface:
             event['colorId'] = get_override_color_id(color)
 
         event['attendees'] = list(map(lambda w: {'email': w}, who))
+
+        event['transparency'] = 'transparent' if transparent else 'opaque'
 
         event = self._add_reminders(event, reminders)
         events = self.get_events()
