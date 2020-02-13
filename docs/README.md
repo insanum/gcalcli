@@ -140,14 +140,14 @@ If desired, you can use your own Calendar API instead of the default API values.
   you put here isn't important. It's just what will show up when gcalcli opens
   up the OAuth website. Anything optional can safely be left blank.
 * Go back to the credentials page and grab your ID and Secret.
-* If desired, add the client_id and client_secret to your .gcalclirc:
+* If desired, add the client-id and client-secret to your .gcalclirc:
 
-        --client_id=xxxxxxxxxxxxxxx.apps.googleusercontent.com
-        --client_secret=xxxxxxxxxxxxxxxxx
+        --client-id=xxxxxxxxxxxxxxx.apps.googleusercontent.com
+        --client-secret=xxxxxxxxxxxxxxxxx
 
 * Remove your existing OAuth information (typically ~/.gcalcli_oauth).
-* Run gcalcli with any desired argument, making sure the new client_id and
-  client_secret are passed on the command line or placed in your .gcalclirc. The
+* Run gcalcli with any desired argument, making sure the new client-id and
+  client-secret are passed on the command line or placed in your .gcalclirc. The
   OAuth authorization page should be opened automatically in your default
   browser.
 
