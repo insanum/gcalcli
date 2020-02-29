@@ -19,8 +19,6 @@
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
 #                                                                           #
 #############################################################################
-from __future__ import absolute_import, print_function
-
 import os
 import signal
 import sys
@@ -31,7 +29,6 @@ from gcalcli.argparsers import get_argument_parser, handle_unparsed
 from gcalcli.exceptions import GcalcliError
 from gcalcli.gcal import GoogleCalendarInterface
 from gcalcli.printer import Printer, valid_color_name
-from gcalcli.utils import _u
 from gcalcli.validators import (
         PARSABLE_DATE, REMINDER, STR_ALLOW_EMPTY, STR_NOT_EMPTY,
         PARSABLE_DURATION, get_input
@@ -182,7 +179,7 @@ def main():
 
             # allow unicode strings for input
             gcal.QuickAddEvent(
-                    _u(parsed_args.text), reminders=parsed_args.reminders
+                    parsed_args.text, reminders=parsed_args.reminders
             )
 
         elif parsed_args.command == 'add':

@@ -1,7 +1,6 @@
 import gcalcli.utils as utils
 from datetime import datetime, timedelta
 from dateutil.tz import UTC
-import six
 import pytest
 
 
@@ -66,14 +65,6 @@ def test_get_times_from_duration():
 def test_days_since_epoch():
     assert utils.days_since_epoch(datetime(1970, 1, 1, 0, tzinfo=UTC)) == 0
     assert utils.days_since_epoch(datetime(1970, 12, 31)) == 364
-
-
-def test_u():
-    for text in [b'text', 'text', '\u309f', u'\xe1', b'\xff\xff', 42]:
-        if six.PY2:
-            assert isinstance(utils._u(text), unicode)  # noqa: F821
-        else:
-            assert isinstance(utils._u(text), str)
 
 
 def test_set_locale():

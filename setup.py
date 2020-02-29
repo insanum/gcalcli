@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 from setuptools import setup
 from gcalcli import __version__
 
@@ -35,7 +34,6 @@ setup(name='gcalcli',
           'httplib2',
           'oauth2client',
           'parsedatetime',
-          'six'
       ],
       extras_require={
           'vobject': ["vobject"],
@@ -49,6 +47,5 @@ setup(name='gcalcli',
           "Environment :: Console",
           "Intended Audience :: End Users/Desktop",
           "License :: OSI Approved :: MIT License",
-          "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3",
       ])

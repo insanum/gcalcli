@@ -1,7 +1,6 @@
 import calendar
 import time
 import locale
-import six
 import re
 from dateutil.tz import tzlocal
 from dateutil.parser import parse as dateutil_parse
@@ -52,25 +51,6 @@ def set_locale(new_locale):
         raise ValueError(
                 'Error: ' + str(exc) +
                 '!\n Check supported locales of your system.\n')
-
-
-def _u(text):
-    encoding = locale.getlocale()[1] or \
-            locale.getpreferredencoding(False) or 'UTF-8'
-    if issubclass(type(text), six.text_type):
-        return text
-    if not issubclass(type(text), six.string_types):
-        if six.PY3:
-            if isinstance(text, bytes):
-                return six.text_type(text, encoding, 'replace')
-            else:
-                return six.text_type(text)
-        elif hasattr(text, '__unicode__'):
-            return six.text_type(text)
-        else:
-            return six.text_type(bytes(text), encoding, 'replace')
-    else:
-        return text.decode(encoding, 'replace')
 
 
 def get_times_from_duration(when, duration=0, allday=False):

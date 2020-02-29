@@ -6,7 +6,7 @@ from json import load
 from dateutil.tz import tzutc
 from datetime import datetime
 
-from gcalcli.utils import parse_reminder, _u
+from gcalcli.utils import parse_reminder
 from gcalcli.argparsers import (get_start_end_parser,
                                 get_color_parser,
                                 get_cal_query_parser,
@@ -35,7 +35,7 @@ def test_list(capsys, PatchedGCalI):
 
     gcal.ListAllCalendars()
     captured = capsys.readouterr()
-    assert captured.out.startswith(_u(expected_header))
+    assert captured.out.startswith(expected_header)
 
     # +3 cos one for the header, one for the '----' decorations,
     # and one for the eom

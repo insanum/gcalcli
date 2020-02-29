@@ -1,40 +1,38 @@
-from __future__ import absolute_import
-
 import os
 import re
 import shlex
+import httplib2
 import time
 import textwrap
 import json
 import random
 import sys
 from unicodedata import east_asian_width
+try:
+    import cPickle as pickle
+except Exception:
+    import pickle
 
-from dateutil.relativedelta import relativedelta
-from datetime import datetime, timedelta, date
 from gcalcli import __program__, __version__
 from gcalcli import utils
-from gcalcli.utils import days_since_epoch, _u
-
+from gcalcli.utils import days_since_epoch
 from gcalcli.validators import (
     get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
     VALID_COLORS, STR_ALLOW_EMPTY, REMINDER, PARSABLE_DURATION
 )
-
 from gcalcli.exceptions import GcalcliError
 from gcalcli.printer import Printer
 from gcalcli.conflicts import ShowConflicts
+
+from dateutil.relativedelta import relativedelta
+from datetime import datetime, timedelta, date
 from dateutil.tz import tzlocal
 from dateutil.parser import parse
-import httplib2
-from six import next
-from six.moves import input, range, zip, map, cPickle as pickle
 from apiclient.discovery import build
 from apiclient.errors import HttpError
 from oauth2client.file import Storage
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client import tools
-
 from collections import namedtuple
 
 EventTitle = namedtuple('EventTitle', ['title', 'color'])
@@ -393,7 +391,7 @@ class GoogleCalendarInterface:
         # so we convert them to unicode and then check their size. Fixes
         # the output issues we were seeing around non-US locale strings
         return sum(
-                self.UNIWIDTH[east_asian_width(char)] for char in _u(string)
+                self.UNIWIDTH[east_asian_width(char)] for char in string
         )
 
     def _word_cut(self, word):
@@ -406,7 +404,7 @@ class GoogleCalendarInterface:
     def _next_cut(self, string):
         print_len = 0
 
-        words = _u(string).split()
+        words = string.split()
         word_lens = []
         for i, word in enumerate(words):
             word_lens.append(self._printed_len(word))
@@ -594,10 +592,10 @@ class GoogleCalendarInterface:
                 continue
             if self.options['ignore_declined'] and self._DeclinedEvent(event):
                 continue
-            output = '%s\t%s\t%s\t%s' % (_u(event['s'].strftime('%Y-%m-%d')),
-                                         _u(event['s'].strftime('%H:%M')),
-                                         _u(event['e'].strftime('%Y-%m-%d')),
-                                         _u(event['e'].strftime('%H:%M')))
+            output = '%s\t%s\t%s\t%s' % (event['s'].strftime('%Y-%m-%d'),
+                                         event['s'].strftime('%H:%M'),
+                                         event['e'].strftime('%Y-%m-%d'),
+                                         event['e'].strftime('%H:%M'))
 
             if self.details.get('url'):
                 output += '\t%s' % (event['htmlLink']
@@ -605,25 +603,25 @@ class GoogleCalendarInterface:
                 output += '\t%s' % (event['hangoutLink']
                                     if 'hangoutLink' in event else '')
 
-            output += '\t%s' % _u(self._valid_title(event).strip())
+            output += '\t%s' % self._valid_title(event).strip()
 
             if self.details.get('location'):
-                output += '\t%s' % (_u(event['location'].strip())
+                output += '\t%s' % (event['location'].strip()
                                     if 'location' in event else '')
 
             if self.details.get('description'):
-                output += '\t%s' % (_u(event['description'].strip())
+                output += '\t%s' % (event['description'].strip()
                                     if 'description' in event else '')
 
             if self.details.get('calendar'):
-                output += '\t%s' % _u(event['gcalcli_cal']['summary'].strip())
+                output += '\t%s' % event['gcalcli_cal']['summary'].strip()
 
             if self.details.get('email'):
                 output += '\t%s' % (event['creator']['email'].strip()
                                     if 'email' in event['creator'] else '')
 
             output = '%s\n' % output.replace('\n', '''\\n''')
-            sys.stdout.write(_u(output))
+            sys.stdout.write(output)
 
     def _PrintEvent(self, event, prefix):
 
