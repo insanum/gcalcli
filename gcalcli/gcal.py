@@ -1580,7 +1580,7 @@ class GoogleCalendarInterface:
                     continue
                 if val.lower() == 'i':
                     new_event = self._retry_with_backoff(
-                                    self._cal_service()
+                                    self.get_cal_service()
                                         .events()
                                         .insert(
                                             calendarId=self.cals[0]['id'],
