@@ -201,6 +201,17 @@ def get_updates_parser():
     return updates_parser
 
 
+def get_conflicts_parser():
+    # optional search text, start and end filters
+    conflicts_parser = argparse.ArgumentParser(add_help=False)
+    conflicts_parser.add_argument('text', nargs='?', type=utils._u)
+    conflicts_parser.add_argument(
+            'start', type=utils.get_time_from_str, nargs='?')
+    conflicts_parser.add_argument(
+            'end', type=utils.get_time_from_str, nargs='?')
+    return conflicts_parser
+
+
 def get_start_end_parser():
     se_parser = argparse.ArgumentParser(add_help=False)
     se_parser.add_argument('start', type=utils.get_time_from_str, nargs='?')
@@ -256,6 +267,7 @@ def get_argument_parser():
     remind_parser = get_remind_parser()
     cal_query_parser = get_cal_query_parser()
     updates_parser = get_updates_parser()
+    conflicts_parser = get_conflicts_parser()
 
     # parsed start and end times
     start_end_parser = get_start_end_parser()
@@ -303,6 +315,13 @@ def get_argument_parser():
             '(defaults to through end of current month)',
             description='Get updates since a datetime for a time period '
             '(default to through end of current month).')
+
+    sub.add_parser(
+            'conflicts',
+            parents=[details_parser, output_parser, conflicts_parser],
+            help='find event conflicts',
+            description='Find conflicts between events matching search term '
+            '(default from now through 30 days into futures)')
 
     calw = sub.add_parser(
             'calw', parents=[details_parser, output_parser, cal_query_parser],

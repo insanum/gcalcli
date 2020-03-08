@@ -23,6 +23,7 @@ from gcalcli.validators import (
 
 from gcalcli.exceptions import GcalcliError
 from gcalcli.printer import Printer
+from gcalcli.conflicts import ShowConflicts
 from dateutil.tz import tzlocal
 from dateutil.parser import parse
 import httplib2
@@ -45,6 +46,7 @@ class GoogleCalendarInterface:
     all_cals = []
     now = datetime.now(tzlocal())
     agenda_length = 5
+    conflicts_lookahead_days = 30
     max_retries = 5
     auth_http = None
     cal_service = None
@@ -1186,6 +1188,22 @@ class GoogleCalendarInterface:
               "until",
               end)
         return self._iterate_events(start, event_list, year_date=False)
+
+    def ConflictsQuery(self, search_text='', start=None, end=None):
+        if not start:
+            start = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if not end:
+            end = (start + timedelta(days=self.conflicts_lookahead_days))
+
+        event_list = self._search_for_events(start, end, search_text)
+        show_conflicts = ShowConflicts(
+                            lambda e: self._PrintEvent(e, "\t !!! Conflict: "))
+
+        return self._iterate_events(start,
+                                    event_list,
+                                    year_date=False,
+                                    work=show_conflicts.show_conflicts)
 
     def AgendaQuery(self, start=None, end=None):
         if not start:

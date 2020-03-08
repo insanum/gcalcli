@@ -65,6 +65,16 @@ def test_updates_parser():
     assert parsed_updates.end
 
 
+def test_conflicts_parser():
+    updates_parser = argparsers.get_conflicts_parser()
+
+    argv = shlex.split('search 2019-08-01 2019-09-01')
+    parsed_conflicts = updates_parser.parse_args(argv)
+    assert parsed_conflicts.text
+    assert parsed_conflicts.start
+    assert parsed_conflicts.end
+
+
 def test_details_parser():
     details_parser = argparsers.get_details_parser()
 
