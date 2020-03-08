@@ -160,6 +160,12 @@ def main():
                     start=parsed_args.start,
                     end=parsed_args.end)
 
+        elif parsed_args.command == 'conflicts':
+            gcal.ConflictsQuery(
+                    search_text=parsed_args.text,
+                    start=parsed_args.start,
+                    end=parsed_args.end)
+
         elif parsed_args.command == 'calw':
             gcal.CalQuery(
                     parsed_args.command, count=parsed_args.weeks,

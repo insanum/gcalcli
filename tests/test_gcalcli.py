@@ -12,6 +12,7 @@ from gcalcli.argparsers import (get_start_end_parser,
                                 get_cal_query_parser,
                                 get_output_parser,
                                 get_updates_parser,
+                                get_conflicts_parser,
                                 get_search_parser)
 from gcalcli.gcal import GoogleCalendarInterface
 from gcalcli.cli import parse_cal_names
@@ -59,6 +60,17 @@ def test_updates(PatchedGCalI):
             ['2019-07-10', '2019-07-19', '2019-08-01'])
     assert PatchedGCalI().UpdatesQuery(
             last_updated_datetime=opts.since,
+            start=opts.start,
+            end=opts.end) == 0
+
+
+def test_conflicts(PatchedGCalI):
+    assert PatchedGCalI().ConflictsQuery() == 0
+
+    opts = get_conflicts_parser().parse_args(
+            ['search text', '2019-07-19', '2019-08-01'])
+    assert PatchedGCalI().ConflictsQuery(
+            'search text',
             start=opts.start,
             end=opts.end) == 0
 
