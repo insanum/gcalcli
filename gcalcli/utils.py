@@ -11,8 +11,17 @@ from parsedatetime.parsedatetime import Calendar
 
 locale.setlocale(locale.LC_ALL, '')
 fuzzy_date_parse = Calendar().parse
+fuzzy_datetime_parse = Calendar().parseDT
+
 
 REMINDER_REGEX = r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$'
+
+DURATION_REGEX = re.compile(
+                r'^((?P<days>[\.\d]+?)(?:d|day|days))?[ :]*'
+                r'((?P<hours>[\.\d]+?)(?:h|hour|hours))?[ :]*'
+                r'((?P<minutes>[\.\d]+?)(?:m|min|mins|minute|minutes))?[ :]*'
+                r'((?P<seconds>[\.\d]+?)(?:s|sec|secs|second|seconds))?$'
+                )
 
 
 def parse_reminder(rem):
@@ -83,10 +92,10 @@ def get_times_from_duration(when, duration=0, allday=False):
 
     else:
         try:
-            stop = start + timedelta(minutes=float(duration))
+            stop = start + get_timedelta_from_str(duration)
         except Exception:
             raise ValueError(
-                    'Duration time (minutes) is invalid: %s\n' % (duration))
+                    'Duration time is invalid: %s\n' % (duration))
 
         start = start.isoformat()
         stop = stop.isoformat()
@@ -110,6 +119,39 @@ def get_time_from_str(when):
         event_time = datetime.fromtimestamp(time.mktime(struct), tzlocal())
 
     return event_time
+
+
+def get_timedelta_from_str(delta):
+    """
+    Parse a time string a timedelta object.
+    Formats:
+      - number -> duration in minutes
+      - "1:10" -> hour and minutes
+      - "1d 1h 1m" -> days, hours, minutes
+    Based on https://stackoverflow.com/a/51916936/12880
+    """
+    parsed_delta = None
+    try:
+        parsed_delta = timedelta(minutes=float(delta))
+    except ValueError:
+        pass
+    if parsed_delta is None:
+        parts = DURATION_REGEX.match(delta)
+        if parts is not None:
+            try:
+                time_params = {name: float(param)
+                               for name, param
+                               in parts.groupdict().items() if param}
+                parsed_delta = timedelta(**time_params)
+            except ValueError:
+                pass
+    if parsed_delta is None:
+        dt, result = fuzzy_datetime_parse(delta, sourceTime=datetime.min)
+        if result:
+            parsed_delta = dt - datetime.min
+    if parsed_delta is None:
+        raise ValueError('Duration is invalid: %s' % (delta))
+    return parsed_delta
 
 
 def days_since_epoch(dt):

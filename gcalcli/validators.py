@@ -3,7 +3,8 @@ from __future__ import absolute_import
 import re
 
 from gcalcli.exceptions import ValidationError
-from gcalcli.utils import REMINDER_REGEX, get_time_from_str
+from gcalcli.utils import (REMINDER_REGEX, get_time_from_str,
+                           get_timedelta_from_str)
 from six.moves import input
 
 # TODO: in the future, pull these from the API
@@ -77,6 +78,22 @@ def parsable_date_validator(input_str):
         )
 
 
+def parsable_duration_validator(input_str):
+    """
+    A filter allowing any duration string which can be parsed
+    by parsedatetime.
+    Raises ValidationError otherwise.
+    """
+    try:
+        get_timedelta_from_str(input_str)
+        return input_str
+    except ValueError:
+        raise ValidationError(
+            'Expected format: a duration (e.g. 1m, 1s, 1h3m)'
+            '(Ctrl-C to exit)\n'
+        )
+
+
 def str_allow_empty_validator(input_str):
     """
     A simple filter that allows any string to pass.
@@ -123,5 +140,6 @@ STR_NOT_EMPTY = non_blank_str_validator
 STR_ALLOW_EMPTY = str_allow_empty_validator
 STR_TO_INT = str_to_int_validator
 PARSABLE_DATE = parsable_date_validator
+PARSABLE_DURATION = parsable_duration_validator
 VALID_COLORS = color_validator
 REMINDER = reminder_validator
