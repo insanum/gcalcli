@@ -18,7 +18,7 @@ from gcalcli.utils import days_since_epoch, _u
 
 from gcalcli.validators import (
     get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
-    VALID_COLORS, STR_ALLOW_EMPTY, REMINDER
+    VALID_COLORS, STR_ALLOW_EMPTY, REMINDER, PARSABLE_DURATION
 )
 
 from gcalcli.exceptions import GcalcliError
@@ -956,7 +956,8 @@ class GoogleCalendarInterface:
 
             elif val.lower() == 'g':
                 val = get_input(
-                        self.printer, 'Length (mins): ', STR_TO_INT
+                        self.printer, 'Length (mins or human readable): ',
+                        PARSABLE_DURATION
                 )
                 if val:
                     all_day = self.options.get('allday')
