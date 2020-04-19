@@ -173,9 +173,8 @@ def main():
             )
 
         elif parsed_args.command == 'free':
-            print(parsed_args)
-            gcal.FreeQuery(start=parsed_args.start)
-
+            gcal.FreeQuery(start=parsed_args.start,
+                           end=parsed_args.end)
 
         elif parsed_args.command == 'calm':
             gcal.CalQuery(parsed_args.command, start_text=parsed_args.start)

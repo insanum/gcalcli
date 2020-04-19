@@ -335,17 +335,14 @@ def get_argument_parser():
     calw.add_argument('weeks', type=int, default=1, nargs='?')
 
     free = sub.add_parser(
-            'free', parents=[details_parser, output_parser, cal_query_parser],
+            'free', parents=[details_parser, output_parser, start_end_parser],
             help='get free',
             description='Get free timeslots in week.')
-    free.add_argument('weeks', type=int, default=1, nargs='?')
 
     sub.add_parser(
             'calm', parents=[details_parser, output_parser, cal_query_parser],
             help='get a month agenda in calendar format',
             description='Get a month agenda in calendar format.')
-
-
 
     quick = sub.add_parser(
             'quick', parents=[details_parser, remind_parser],

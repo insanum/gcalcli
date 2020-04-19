@@ -1144,6 +1144,7 @@ class GoogleCalendarInterface:
     def _display_free(self, start, end, search=None,
                                 year_date=False):
         event_list = self._search_for_events(start, end, search)
+
         day = start.replace(hour=0, minute=0, second=0, microsecond=0)
         dayst = start.replace(hour=9, minute=0, second=0, microsecond=0)
         nextst = dayst
@@ -1153,24 +1154,40 @@ class GoogleCalendarInterface:
         self.printer.msg(f'\nAvailability {dayst.strftime("%b %d")} - {end.strftime("%b %d")} \n', 'yellow')
         self.printer.msg('---------------------------- \n\n', 'yellow')
         for event in event_list:
-
             while event['s'] > dayend:
                 self.printer.msg(prefix, 'green')
-                self.printer.msg(f" {nextst.strftime('%H:%M')} to {dayend.strftime('%H:%M')}\n", )
+                self.printer.msg(f" {nextst.strftime('%H:%M')} to ")
+                self.printer.msg(f"{dayend.strftime('%H:%M')}\n")
                 dayst = dayst + timedelta(days=1)
                 dayend = dayend + timedelta(days=1)
                 nextst = dayst
                 print_prefix = True
                 prefix = dayst.strftime('\n%a %b %d')
-            if event['s'] >= nextst:
+            if event['s'] > nextst:
+
                 self.printer.msg(prefix, 'green')
-                self.printer.msg(f" {nextst.strftime('%H:%M')} to {event['s'].strftime('%H:%M')}\n")
+                self.printer.msg(f" {nextst.strftime('%H:%M')} to ")
+                self.printer.msg(f"{event['s'].strftime('%H:%M')}\n")
                 nextst  = event['e']
                 prefix = '          '
+            if (event['s'] <= nextst) and (event['e'] < dayend):
+                nextst  = event['e']
+
+        # last event:
         if event['e'] < dayend:
-            print(prefix + f" {nextst.strftime('%H:%M')} to {dayend.strftime('%H:%M')}")
+            self.printer.msg(prefix, 'green')
+            self.printer.msg(f" {nextst.strftime('%H:%M')} to ")
+            self.printer.msg(f"{event['s'].strftime('%H:%M')}\n")
 
-
+        # any trailing days with no events:
+        dayst = dayst + timedelta(days=1)
+        dayend = dayend + timedelta(days=1)
+        while dayst < end:
+            prefix = dayst.strftime('\n%a %b %d')
+            self.printer.msg(prefix, 'green')
+            self.printer.msg(f" {dayst.strftime('%H:%M')} to {dayend.strftime('%H:%M')}\n", )
+            dayst = dayst + timedelta(days=1)
+            dayend = dayend + timedelta(days=1)
 
     def _display_queried_events(self, start, end, search=None,
                                 year_date=False):
@@ -1247,12 +1264,11 @@ class GoogleCalendarInterface:
 
             getattr(actions, action)(row, cal, self)
 
-    def FreeQuery(self, start=None, count=1):
+    def FreeQuery(self, start=None, end=None, count=1):
         if not start:
             start = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        end = (start + timedelta(days=(count * 8)))
-
+        if not end:
+            end = (start + timedelta(days=(count * 8)))
         return self._display_free(start, end)
 
     def CalQuery(self, cmd, start_text='', count=1):
