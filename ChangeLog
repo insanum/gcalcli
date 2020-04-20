@@ -1,3 +1,10 @@
+v4.2.1
+  * Remove python2 support
+  * Allow flexible notion for durations (flicken) 
+  * new `conflicts` command (flicken)
+  * Fixed issue when locale.nl_langinfo isn't available
+  * Fixed IndexError when attendee cannot be found in _DeclinedEvent (navignaw)
+
 v4.2.0
   * Prompt user for calendar on `add' when it isn't specified
   * Add `end' time to details view
