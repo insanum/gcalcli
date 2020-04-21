@@ -1161,16 +1161,14 @@ class GoogleCalendarInterface:
                 dayst = dayst + timedelta(days=1)
                 dayend = dayend + timedelta(days=1)
                 nextst = dayst
-                print_prefix = True
                 prefix = dayst.strftime('\n%a %b %d')
-            if event['s'] > nextst:
-
+            if (event['s'] > nextst):
                 self.printer.msg(prefix, 'green')
                 self.printer.msg(f" {nextst.strftime('%H:%M')} to ")
                 self.printer.msg(f"{event['s'].strftime('%H:%M')}\n")
                 nextst  = event['e']
                 prefix = '          '
-            if (event['s'] <= nextst) and (event['e'] < dayend):
+            if (event['s'] <= nextst) and (event['s'] >= dayst):
                 nextst  = event['e']
 
         # last event:
