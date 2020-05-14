@@ -603,6 +603,21 @@ class GoogleCalendarInterface:
                 output += '\t%s' % (event['hangoutLink']
                                     if 'hangoutLink' in event else '')
 
+            if self.details.get('conference'):
+                conference_data = (event['conferenceData']
+                                   if 'conferenceData' in event else None)
+
+                # only display first entry point for TSV
+                # https://github.com/insanum/gcalcli/issues/533
+                entry_point = (conference_data['entryPoints'][0]
+                               if conference_data is not None else None)
+
+                output += '\t%s' % (entry_point['entryPointType']
+                                    if conference_data is not None else '')
+
+                output += '\t%s' % (entry_point['uri']
+                                    if conference_data is not None else '')
+
             output += '\t%s' % self._valid_title(event).strip()
 
             if self.details.get('location'):
