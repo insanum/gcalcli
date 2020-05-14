@@ -711,6 +711,15 @@ class GoogleCalendarInterface:
             xstr = '%s  Hangout Link: %s\n' % (details_indent, hlink)
             self.printer.msg(xstr, 'default')
 
+        if self.details.get('conference') and 'conferenceData' in event:
+            for entry_point in event['conferenceData']['entryPoints']:
+                entry_point_type = entry_point['entryPointType']
+                hlink = entry_point['uri']
+                xstr = '%s  Conference Link: %s: %s\n' % (details_indent,
+                                                          entry_point_type,
+                                                          hlink)
+                self.printer.msg(xstr, 'default')
+
         if self.details.get('location') \
                 and 'location' in event \
                 and event['location'].strip():
