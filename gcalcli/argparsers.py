@@ -11,7 +11,7 @@ import datetime
 import locale
 
 DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
-           'url', 'attendees', 'email', 'attachments', 'end']
+           'url', 'conference', 'attendees', 'email', 'attachments', 'end']
 
 
 PROGRAM_OPTIONS = {
