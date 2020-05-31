@@ -7,6 +7,7 @@ import textwrap
 import json
 import random
 import sys
+import uuid
 from unicodedata import east_asian_width
 try:
     import cPickle as pickle
@@ -1369,9 +1370,13 @@ class GoogleCalendarInterface:
 
         event['attendees'] = list(map(lambda w: {'email': w}, who))
 
+        if self.details.get('conference'):
+            event['conferenceData'] = { 'createRequest': {'requestId': str(uuid.uuid4())[-10:],
+                                                         'conferenceSolutionKey' : {'type': 'hangoutsMeet' }}}
+
         event = self._add_reminders(event, reminders)
         events = self.get_cal_service().events()
-        request = events.insert(calendarId=self.cals[0]['id'], body=event)
+        request = events.insert(calendarId=self.cals[0]['id'], conferenceDataVersion=1, body=event)
         new_event = self._retry_with_backoff(request)
 
         if self.details.get('url'):
