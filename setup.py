@@ -4,9 +4,12 @@ from gcalcli import __version__
 
 try:
     import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst',
-                                        format='markdown_github',
-                                        extra_args=("--wrap=none",))
+    long_description = pypandoc.convert_file(
+        'README.md',
+        'rst',
+        format='markdown_github',
+        extra_args=("--wrap=none",)
+    )
 except ImportError:
     import sys
     print('Warning: No long description generated.', file=sys.stderr)
