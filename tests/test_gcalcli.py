@@ -106,8 +106,9 @@ def test_add_event(PatchedGCalI):
     who = 'anyone'
     reminders = None
     color = "banana"
+    conference = False
     assert gcal.AddEvent(
-        title, where, start, end, descr, who, reminders, color)
+        title, where, start, end, descr, who, reminders, color, conference)
 
 
 def test_add_event_override_color(capsys, default_options,

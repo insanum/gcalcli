@@ -374,6 +374,7 @@ def get_argument_parser():
     add.add_argument(
             '--noprompt', action='store_false', dest='prompt', default=True,
             help='Don\'t prompt for missing data when adding events')
+    add.add_argument('--conference', action='store_true', default=False, help='Create google meets')
 
     _import = sub.add_parser(
             'import', parents=[remind_parser],

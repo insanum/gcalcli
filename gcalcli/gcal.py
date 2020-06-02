@@ -1326,7 +1326,7 @@ class GoogleCalendarInterface:
 
         return new_event
 
-    def AddEvent(self, title, where, start, end, descr, who, reminders, color):
+    def AddEvent(self, title, where, start, end, descr, who, reminders, color, conference):
 
         if len(self.cals) != 1:
             # Calendar not specified. Prompt the user to select it
@@ -1370,7 +1370,7 @@ class GoogleCalendarInterface:
 
         event['attendees'] = list(map(lambda w: {'email': w}, who))
 
-        if self.details.get('conference'):
+        if  conference or self.details.get('conference'):
             event['conferenceData'] = { 'createRequest': {'requestId': str(uuid.uuid4())[-10:],
                                                          'conferenceSolutionKey' : {'type': 'hangoutsMeet' }}}
 
