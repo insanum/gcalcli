@@ -142,8 +142,8 @@ If desired, you can use your own Calendar API instead of the default API values.
 * Go back to the credentials page and grab your ID and Secret.
 * If desired, add the client-id and client-secret to your .gcalclirc:
 
-        --client-id=xxxxxxxxxxxxxxx.apps.googleusercontent.com
-        --client-secret=xxxxxxxxxxxxxxxxx
+        --client_id=xxxxxxxxxxxxxxx.apps.googleusercontent.com
+        --client_secret=xxxxxxxxxxxxxxxxx
 
 * Remove your existing OAuth information (typically ~/.gcalcli_oauth).
 * Run gcalcli with any desired argument, making sure the new client-id and
