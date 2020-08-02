@@ -15,6 +15,7 @@ except Exception:
 
 from gcalcli import __program__, __version__
 from gcalcli import utils
+from gcalcli.details import _valid_title, HANDLERS, HANDLERS_DEFAULT
 from gcalcli.utils import days_since_epoch
 from gcalcli.validators import (
     get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
@@ -247,12 +248,6 @@ class GoogleCalendarInterface:
         else:
             return 'default'
 
-    def _valid_title(self, event):
-        if 'summary' in event and event['summary'].strip():
-            return event['summary']
-        else:
-            return '(No title)'
-
     def _isallday(self, event):
         return event['s'].hour == 0 and event['s'].minute == 0 and \
             event['e'].hour == 0 and event['e'].minute == 0
@@ -274,7 +269,7 @@ class GoogleCalendarInterface:
         return e_start < time_point and e_end >= time_point
 
     def _format_title(self, event, allday=False):
-        titlestr = self._valid_title(event)
+        titlestr = _valid_title(event)
         if allday:
             return titlestr
         elif self.options['military']:
@@ -587,55 +582,24 @@ class GoogleCalendarInterface:
                 self.printer.msg(week_bottom + '\n', color_border)
 
     def _tsv(self, start_datetime, event_list):
+        keys = set(self.details.keys())
+        keys.update(HANDLERS_DEFAULT)
+
+        handlers = [handler
+                    for key, handler in HANDLERS.items()
+                    if key in keys]
+
         for event in event_list:
             if self.options['ignore_started'] and (event['s'] < self.now):
                 continue
             if self.options['ignore_declined'] and self._DeclinedEvent(event):
                 continue
-            output = '%s\t%s\t%s\t%s' % (event['s'].strftime('%Y-%m-%d'),
-                                         event['s'].strftime('%H:%M'),
-                                         event['e'].strftime('%Y-%m-%d'),
-                                         event['e'].strftime('%H:%M'))
 
-            if self.details.get('url'):
-                output += '\t%s' % (event['htmlLink']
-                                    if 'htmlLink' in event else '')
-                output += '\t%s' % (event['hangoutLink']
-                                    if 'hangoutLink' in event else '')
+            row = []
+            for handler in handlers:
+                row.extend(handler.get(event))
 
-            if self.details.get('conference'):
-                conference_data = (event['conferenceData']
-                                   if 'conferenceData' in event else None)
-
-                # only display first entry point for TSV
-                # https://github.com/insanum/gcalcli/issues/533
-                entry_point = (conference_data['entryPoints'][0]
-                               if conference_data is not None else None)
-
-                output += '\t%s' % (entry_point['entryPointType']
-                                    if conference_data is not None else '')
-
-                output += '\t%s' % (entry_point['uri']
-                                    if conference_data is not None else '')
-
-            output += '\t%s' % self._valid_title(event).strip()
-
-            if self.details.get('location'):
-                output += '\t%s' % (event['location'].strip()
-                                    if 'location' in event else '')
-
-            if self.details.get('description'):
-                output += '\t%s' % (event['description'].strip()
-                                    if 'description' in event else '')
-
-            if self.details.get('calendar'):
-                output += '\t%s' % event['gcalcli_cal']['summary'].strip()
-
-            if self.details.get('email'):
-                output += '\t%s' % (event['creator']['email'].strip()
-                                    if 'email' in event['creator'] else '')
-
-            output = '%s\n' % output.replace('\n', '''\\n''')
+            output = '%s\n' % ('\t'.join(row)).replace('\n', '''\\n''')
             sys.stdout.write(output)
 
     def _PrintEvent(self, event, prefix):
@@ -690,7 +654,7 @@ class GoogleCalendarInterface:
         if all_day:
             fmt = '  ' + time_width + '  %s\n'
             self.printer.msg(
-                    fmt % ('', self._valid_title(event).strip()),
+                    fmt % ('', _valid_title(event).strip()),
                     event_color
             )
         else:
@@ -706,7 +670,7 @@ class GoogleCalendarInterface:
 
             self.printer.msg(
                     fmt % (tmp_start_time_str, tmp_end_time_str,
-                           self._valid_title(event).strip()),
+                           _valid_title(event).strip()),
                     event_color
             )
 
@@ -1428,7 +1392,7 @@ class GoogleCalendarInterface:
                     event['s'].strftime('%p').lower()
 
             message += '%s  %s\n' % \
-                       (tmp_time_str, self._valid_title(event).strip())
+                       (tmp_time_str, _valid_title(event).strip())
 
         if not message:
             return
