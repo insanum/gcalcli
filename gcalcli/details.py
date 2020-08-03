@@ -38,17 +38,9 @@ class SingleColumnHandler(Handler):
 class SimpleSingleColumnHandler(SingleColumnHandler):
     """Handler for single-string details that require no special processing."""
 
-    # XXX: py36+: change to `_key: str`
-    _key = None  # type: Optional[str]
-
-    @property
-    def header(self):
-        """Getter property that returns a list of `self._key`."""
-        return [self._key]
-
     @classmethod
     def _get(cls, event):
-        return event.get(cls._key, '')
+        return event.get(cls.header[0], '')
 
 
 class Time(Handler):
@@ -105,13 +97,13 @@ class Title(SingleColumnHandler):
 class Location(SimpleSingleColumnHandler):
     """Handler for location."""
 
-    _key = 'location'
+    header = ['location']
 
 
 class Description(SimpleSingleColumnHandler):
     """Handler for description."""
 
-    _key = 'description'
+    header = ['description']
 
 
 class Calendar(SingleColumnHandler):
