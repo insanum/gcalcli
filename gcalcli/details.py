@@ -126,9 +126,16 @@ class Email(SingleColumnHandler):
         return event['creator'].get('email', '')
 
 
+class ID(SimpleSingleColumnHandler):
+    """Handler for event ID."""
+
+    header = ['id']
+
+
 HANDLERS_DEFAULT = {'time', 'title'}
 
-HANDLERS = OrderedDict([('time', Time),
+HANDLERS = OrderedDict([('id', ID),
+                        ('time', Time),
                         ('url', Url),
                         ('conference', Conference),
                         ('title', Title),
