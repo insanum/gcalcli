@@ -2,6 +2,7 @@ import os
 import re
 import shlex
 import httplib2
+from itertools import chain
 import time
 import textwrap
 import json
@@ -589,6 +590,10 @@ class GoogleCalendarInterface:
                     for key, handler in HANDLERS.items()
                     if key in keys]
 
+        header_row = chain.from_iterable(handler.header
+                                         for handler in handlers)
+        print(*header_row, sep='\t')
+
         for event in event_list:
             if self.options['ignore_started'] and (event['s'] < self.now):
                 continue
@@ -599,8 +604,8 @@ class GoogleCalendarInterface:
             for handler in handlers:
                 row.extend(handler.get(event))
 
-            output = '%s\n' % ('\t'.join(row)).replace('\n', '''\\n''')
-            sys.stdout.write(output)
+            output = ('\t'.join(row)).replace('\n', '''\\n''')
+            print(output)
 
     def _PrintEvent(self, event, prefix):
 
