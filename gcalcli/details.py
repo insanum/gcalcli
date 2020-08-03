@@ -144,3 +144,8 @@ HANDLERS = OrderedDict([('time', Time),
                         ('description', Description),
                         ('calendar', Calendar),
                         ('email', Email)])
+
+_DETAILS_WITHOUT_HANDLERS = ['length', 'reminders', 'attendees',
+                             'attachments', 'end']
+
+DETAILS = list(HANDLERS.keys()) + _DETAILS_WITHOUT_HANDLERS
