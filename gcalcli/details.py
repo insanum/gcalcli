@@ -28,7 +28,7 @@ class Handler:
         raise NotImplementedError
 
     @classmethod
-    def patch(cls, event, value):
+    def patch(cls, event, fieldname, value):
         """Patch event from value."""
         raise NotImplementedError
 
@@ -40,6 +40,10 @@ class SingleFieldHandler(Handler):
     def get(cls, event):
         return [cls._get(event).strip()]
 
+    @classmethod
+    def patch(cls, event, fieldname, value):
+        cls._patch(cls, event, value)
+
 
 class SimpleSingleFieldHandler(SingleFieldHandler):
     """Handler for single-string details that require no special processing."""
@@ -49,7 +53,7 @@ class SimpleSingleFieldHandler(SingleFieldHandler):
         return event.get(cls.fieldnames[0], '')
 
     @classmethod
-    def patch(cls, event, value):
+    def _patch(cls, event, value):
         event[cls.fieldnames[0]] = value
 
 
@@ -104,7 +108,7 @@ class Title(SingleFieldHandler):
         return _valid_title(event)
 
     @classmethod
-    def patch(cls, event, value):
+    def _patch(cls, event, value):
         event['summary'] = value
 
 
