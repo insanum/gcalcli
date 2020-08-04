@@ -17,9 +17,9 @@ def _valid_title(event):
 class Handler:
     """Handler for a specific detail of an event."""
 
-    # list of strings for headers provided by this object
-    # XXX: py36+: change to `header: List[str]`
-    header = None  # type: Optional[List[str]]
+    # list of strings for fieldnames provided by this object
+    # XXX: py36+: change to `fieldnames: List[str]`
+    fieldnames = None  # type: Optional[List[str]]
 
     @classmethod
     def get(cls, event):
@@ -27,7 +27,7 @@ class Handler:
         raise NotImplementedError
 
 
-class SingleColumnHandler(Handler):
+class SingleFieldHandler(Handler):
     """Handler for a detail that only produces one column."""
 
     @classmethod
@@ -35,18 +35,18 @@ class SingleColumnHandler(Handler):
         return [cls._get(event).strip()]
 
 
-class SimpleSingleColumnHandler(SingleColumnHandler):
+class SimpleSingleFieldHandler(SingleFieldHandler):
     """Handler for single-string details that require no special processing."""
 
     @classmethod
     def _get(cls, event):
-        return event.get(cls.header[0], '')
+        return event.get(cls.fieldnames[0], '')
 
 
 class Time(Handler):
     """Handler for dates and times."""
 
-    header = ['start_date', 'start_time', 'end_date', 'end_time']
+    fieldnames = ['start_date', 'start_time', 'end_date', 'end_time']
 
     @classmethod
     def get(cls, event):
@@ -57,7 +57,7 @@ class Time(Handler):
 class Url(Handler):
     """Handler for HTML and legacy Hangout links."""
 
-    header = ['html_link', 'hangout_link']
+    fieldnames = ['html_link', 'hangout_link']
 
     @classmethod
     def get(cls, event):
@@ -68,7 +68,7 @@ class Url(Handler):
 class Conference(Handler):
     """Handler for videoconference and teleconference details."""
 
-    header = ['conference_entry_point_type', 'conference_uri']
+    fieldnames = ['conference_entry_point_type', 'conference_uri']
 
     @classmethod
     def get(cls, event):
@@ -84,52 +84,52 @@ class Conference(Handler):
         return [entry_point['entryPointType'], entry_point['uri']]
 
 
-class Title(SingleColumnHandler):
+class Title(SingleFieldHandler):
     """Handler for title."""
 
-    header = ['title']
+    fieldnames = ['title']
 
     @classmethod
     def _get(cls, event):
         return _valid_title(event)
 
 
-class Location(SimpleSingleColumnHandler):
+class Location(SimpleSingleFieldHandler):
     """Handler for location."""
 
-    header = ['location']
+    fieldnames = ['location']
 
 
-class Description(SimpleSingleColumnHandler):
+class Description(SimpleSingleFieldHandler):
     """Handler for description."""
 
-    header = ['description']
+    fieldnames = ['description']
 
 
-class Calendar(SingleColumnHandler):
+class Calendar(SingleFieldHandler):
     """Handler for calendar."""
 
-    header = ['calendar']
+    fieldnames = ['calendar']
 
     @classmethod
     def _get(cls, event):
         return event['gcalcli_cal']['summary']
 
 
-class Email(SingleColumnHandler):
+class Email(SingleFieldHandler):
     """Handler for emails."""
 
-    header = ['email']
+    fieldnames = ['email']
 
     @classmethod
     def _get(cls, event):
         return event['creator'].get('email', '')
 
 
-class ID(SimpleSingleColumnHandler):
+class ID(SimpleSingleFieldHandler):
     """Handler for event ID."""
 
-    header = ['id']
+    fieldnames = ['id']
 
 
 HANDLERS_DEFAULT = {'time', 'title'}
