@@ -1,6 +1,7 @@
 """Handlers for specific details of events."""
 
 from collections import OrderedDict
+from itertools import chain
 from typing import List, Optional
 
 FMT_DATE = '%Y-%m-%d'
@@ -26,6 +27,11 @@ class Handler:
         """Return simple string representation for columnar output."""
         raise NotImplementedError
 
+    @classmethod
+    def patch(cls, event, value):
+        """Patch event from value."""
+        raise NotImplementedError
+
 
 class SingleFieldHandler(Handler):
     """Handler for a detail that only produces one column."""
@@ -41,6 +47,10 @@ class SimpleSingleFieldHandler(SingleFieldHandler):
     @classmethod
     def _get(cls, event):
         return event.get(cls.fieldnames[0], '')
+
+    @classmethod
+    def patch(cls, event, value):
+        event[cls.fieldnames[0]] = value
 
 
 class Time(Handler):
@@ -93,6 +103,10 @@ class Title(SingleFieldHandler):
     def _get(cls, event):
         return _valid_title(event)
 
+    @classmethod
+    def patch(cls, event, value):
+        event['summary'] = value
+
 
 class Location(SimpleSingleFieldHandler):
     """Handler for location."""
@@ -143,6 +157,11 @@ HANDLERS = OrderedDict([('id', ID),
                         ('description', Description),
                         ('calendar', Calendar),
                         ('email', Email)])
+
+FIELD_HANDLERS = dict(chain.from_iterable(
+    (((fieldname, handler)
+      for fieldname in handler.fieldnames)
+     for handler in HANDLERS.values())))
 
 _DETAILS_WITHOUT_HANDLERS = ['length', 'reminders', 'attendees',
                              'attachments', 'end']

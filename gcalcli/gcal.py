@@ -1,3 +1,4 @@
+from csv import DictReader, excel_tab
 import os
 import re
 import shlex
@@ -16,7 +17,8 @@ except Exception:
 
 from gcalcli import __program__, __version__
 from gcalcli import utils
-from gcalcli.details import _valid_title, HANDLERS, HANDLERS_DEFAULT
+from gcalcli.details import (_valid_title, FIELD_HANDLERS, HANDLERS,
+                             HANDLERS_DEFAULT)
 from gcalcli.utils import days_since_epoch
 from gcalcli.validators import (
     get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
@@ -1205,6 +1207,30 @@ class GoogleCalendarInterface:
             end = (start + timedelta(days=self.agenda_length))
 
         return self._display_queried_events(start, end)
+
+    def AgendaUpdate(self, file=sys.stdin):
+        reader = DictReader(file, dialect=excel_tab)
+
+        if len(self.cals) != 1:
+            raise GcalcliError('Must specify a single calendar.')
+
+        cal_id = self.cals[0]['id']
+
+        for row in reader:
+            event = {}
+
+            for fieldname, value in row.items():
+                FIELD_HANDLERS[fieldname].patch(event, value)
+
+            self._retry_with_backoff(
+                self.get_cal_service()
+                    .events()
+                    .patch(
+                        calendarId=cal_id,
+                        eventId=event['id'],
+                        body=event
+                    )
+            )
 
     def CalQuery(self, cmd, start_text='', count=1):
         if not start_text:

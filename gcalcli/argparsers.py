@@ -10,6 +10,7 @@ from shutil import get_terminal_size
 import copy as _copy
 import datetime
 import locale
+import sys
 
 PROGRAM_OPTIONS = {
         '--client-id': {'default': gcalcli.__API_CLIENT_ID__,
@@ -304,6 +305,13 @@ def get_argument_parser():
             parents=[details_parser, output_parser, start_end_parser],
             help='get an agenda for a time period',
             description='Get an agenda for a time period.')
+
+    agendaupdate = sub.add_parser(
+            'agendaupdate',
+            help='update calendar from agenda TSV file',
+            description='Update calendar from agenda TSV file.')
+    agendaupdate.add_argument(
+        'file', type=argparse.FileType('r'), nargs='?', default=sys.stdin)
 
     sub.add_parser(
             'updates',
