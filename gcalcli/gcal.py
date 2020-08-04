@@ -592,7 +592,7 @@ class GoogleCalendarInterface:
                     for key, handler in HANDLERS.items()
                     if key in keys]
 
-        header_row = chain.from_iterable(handler.header
+        header_row = chain.from_iterable(handler.fieldnames
                                          for handler in handlers)
         print(*header_row, sep='\t')
 
