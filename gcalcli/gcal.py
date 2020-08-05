@@ -1214,13 +1214,14 @@ class GoogleCalendarInterface:
         if len(self.cals) != 1:
             raise GcalcliError('Must specify a single calendar.')
 
-        cal_id = self.cals[0]['id']
+        cal = self.cals[0]
+        cal_id = cal['id']
 
         for row in reader:
             event = {}
 
             for fieldname, value in row.items():
-                FIELD_HANDLERS[fieldname].patch(event, value)
+                FIELD_HANDLERS[fieldname].patch(cal, event, fieldname, value)
 
             self._retry_with_backoff(
                 self.get_cal_service()

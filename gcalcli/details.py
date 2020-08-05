@@ -1,11 +1,15 @@
 """Handlers for specific details of events."""
 
 from collections import OrderedDict
+from datetime import datetime
 from itertools import chain
-from typing import List, Optional
+from typing import List
+
+from dateutil.parser import isoparse, parse
 
 FMT_DATE = '%Y-%m-%d'
 FMT_TIME = '%H:%M'
+TODAY = datetime.now().date()
 
 
 def _valid_title(event):
@@ -20,7 +24,7 @@ class Handler:
 
     # list of strings for fieldnames provided by this object
     # XXX: py36+: change to `fieldnames: List[str]`
-    fieldnames = None  # type: Optional[List[str]]
+    fieldnames = []  # type: List[str]
 
     @classmethod
     def get(cls, event):
@@ -28,7 +32,7 @@ class Handler:
         raise NotImplementedError
 
     @classmethod
-    def patch(cls, event, fieldname, value):
+    def patch(cls, cal, event, fieldname, value):
         """Patch event from value."""
         raise NotImplementedError
 
@@ -41,8 +45,8 @@ class SingleFieldHandler(Handler):
         return [cls._get(event).strip()]
 
     @classmethod
-    def patch(cls, event, fieldname, value):
-        cls._patch(cls, event, value)
+    def patch(cls, cal, event, fieldname, value):
+        return cls._patch(event, value)
 
 
 class SimpleSingleFieldHandler(SingleFieldHandler):
@@ -66,6 +70,35 @@ class Time(Handler):
     def get(cls, event):
         return [event['s'].strftime(FMT_DATE), event['s'].strftime(FMT_TIME),
                 event['e'].strftime(FMT_DATE), event['e'].strftime(FMT_TIME)]
+
+    @classmethod
+    def patch(cls, cal, event, fieldname, value):
+        instant_name, _, unit = fieldname.partition('_')
+
+        assert instant_name in {'start', 'end'}
+
+        if unit == 'date':
+            instant = event[instant_name] = {}
+            instant_date = parse(value, default=TODAY)
+
+            instant['date'] = instant_date.isoformat()
+            instant['dateTime'] = None  # clear any previous non-all-day time
+        else:
+            assert unit == 'time'
+
+            # If the time field is empty, do nothing.
+            # This enables all day events.
+            if not value.strip():
+                return
+
+            # date must be an earlier TSV field than time
+            instant = event[instant_name]
+            instant_date = isoparse(instant['date'])
+            instant_datetime = parse(value, default=instant_date)
+
+            instant['date'] = None  # clear all-day date
+            instant['dateTime'] = instant_datetime.isoformat()
+            instant['timeZone'] = cal['timeZone']
 
 
 class Url(Handler):
