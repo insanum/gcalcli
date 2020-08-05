@@ -7,6 +7,8 @@ from typing import List
 
 from dateutil.parser import isoparse, parse
 
+from gcalcli.utils import is_all_day
+
 FMT_DATE = '%Y-%m-%d'
 FMT_TIME = '%H:%M'
 TODAY = datetime.now().date()
@@ -67,9 +69,24 @@ class Time(Handler):
     fieldnames = ['start_date', 'start_time', 'end_date', 'end_time']
 
     @classmethod
+    def _datetime_to_fields(cls, instant, all_day):
+        instant_date = instant.strftime(FMT_DATE)
+
+        if all_day:
+            instant_time = ''
+        else:
+            instant_time = instant.strftime(FMT_TIME)
+
+        return [instant_date, instant_time]
+
+    @classmethod
     def get(cls, event):
-        return [event['s'].strftime(FMT_DATE), event['s'].strftime(FMT_TIME),
-                event['e'].strftime(FMT_DATE), event['e'].strftime(FMT_TIME)]
+        all_day = is_all_day(event)
+
+        start_fields = cls._datetime_to_fields(event['s'], all_day)
+        end_fields = cls._datetime_to_fields(event['e'], all_day)
+
+        return start_fields + end_fields
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
