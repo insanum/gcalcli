@@ -19,7 +19,7 @@ from gcalcli import __program__, __version__
 from gcalcli import utils
 from gcalcli.details import (_valid_title, FIELD_HANDLERS, HANDLERS,
                              HANDLERS_DEFAULT)
-from gcalcli.utils import days_since_epoch
+from gcalcli.utils import days_since_epoch, is_all_day
 from gcalcli.validators import (
     get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
     VALID_COLORS, STR_ALLOW_EMPTY, REMINDER, PARSABLE_DURATION
@@ -251,10 +251,6 @@ class GoogleCalendarInterface:
         else:
             return 'default'
 
-    def _isallday(self, event):
-        return event['s'].hour == 0 and event['s'].minute == 0 and \
-            event['e'].hour == 0 and event['e'].minute == 0
-
     def _cal_monday(self, day_num):
         """Shift the day number if we're doing cal monday, or cal_weekend is
         false, since that also means we're starting on day 1
@@ -301,7 +297,7 @@ class GoogleCalendarInterface:
 
         for event in event_list:
             event_daynum = self._cal_monday(int(event['s'].strftime('%w')))
-            event_allday = self._isallday(event)
+            event_allday = is_all_day(event)
 
             event_end_date = event['e']
             if event_allday:
@@ -646,7 +642,7 @@ class GoogleCalendarInterface:
         self.printer.msg(prefix, self.options['color_date'])
 
         happening_now = event['s'] <= self.now <= event['e']
-        all_day = self._isallday(event)
+        all_day = is_all_day(event)
         if self.options['override_color'] and event.get('colorId'):
             if happening_now and not all_day:
                 event_color = self.options['color_now_marker']
