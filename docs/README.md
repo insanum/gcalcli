@@ -49,7 +49,7 @@ nix-env -i gcalcli
 ### Install from PyPI
 
 ```sh
-pip install gcalcli
+pip3 install gcalcli
 ```
 
 ### Install from source
@@ -57,13 +57,13 @@ pip install gcalcli
 ```sh
 git clone https://github.com/insanum/gcalcli.git
 cd gcalcli
-python setup.py install
+python3 setup.py install
 ```
 
 ### Install optional package
 
 ```sh
-pip install vobject
+pip3 install vobject
 ```
 
 Features
