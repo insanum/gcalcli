@@ -633,7 +633,7 @@ class GoogleCalendarInterface:
 
             if self.details.get('email'):
                 output += '\t%s' % (event['creator']['email'].strip()
-                                    if 'email' in event['creator'] else '')
+                                    if 'creator' in event and 'email' in event['creator'] else '')
 
             output = '%s\n' % output.replace('\n', '''\\n''')
             sys.stdout.write(output)
