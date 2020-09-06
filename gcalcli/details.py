@@ -224,6 +224,13 @@ class Calendar(SingleFieldHandler):
     def _get(cls, event):
         return event['gcalcli_cal']['summary']
 
+    @classmethod
+    def patch(cls, cal, event, fieldname, value):
+        curr_value = cal['summary']
+
+        if curr_value != value:
+            raise ReadonlyCheckError(fieldname, curr_value, value)
+
 
 class Email(SingleFieldHandler):
     """Handler for emails."""
@@ -250,7 +257,7 @@ HANDLERS = OrderedDict([('id', ID),
                         ('description', Description),
                         ('calendar', Calendar),
                         ('email', Email)])
-HANDLERS_READONLY = {Url}
+HANDLERS_READONLY = {Url, Calendar}
 
 FIELD_HANDLERS = dict(chain.from_iterable(
     (((fieldname, handler)
