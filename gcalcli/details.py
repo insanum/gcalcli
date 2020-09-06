@@ -7,7 +7,7 @@ from typing import List
 
 from dateutil.parser import isoparse, parse
 
-from gcalcli.exceptions import GcalcliError
+from gcalcli.exceptions import ReadonlyError, ReadonlyCheckError
 from gcalcli.utils import is_all_day
 
 FMT_DATE = '%Y-%m-%d'
@@ -16,7 +16,8 @@ TODAY = datetime.now().date()
 
 URL_PROPS = OrderedDict([('html_link', 'htmlLink'),
                          ('hangout_link', 'hangoutLink')])
-ENTRY_POINT_PROPS = OrderedDict([('conference_entry_point_type', 'entryPointType'),
+ENTRY_POINT_PROPS = OrderedDict([('conference_entry_point_type',
+                                  'entryPointType'),
                                  ('conference_uri', 'uri')])
 
 
@@ -136,10 +137,10 @@ class Url(Handler):
     @classmethod
     def patch(cls, cal, event, fieldname, value):
         if fieldname == 'html_link':
-            raise GcalcliError('Field {} is read-only. '
-                               'It is not possible to verify that the value '
-                               'has not changed. '
-                               'Remove it from the input.'.format(fieldname))
+            raise ReadonlyError(fieldname,
+                                'It is not possible to verify that the value '
+                                'has not changed. '
+                                'Remove it from the input.')
 
         prop = URL_PROPS[fieldname]
 
@@ -150,9 +151,7 @@ class Url(Handler):
         curr_value = event.get(prop, '')
 
         if curr_value != value:
-            raise GcalcliError('Field {} is read-only. '
-                               'Current value "{}" does not match update value'
-                               ' "{}"'.format(fieldname, curr_value, value))
+            raise ReadonlyCheckError(fieldname, curr_value, value)
 
 
 class Conference(Handler):
