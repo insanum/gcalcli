@@ -13,6 +13,9 @@ FMT_DATE = '%Y-%m-%d'
 FMT_TIME = '%H:%M'
 TODAY = datetime.now().date()
 
+URL_PROPS = OrderedDict([('html_link', 'htmlLink'),
+                         ('hangout_link', 'hangoutLink')])
+
 
 def _valid_title(event):
     if 'summary' in event and event['summary'].strip():
@@ -121,12 +124,11 @@ class Time(Handler):
 class Url(Handler):
     """Handler for HTML and legacy Hangout links."""
 
-    fieldnames = ['html_link', 'hangout_link']
+    fieldnames = list(URL_PROPS.keys())
 
     @classmethod
     def get(cls, event):
-        return [event.get('htmlLink', ''),
-                event.get('hangoutLink', '')]
+        return [event.get(prop, '') for prop in URL_PROPS.values()]
 
 
 class Conference(Handler):
