@@ -7,6 +7,7 @@ from typing import List
 
 from dateutil.parser import isoparse, parse
 
+from gcalcli.exceptions import GcalcliError
 from gcalcli.utils import is_all_day
 
 FMT_DATE = '%Y-%m-%d'
@@ -130,6 +131,27 @@ class Url(Handler):
     def get(cls, event):
         return [event.get(prop, '') for prop in URL_PROPS.values()]
 
+    @classmethod
+    def patch(cls, cal, event, fieldname, value):
+        if fieldname == 'html_link':
+            raise GcalcliError('Field {} is read-only. '
+                               'It is not possible to verify that the value '
+                               'has not changed. '
+                               'Remove it from the input.'.format(fieldname))
+
+        prop = URL_PROPS[fieldname]
+
+        # Fail if the current value doesn't
+        # match the desired patch. This requires an additional API query for
+        # each row, so best to avoid attempting to update these fields.
+
+        curr_value = event.get(prop, '')
+
+        if curr_value != value:
+            raise GcalcliError('Field {} is read-only. '
+                               'Current value "{}" does not match update value'
+                               ' "{}"'.format(fieldname, curr_value, value))
+
 
 class Conference(Handler):
     """Handler for videoconference and teleconference details."""
@@ -202,8 +224,6 @@ class ID(SimpleSingleFieldHandler):
     fieldnames = ['id']
 
 
-HANDLERS_DEFAULT = {'time', 'title'}
-
 HANDLERS = OrderedDict([('id', ID),
                         ('time', Time),
                         ('url', Url),
@@ -213,13 +233,20 @@ HANDLERS = OrderedDict([('id', ID),
                         ('description', Description),
                         ('calendar', Calendar),
                         ('email', Email)])
+HANDLERS_READONLY = {Url}
 
 FIELD_HANDLERS = dict(chain.from_iterable(
     (((fieldname, handler)
       for fieldname in handler.fieldnames)
      for handler in HANDLERS.values())))
 
+FIELDNAMES_READONLY = frozenset(fieldname
+                                for fieldname, handler
+                                in FIELD_HANDLERS.items()
+                                if handler in HANDLERS_READONLY)
+
 _DETAILS_WITHOUT_HANDLERS = ['length', 'reminders', 'attendees',
                              'attachments', 'end']
 
 DETAILS = list(HANDLERS.keys()) + _DETAILS_WITHOUT_HANDLERS
+DETAILS_DEFAULT = {'time', 'title'}

@@ -17,8 +17,8 @@ except Exception:
 
 from gcalcli import __program__, __version__
 from gcalcli import utils
-from gcalcli.details import (_valid_title, FIELD_HANDLERS, HANDLERS,
-                             HANDLERS_DEFAULT)
+from gcalcli.details import (_valid_title, DETAILS_DEFAULT, FIELD_HANDLERS,
+                             FIELDNAMES_READONLY, HANDLERS)
 from gcalcli.utils import days_since_epoch, is_all_day
 from gcalcli.validators import (
     get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
@@ -582,7 +582,7 @@ class GoogleCalendarInterface:
 
     def _tsv(self, start_datetime, event_list):
         keys = set(self.details.keys())
-        keys.update(HANDLERS_DEFAULT)
+        keys.update(DETAILS_DEFAULT)
 
         handlers = [handler
                     for key, handler in HANDLERS.items()
@@ -1214,18 +1214,41 @@ class GoogleCalendarInterface:
         cal_id = cal['id']
 
         for row in reader:
-            event = {}
+            curr_event = None
+            mod_event = {}
 
             for fieldname, value in row.items():
-                FIELD_HANDLERS[fieldname].patch(cal, event, fieldname, value)
+                handler = FIELD_HANDLERS[fieldname]
+
+                if fieldname in FIELDNAMES_READONLY:
+                    # Instead of changing mod_event, the Handler.patch() for
+                    # a readonly field checks against the current values.
+
+                    if curr_event is None:
+                        # XXX: id must be an earlier column before anything
+                        # readonly. Otherwise, there will be no eventId for
+                        # get()
+
+                        curr_event = self._retry_with_backoff(
+                            self.get_cal_service()
+                                .events()
+                                .get(
+                                    calendarId=cal_id,
+                                    eventId=mod_event['id']
+                                )
+                        )
+
+                    handler.patch(cal, curr_event, fieldname, value)
+                else:
+                    handler.patch(cal, mod_event, fieldname, value)
 
             self._retry_with_backoff(
                 self.get_cal_service()
                     .events()
                     .patch(
                         calendarId=cal_id,
-                        eventId=event['id'],
-                        body=event
+                        eventId=mod_event['id'],
+                        body=mod_event
                     )
             )
 
