@@ -41,6 +41,7 @@ from collections import namedtuple
 
 EventTitle = namedtuple('EventTitle', ['title', 'color'])
 
+CONFERENCE_DATA_VERSION = 1
 
 class GoogleCalendarInterface:
 
@@ -1248,6 +1249,7 @@ class GoogleCalendarInterface:
                     .patch(
                         calendarId=cal_id,
                         eventId=mod_event['id'],
+                        conferenceDataVersion=CONFERENCE_DATA_VERSION,
                         body=mod_event
                     )
             )

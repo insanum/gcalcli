@@ -16,6 +16,8 @@ TODAY = datetime.now().date()
 
 URL_PROPS = OrderedDict([('html_link', 'htmlLink'),
                          ('hangout_link', 'hangoutLink')])
+ENTRY_POINT_PROPS = OrderedDict([('conference_entry_point_type', 'entryPointType'),
+                                 ('conference_uri', 'uri')])
 
 
 def _valid_title(event):
@@ -156,7 +158,7 @@ class Url(Handler):
 class Conference(Handler):
     """Handler for videoconference and teleconference details."""
 
-    fieldnames = ['conference_entry_point_type', 'conference_uri']
+    fieldnames = list(ENTRY_POINT_PROPS.keys())
 
     @classmethod
     def get(cls, event):
@@ -169,7 +171,23 @@ class Conference(Handler):
         # https://github.com/insanum/gcalcli/issues/533
         entry_point = data['entryPoints'][0]
 
-        return [entry_point['entryPointType'], entry_point['uri']]
+        return [entry_point.get(prop, '')
+                for prop in ENTRY_POINT_PROPS.values()]
+
+    @classmethod
+    def patch(cls, cal, event, fieldname, value):
+        if not value:
+            return
+
+        prop = ENTRY_POINT_PROPS[fieldname]
+
+        data = event.setdefault('conferenceData', {})
+        entry_points = data.setdefault('entryPoints', [])
+        if not entry_points:
+            entry_points.append({})
+
+        entry_point = entry_points[0]
+        entry_point[prop] = value
 
 
 class Title(SingleFieldHandler):
