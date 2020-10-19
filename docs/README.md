@@ -40,6 +40,12 @@ Check your OS distribution for packages.
 apt-get install gcalcli
 ```
 
+### Install using [Homebrew](https://brew.sh/)
+
+```sh
+brew install gcalcli
+```
+
 ### Install using [Nix](https://nixos.org/nix/)
 
 ```sh
