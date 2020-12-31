@@ -16,9 +16,9 @@ except Exception:
     import pickle
 
 from gcalcli import __program__, __version__
-from gcalcli import utils
-from gcalcli.details import (_valid_title, DETAILS_DEFAULT, FIELD_HANDLERS,
-                             FIELDNAMES_READONLY, HANDLERS)
+from gcalcli import actions, utils
+from gcalcli.details import (
+    _valid_title, ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS)
 from gcalcli.utils import days_since_epoch, is_all_day
 from gcalcli.validators import (
     get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
@@ -41,7 +41,6 @@ from collections import namedtuple
 
 EventTitle = namedtuple('EventTitle', ['title', 'color'])
 
-CONFERENCE_DATA_VERSION = 1
 
 class GoogleCalendarInterface:
 
@@ -1212,47 +1211,10 @@ class GoogleCalendarInterface:
             raise GcalcliError('Must specify a single calendar.')
 
         cal = self.cals[0]
-        cal_id = cal['id']
 
         for row in reader:
-            curr_event = None
-            mod_event = {}
-
-            for fieldname, value in row.items():
-                handler = FIELD_HANDLERS[fieldname]
-
-                if fieldname in FIELDNAMES_READONLY:
-                    # Instead of changing mod_event, the Handler.patch() for
-                    # a readonly field checks against the current values.
-
-                    if curr_event is None:
-                        # XXX: id must be an earlier column before anything
-                        # readonly. Otherwise, there will be no eventId for
-                        # get()
-
-                        curr_event = self._retry_with_backoff(
-                            self.get_cal_service()
-                                .events()
-                                .get(
-                                    calendarId=cal_id,
-                                    eventId=mod_event['id']
-                                )
-                        )
-
-                    handler.patch(cal, curr_event, fieldname, value)
-                else:
-                    handler.patch(cal, mod_event, fieldname, value)
-
-            self._retry_with_backoff(
-                self.get_cal_service()
-                    .events()
-                    .patch(
-                        calendarId=cal_id,
-                        eventId=mod_event['id'],
-                        conferenceDataVersion=CONFERENCE_DATA_VERSION,
-                        body=mod_event
-                    )
-            )
+            action = row.get("action", ACTION_DEFAULT)
+            getattr(actions, action)(row, cal, self)
 
     def CalQuery(self, cmd, start_text='', count=1):
         if not start_text:
