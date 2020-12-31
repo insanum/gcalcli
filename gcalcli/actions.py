@@ -47,3 +47,7 @@ def patch(row, cal, interface):
             body=mod_event
         )
     )
+
+
+def ignore(*args, **kwargs):
+    """Do nothing."""
