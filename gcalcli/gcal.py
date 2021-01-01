@@ -819,16 +819,18 @@ class GoogleCalendarInterface:
                 )
             self.printer.msg(xstr, 'default')
 
+    def delete(self, cal_id, event_id):
+        self._retry_with_backoff(
+            self.get_events()
+                .delete(cal_id, event_id)
+        )
+
     def _delete_event(self, event):
+        cal_id = event['gcalcli_cal']['id']
+        event_id = event['id']
 
         if self.expert:
-            self._retry_with_backoff(
-                self.get_events()
-                    .delete(
-                        calendarId=event['gcalcli_cal']['id'],
-                        eventId=event['id']
-                    )
-            )
+            self.delete(cal_id, event_id)
             self.printer.msg('Deleted!\n', 'red')
             return
 
@@ -839,13 +841,7 @@ class GoogleCalendarInterface:
             return
 
         elif val.lower() == 'y':
-            self._retry_with_backoff(
-                self.get_events()
-                    .delete(
-                        calendarId=event['gcalcli_cal']['id'],
-                        eventId=event['id']
-                    )
-            )
+            self.delete(cal_id, event_id)
             self.printer.msg('Deleted!\n', 'red')
 
         elif val.lower() == 'q':
