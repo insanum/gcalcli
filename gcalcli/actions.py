@@ -1,9 +1,16 @@
 """Handlers for specific agendaupdate actions."""
 
 from gcalcli.details import FIELD_HANDLERS, FIELDNAMES_READONLY
+from gcalcli.exceptions import ReadonlyError
 
 
 CONFERENCE_DATA_VERSION = 1
+
+
+def _iter_field_handlers(row):
+    for fieldname, value in row.items():
+        handler = FIELD_HANDLERS[fieldname]
+        yield fieldname, handler, value
 
 
 def patch(row, cal, interface):
@@ -12,9 +19,7 @@ def patch(row, cal, interface):
     mod_event = {}
     cal_id = cal['id']
 
-    for fieldname, value in row.items():
-        handler = FIELD_HANDLERS[fieldname]
-
+    for fieldname, handler, value in _iter_field_handlers(row):
         if fieldname in FIELDNAMES_READONLY:
             # Instead of changing mod_event, the Handler.patch() for
             # a readonly field checks against the current values.
