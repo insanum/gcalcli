@@ -47,8 +47,16 @@ def patch(row, cal, interface):
     )
 
 
+def delete(row, cal, interface):
+    """Delete event."""
+    cal_id = cal['id']
+    event_id = row['id']
+
+    interface.delete(cal_id, event_id)
+
+
 def ignore(*args, **kwargs):
     """Do nothing."""
 
 
-ACTIONS = {"patch", "ignore"}
+ACTIONS = {"patch", "delete", "ignore"}

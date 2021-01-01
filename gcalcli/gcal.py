@@ -822,7 +822,8 @@ class GoogleCalendarInterface:
     def delete(self, cal_id, event_id):
         self._retry_with_backoff(
             self.get_events()
-                .delete(cal_id, event_id)
+                .delete(calendarId=cal_id,
+                        eventId=event_id)
         )
 
     def _delete_event(self, event):
