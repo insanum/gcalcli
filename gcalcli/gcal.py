@@ -17,6 +17,7 @@ except Exception:
 
 from gcalcli import __program__, __version__
 from gcalcli import actions, utils
+from gcalcli.actions import ACTIONS
 from gcalcli.details import (
     _valid_title, ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS)
 from gcalcli.utils import days_since_epoch, is_all_day
@@ -1212,6 +1213,9 @@ class GoogleCalendarInterface:
 
         for row in reader:
             action = row.get("action", ACTION_DEFAULT)
+            if action not in ACTIONS:
+                raise GcalcliError('Action "{}" not supported.'.format(action))
+
             getattr(actions, action)(row, cal, self)
 
     def CalQuery(self, cmd, start_text='', count=1):

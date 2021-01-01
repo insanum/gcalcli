@@ -49,3 +49,6 @@ def patch(row, cal, interface):
 
 def ignore(*args, **kwargs):
     """Do nothing."""
+
+
+ACTIONS = {"patch", "ignore"}
