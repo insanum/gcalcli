@@ -163,6 +163,9 @@ class GoogleCalendarInterface:
 
         return self.cal_service
 
+    def get_events(self):
+        return self.get_cal_service().events()
+
     def _get_cached(self):
         if self.options['config_folder']:
             cache_file = os.path.expanduser(
@@ -819,8 +822,7 @@ class GoogleCalendarInterface:
 
         if self.expert:
             self._retry_with_backoff(
-                self.get_cal_service()
-                    .events()
+                self.get_events()
                     .delete(
                         calendarId=event['gcalcli_cal']['id'],
                         eventId=event['id']
@@ -837,8 +839,7 @@ class GoogleCalendarInterface:
 
         elif val.lower() == 'y':
             self._retry_with_backoff(
-                self.get_cal_service()
-                    .events()
+                self.get_events()
                     .delete(
                         calendarId=event['gcalcli_cal']['id'],
                         eventId=event['id']
@@ -903,8 +904,7 @@ class GoogleCalendarInterface:
                         mod_event[k] = event[k]
 
                 self._retry_with_backoff(
-                    self.get_cal_service()
-                        .events()
+                    self.get_events()
                         .patch(
                             calendarId=event['gcalcli_cal']['id'],
                             eventId=event['id'],
@@ -1077,8 +1077,7 @@ class GoogleCalendarInterface:
             pageToken = events.get('nextPageToken')
             if pageToken:
                 events = self._retry_with_backoff(
-                             self.get_cal_service()
-                                 .events()
+                             self.get_events()
                                  .list(
                                      calendarId=cal['id'],
                                      pageToken=pageToken
@@ -1094,8 +1093,7 @@ class GoogleCalendarInterface:
         event_list = []
         for cal in self.cals:
             events = self._retry_with_backoff(
-                         self.get_cal_service()
-                             .events()
+                         self.get_events()
                              .list(
                                  calendarId=cal['id'],
                                  timeMin=start.isoformat() if start else None,
@@ -1271,8 +1269,7 @@ class GoogleCalendarInterface:
             raise GcalcliError('You must only specify a single calendar\n')
 
         new_event = self._retry_with_backoff(
-            self.get_cal_service()
-                .events()
+            self.get_events()
                 .quickAdd(
                     calendarId=self.cals[0]['id'],
                     text=event_text
@@ -1289,8 +1286,7 @@ class GoogleCalendarInterface:
                                                       'method': m})
 
             new_event = self._retry_with_backoff(
-                            self.get_cal_service()
-                                .events()
+                            self.get_events()
                                 .patch(
                                     calendarId=self.cals[0]['id'],
                                     eventId=new_event['id'],
@@ -1349,7 +1345,7 @@ class GoogleCalendarInterface:
         event['attendees'] = list(map(lambda w: {'email': w}, who))
 
         event = self._add_reminders(event, reminders)
-        events = self.get_cal_service().events()
+        events = self.get_events()
         request = events.insert(calendarId=self.cals[0]['id'], body=event)
         new_event = self._retry_with_backoff(request)
 
@@ -1581,8 +1577,7 @@ class GoogleCalendarInterface:
 
                 if not verbose:
                     new_event = self._retry_with_backoff(
-                                    self.get_cal_service()
-                                        .events()
+                                    self.get_events()
                                         .insert(
                                             calendarId=self.cals[0]['id'],
                                             body=event
@@ -1600,8 +1595,7 @@ class GoogleCalendarInterface:
                     continue
                 if val.lower() == 'i':
                     new_event = self._retry_with_backoff(
-                                    self.get_cal_service()
-                                        .events()
+                                    self.get_events()
                                         .insert(
                                             calendarId=self.cals[0]['id'],
                                             body=event

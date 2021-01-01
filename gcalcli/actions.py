@@ -25,8 +25,7 @@ def patch(row, cal, interface):
                 # get()
 
                 curr_event = interface._retry_with_backoff(
-                    interface.get_cal_service()
-                    .events()
+                    interface.get_events()
                     .get(
                         calendarId=cal_id,
                         eventId=mod_event['id']
@@ -38,8 +37,7 @@ def patch(row, cal, interface):
             handler.patch(cal, mod_event, fieldname, value)
 
     interface._retry_with_backoff(
-        interface.get_cal_service()
-        .events()
+        interface.get_events()
         .patch(
             calendarId=cal_id,
             eventId=mod_event['id'],
