@@ -15,6 +15,10 @@ def _iter_field_handlers(row):
 
 def patch(row, cal, interface):
     """Patch event with new data."""
+    event_id = row['id']
+    if not event_id:
+        return insert(row, cal, interface)
+
     curr_event = None
     mod_event = {}
     cal_id = cal['id']
@@ -25,15 +29,11 @@ def patch(row, cal, interface):
             # a readonly field checks against the current values.
 
             if curr_event is None:
-                # XXX: id must be an earlier column before anything
-                # readonly. Otherwise, there will be no eventId for
-                # get()
-
                 curr_event = interface._retry_with_backoff(
                     interface.get_events()
                     .get(
                         calendarId=cal_id,
-                        eventId=mod_event['id']
+                        eventId=event_id
                     )
                 )
 
@@ -45,7 +45,7 @@ def patch(row, cal, interface):
         interface.get_events()
         .patch(
             calendarId=cal_id,
-            eventId=mod_event['id'],
+            eventId=event_id,
             conferenceDataVersion=CONFERENCE_DATA_VERSION,
             body=mod_event
         )
