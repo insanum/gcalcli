@@ -117,6 +117,8 @@ class GoogleCalendarInterface:
                         error.get('errors')[0].get('reason') \
                         in ['rateLimitExceeded', 'userRateLimitExceeded']:
                     time.sleep((2 ** n) + random.random())
+                elif error.get('code') == 409:
+                    return None
                 else:
                     raise
 
@@ -1560,6 +1562,12 @@ class GoogleCalendarInterface:
                     event['attendees'].append({'displayName': attendee.name,
                                                'email': email})
 
+            if hasattr(ve, 'uid'):
+                uid = ve.uid.value.strip()
+                if verbose:
+                    print('UID :\n%s' % uid)
+                event['iCalUID'] = uid
+
             return event
 
         try:
@@ -1609,10 +1617,11 @@ class GoogleCalendarInterface:
                                             body=event
                                         )
                                 )
-                    hlink = new_event.get('htmlLink')
-                    self.printer.msg(
-                            'New event added: %s\n' % hlink, 'green'
-                    )
+                    if new_event is not None:
+                        hlink = new_event.get('htmlLink')
+                        self.printer.msg('New event added: %s\n' % hlink, 'green')
+                    else:
+                        self.printer.msg("event with UID %s already in calendar\n" % event['iCalUID'], 'green')
                     continue
 
                 self.printer.msg('\n[S]kip [i]mport [q]uit: ', 'magenta')
@@ -1628,8 +1637,11 @@ class GoogleCalendarInterface:
                                             body=event
                                         )
                                 )
-                    hlink = new_event.get('htmlLink')
-                    self.printer.msg('New event added: %s\n' % hlink, 'green')
+                    if new_event is not None:
+                        hlink = new_event.get('htmlLink')
+                        self.printer.msg('New event added: %s\n' % hlink, 'green')
+                    else:
+                        self.printer.msg("event with UID %s already in calendar\n" % event['iCalUID'], 'green')
                 elif val.lower() == 'q':
                     sys.exit(0)
                 else:
