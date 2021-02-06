@@ -48,6 +48,7 @@ class GoogleCalendarInterface:
     max_retries = 5
     auth_http = None
     cal_service = None
+    tasks_service = None
 
     ACCESS_OWNER = 'owner'
     ACCESS_WRITER = 'writer'
@@ -140,7 +141,7 @@ class GoogleCalendarInterface:
                     OAuth2WebServerFlow(
                         client_id=self.options['client_id'],
                         client_secret=self.options['client_secret'],
-                        scope=['https://www.googleapis.com/auth/calendar'],
+                        scope=['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/tasks'],
                         user_agent=__program__ + '/' + __version__
                     ),
                     storage,
@@ -157,6 +158,10 @@ class GoogleCalendarInterface:
                                      version='v3',
                                      http=self._google_auth())
 
+        if not self.tasks_service:
+            self.tasks_service = build(
+                serviceName="tasks", version="v1", http=self._google_auth()
+            )
         return self.cal_service
 
     def _get_cached(self):
