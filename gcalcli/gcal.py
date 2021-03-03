@@ -42,6 +42,7 @@ from collections import namedtuple
 
 EventTitle = namedtuple('EventTitle', ['title', 'color'])
 
+CONFERENCE_DATA_VERSION = 1
 
 class GoogleCalendarInterface:
 
