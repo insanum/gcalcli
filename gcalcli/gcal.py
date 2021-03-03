@@ -153,14 +153,15 @@ class GoogleCalendarInterface:
         return self.auth_http
 
     def get_cal_service(self):
+        _auth = self._google_auth()
         if not self.cal_service:
             self.cal_service = build(serviceName='calendar',
                                      version='v3',
-                                     http=self._google_auth())
+                                     http=_auth)
 
         if not self.tasks_service:
             self.tasks_service = build(
-                serviceName="tasks", version="v1", http=self._google_auth()
+                serviceName="tasks", version="v1", http=_auth
             )
         return self.cal_service
 
