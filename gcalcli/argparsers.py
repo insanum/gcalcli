@@ -29,7 +29,11 @@ PROGRAM_OPTIONS = {
                           'help': 'Whether to include ~/.gcalclirc when ' +
                                   'using configFolder'},
         '--calendar': {'default': [], 'type': str, 'action': 'append',
-                       'help': 'Which calendars to use'},
+                       'help': 'Which calendars to use ' + 
+                               'format is --calendar "Calendar Name#optionalcolor" ' +
+                               'the #optionalcolor suffix is option chosen may correspond ' +
+                               'to the name of a valid ANSII color ' +
+                               'this option may be called multiple times to display additional calendars'},
         '--default-calendar': {'default': [], 'type': str, 'action': 'append',
                                'dest': 'defaultCalendar',
                                'help': 'Optional default calendar to use if ' +
