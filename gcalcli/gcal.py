@@ -42,6 +42,7 @@ class GoogleCalendarInterface:
 
     cache = {}
     all_cals = []
+    all_tasklists = []
     now = datetime.now(tzlocal())
     agenda_length = 5
     conflicts_lookahead_days = 30
@@ -59,6 +60,7 @@ class GoogleCalendarInterface:
 
     def __init__(self, cal_names=[], printer=Printer(), **options):
         self.cals = []
+        self.tasklists = []
         self.printer = printer
         self.options = options
 
@@ -1064,6 +1066,39 @@ class GoogleCalendarInterface:
             if work:
                 work(event)
 
+        return selected
+
+    def _iterate_tasks(self, start_datetime, task_list, year_date=False, work=None):
+        selected = 0
+
+        if len(task_list) == 0:
+            return selected
+
+        # 10 chars for day and length must match 'indent' in _PrintTask 
+        day_format = '\n%Y-%m-%d' if year_date else '\n%a %b %d'
+        day = ''
+        from rich import inspect
+        for task in task_list:
+            if not task.get('due'):
+                continue
+
+            # TODO: implement this flag
+            """
+            if self.options['show_completed'] and 'completed' in task.keys():
+                continue
+            """
+
+            selected += 1
+            tmp_day_str = task["due"].strftime(day_format)
+            prefix = None
+            if year_date or tmp_day_str != day:
+                day = prefix = tmp_day_str
+            
+            self._PrintTask(task, prefix)
+
+            if work:
+                work(task)
+        
         return selected
 
     def _GetAllEvents(self, cal, events, end):
