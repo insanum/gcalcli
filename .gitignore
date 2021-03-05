@@ -15,3 +15,5 @@ gcalcli.egg-info
 
 pyproject.toml
 poetry.lock
+
+.vscode/.ropeproject/
