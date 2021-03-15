@@ -46,6 +46,13 @@ apt-get install gcalcli
 nix-env -i gcalcli
 ```
 
+### Install using HomeBrew (MacOS
+
+```sh
+brew install gcalcli
+```
+
+
 ### Install from PyPI
 
 ```sh
