@@ -46,7 +46,7 @@ apt-get install gcalcli
 nix-env -i gcalcli
 ```
 
-### Install using HomeBrew (MacOS
+### Install using [Homebrew](https://brew.sh/) (MacOS)
 
 ```sh
 brew install gcalcli
