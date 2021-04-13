@@ -12,3 +12,8 @@ gcalcli.egg-info
 .tox
 
 *.pyc
+
+pyproject.toml
+poetry.lock
+
+.vscode/.ropeproject/
