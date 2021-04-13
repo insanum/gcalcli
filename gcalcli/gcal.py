@@ -99,6 +99,10 @@ class GoogleCalendarInterface:
             # Add relevant matches to the list of calendars we want to
             # operate against
             self.cals += matches
+    
+    def _select_tasklists(self, selected_names):
+        if self.tasklists:
+            raise GcalcliError('this object should not already have tasklists')
 
     @staticmethod
     def _localize_datetime(dt):
@@ -593,8 +597,50 @@ class GoogleCalendarInterface:
                 self.printer.msg(week_divider + '\n', color_border)
             else:
                 self.printer.msg(week_bottom + '\n', color_border)
+        
 
-    def _tsv(self, start_datetime, event_list):
+    def _tsv(self, start_datetime, event_list=None, tasks_list=None):
+        if event_list:
+            self._tsv_events(start_datetime, event_list)
+        if tasks_list:
+            self._tsv_tasks(start_datetime, tasks_list)
+
+    def _tsv_tasks(self, start_datetime, tasks_list):
+        for task in tasks_list:
+
+            output = '%s\t%s\t%s\t%s' % (
+                parse(task['due']).strftime("%Y-%m-%d"),
+                parse(task['due']).strftime("%H:%M"),
+                parse(task['due']).strftime("%Y-%m-%d"),
+                parse(task['due']).strftime("%H:%M")
+            ) 
+
+            if self.details.get('url'):
+                pass
+
+            if self.details.get('conference'):
+                output += '\t' # not relevant to tasks
+
+            output += '\t%s' % task['title']
+
+            if self.details.get('location'):
+                output += '\t' # not relevant to tasks
+
+            if self.details.get('calendar'):
+                output += '\t%s' % (
+                    task['in_list']
+                )
+
+            if self.details.get('email'):
+                output += '\t' # no support for importing tasks from someone else, so not revelant.
+
+            output = '%s\n' % output.replace('\n', '''\\n''')
+            sys.stdout.write(output)
+
+
+
+    
+    def _tsv_events(self, start_datetime, event_list):
         for event in event_list:
             if self.options['ignore_started'] and (event['s'] < self.now):
                 continue
@@ -856,6 +902,76 @@ class GoogleCalendarInterface:
                 )
             self.printer.msg(xstr, 'default')
 
+    def _PrintTask(self, task, prefix):
+        indent = 10 * ' '
+        details_indent = 19 * ' '
+
+        if not prefix:
+            prefix = indent
+        self.printer.msg(prefix, self.options['color_date'])
+        happening_now = self.now.date == task['due']
+        all_day = True
+        # TODO: Implement task color flag
+        # event_color = self.options["tasks_color"]
+        
+        time_width = '%-5s' if self.options['military'] else '%-7s'
+        fmt = '  ' + time_width + '  %s\n'
+        self.printer.msg(
+            fmt % ('', task.get('title', '(No title)')),
+            # event_color
+        )
+
+        if task.get('links'):
+            xstr = ''
+            for i, link in enumerate(task['links']):
+                xstr += '%s  Link #%d: %s\n' % (details_indent, i+1, link['link'])
+
+        if task.get('notes') and task['description'].strip():
+            descr_indent = details_indent + '  '
+            box = True
+            if box:
+                top_marker = (
+                        descr_indent +
+                        self.printer.art['ulc'] +
+                        (self.printer.art['hrz'] *
+                            ((self.details.get('width') - len(descr_indent))
+                             - 2
+                             )
+                         ) +
+                        self.printer.art['urc']
+                )
+                bot_marker = (
+                        descr_indent +
+                        self.printer.art['llc'] +
+                        (self.printer.art['hrz'] *
+                            ((self.details.get('width') - len(descr_indent))
+                             - 2
+                             )
+                         ) +
+                        self.printer.art['lrc']
+                )
+                xstr = '%s  Description:\n%s\n%s\n%s\n' % (
+                    details_indent,
+                    top_marker,
+                    _format_descr(task['notes'].strip(),
+                                  descr_indent, box),
+                    bot_marker
+                )
+            else:
+                marker = descr_indent + '-' * \
+                    (self.details.get('width') - len(descr_indent))
+                xstr = '%s  Description:\n%s\n%s\n%s\n' % (
+                    details_indent,
+                    marker,
+                    _format_descr(task['notes'].strip(),
+                                  descr_indent, box),
+                    marker
+                )
+            self.printer.msg(xstr, 'default')
+
+
+
+
     def _delete_event(self, event):
 
         if self.expert:
@@ -1036,6 +1152,7 @@ class GoogleCalendarInterface:
                     event, event['s'].strftime('\n%Y-%m-%d')
             )
 
+
     def _iterate_events(self, start_datetime, event_list, year_date=False,
                         work=None):
 
@@ -1077,7 +1194,6 @@ class GoogleCalendarInterface:
         # 10 chars for day and length must match 'indent' in _PrintTask 
         day_format = '\n%Y-%m-%d' if year_date else '\n%a %b %d'
         day = ''
-        from rich import inspect
         for task in task_list:
             if not task.get('due'):
                 continue
@@ -1089,7 +1205,7 @@ class GoogleCalendarInterface:
             """
 
             selected += 1
-            tmp_day_str = task["due"].strftime(day_format)
+            tmp_day_str = parse(task["due"]).strftime(day_format)
             prefix = None
             if year_date or tmp_day_str != day:
                 day = prefix = tmp_day_str
@@ -1183,6 +1299,22 @@ class GoogleCalendarInterface:
         event_list.sort(key=lambda x: x['s'])
 
         return event_list
+    
+    def _search_for_tasks(self, start, end, search=None):
+        from rich import inspect, print
+        found = []
+        tasklists = self.tasks_service.tasklists().list().execute()["items"]
+        for tasklist in tasklists:
+            tasks_of_tasklist = self.tasks_service.tasks().list(
+                tasklist=tasklist["id"],
+                dueMin=start.isoformat() if start else None,
+                dueMax=end.isoformat() if end else None
+            ).execute()
+            if 'items' not in tasks_of_tasklist:
+                continue
+            found += tasks_of_tasklist['items']
+
+        return found
 
     def _DeclinedEvent(self, event):
         if 'attendees' in event:
@@ -1221,11 +1353,15 @@ class GoogleCalendarInterface:
     def _display_queried_events(self, start, end, search=None,
                                 year_date=False):
         event_list = self._search_for_events(start, end, search)
+        task_list = self._search_for_tasks(start, end, search)
 
         if self.options.get('tsv'):
-            return self._tsv(start, event_list)
+            return self._tsv(start, event_list, task_list)
         else:
-            return self._iterate_events(start, event_list, year_date=year_date)
+            return (
+                self._iterate_events(start, event_list, year_date=year_date),
+                self._iterate_tasks(start, task_list, year_date=year_date)
+            )
 
     def TextQuery(self, search_text='', start=None, end=None):
         if not search_text:
