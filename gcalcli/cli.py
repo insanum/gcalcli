@@ -151,6 +151,9 @@ def main():
         elif parsed_args.command == 'agenda':
             gcal.AgendaQuery(start=parsed_args.start, end=parsed_args.end)
 
+        elif parsed_args.command == 'agendaupdate':
+            gcal.AgendaUpdate(parsed_args.file)
+
         elif parsed_args.command == 'updates':
             gcal.UpdatesQuery(
                     last_updated_datetime=parsed_args.since,

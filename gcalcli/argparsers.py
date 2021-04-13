@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import argparse
 import gcalcli
 from gcalcli import utils
+from gcalcli.details import DETAILS
 from gcalcli.deprecations import parser_allow_deprecated, DeprecatedStoreTrue
 from gcalcli.printer import valid_color_name
 from oauth2client import tools
@@ -9,10 +10,7 @@ from shutil import get_terminal_size
 import copy as _copy
 import datetime
 import locale
-
-DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
-           'url', 'conference', 'attendees', 'email', 'attachments', 'end']
-
+import sys
 
 PROGRAM_OPTIONS = {
         '--client-id': {'default': gcalcli.__API_CLIENT_ID__,
@@ -307,6 +305,13 @@ def get_argument_parser():
             parents=[details_parser, output_parser, start_end_parser],
             help='get an agenda for a time period',
             description='Get an agenda for a time period.')
+
+    agendaupdate = sub.add_parser(
+            'agendaupdate',
+            help='update calendar from agenda TSV file',
+            description='Update calendar from agenda TSV file.')
+    agendaupdate.add_argument(
+        'file', type=argparse.FileType('r'), nargs='?', default=sys.stdin)
 
     sub.add_parser(
             'updates',
