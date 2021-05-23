@@ -1577,6 +1577,12 @@ class GoogleCalendarInterface:
                     event['attendees'].append({'displayName': attendee.name,
                                                'email': email})
 
+            if hasattr(ve, 'uid'):
+                uid = ve.uid.value.strip()
+                if verbose:
+                    print('UID..........%s' % uid)
+                event['iCalUID'] = uid
+
             return event
 
         try:
@@ -1631,13 +1637,15 @@ class GoogleCalendarInterface:
                         self.printer.err_msg('Error: invalid input\n')
                         sys.exit(1)
 
+                if 'iCalUID' in event:
+                    method = self.get_cal_service().events().import_
+                else:
+                    method = self.get_cal_service().events().insert
                 new_event = self._retry_with_backoff(
-                                self.get_cal_service()
-                                    .events()
-                                    .insert(
-                                        calendarId=self.cals[0]['id'],
-                                        body=event
-                                    )
+                                method(
+                                    calendarId=self.cals[0]['id'],
+                                    body=event
+                                )
                             )
                 hlink = new_event.get('htmlLink')
                 self.printer.msg(
