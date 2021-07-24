@@ -16,9 +16,10 @@ except Exception:
     import pickle
 
 from gcalcli import __program__, __version__
-from gcalcli import utils
-from gcalcli.details import (_valid_title, DETAILS_DEFAULT, FIELD_HANDLERS,
-                             FIELDNAMES_READONLY, HANDLERS)
+from gcalcli import actions, utils
+from gcalcli.actions import ACTIONS
+from gcalcli.details import (
+    _valid_title, ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS)
 from gcalcli.utils import days_since_epoch, is_all_day
 from gcalcli.validators import (
     get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
@@ -163,6 +164,9 @@ class GoogleCalendarInterface:
                                      http=self._google_auth())
 
         return self.cal_service
+
+    def get_events(self):
+        return self.get_cal_service().events()
 
     def _get_cached(self):
         if self.options['config_folder']:
@@ -816,17 +820,19 @@ class GoogleCalendarInterface:
                 )
             self.printer.msg(xstr, 'default')
 
+    def delete(self, cal_id, event_id):
+        self._retry_with_backoff(
+            self.get_events()
+                .delete(calendarId=cal_id,
+                        eventId=event_id)
+        )
+
     def _delete_event(self, event):
+        cal_id = event['gcalcli_cal']['id']
+        event_id = event['id']
 
         if self.expert:
-            self._retry_with_backoff(
-                self.get_cal_service()
-                    .events()
-                    .delete(
-                        calendarId=event['gcalcli_cal']['id'],
-                        eventId=event['id']
-                    )
-            )
+            self.delete(cal_id, event_id)
             self.printer.msg('Deleted!\n', 'red')
             return
 
@@ -837,14 +843,7 @@ class GoogleCalendarInterface:
             return
 
         elif val.lower() == 'y':
-            self._retry_with_backoff(
-                self.get_cal_service()
-                    .events()
-                    .delete(
-                        calendarId=event['gcalcli_cal']['id'],
-                        eventId=event['id']
-                    )
-            )
+            self.delete(cal_id, event_id)
             self.printer.msg('Deleted!\n', 'red')
 
         elif val.lower() == 'q':
@@ -904,8 +903,7 @@ class GoogleCalendarInterface:
                         mod_event[k] = event[k]
 
                 self._retry_with_backoff(
-                    self.get_cal_service()
-                        .events()
+                    self.get_events()
                         .patch(
                             calendarId=event['gcalcli_cal']['id'],
                             eventId=event['id'],
@@ -1078,8 +1076,7 @@ class GoogleCalendarInterface:
             pageToken = events.get('nextPageToken')
             if pageToken:
                 events = self._retry_with_backoff(
-                             self.get_cal_service()
-                                 .events()
+                             self.get_events()
                                  .list(
                                      calendarId=cal['id'],
                                      pageToken=pageToken
@@ -1095,8 +1092,7 @@ class GoogleCalendarInterface:
         event_list = []
         for cal in self.cals:
             events = self._retry_with_backoff(
-                         self.get_cal_service()
-                             .events()
+                         self.get_events()
                              .list(
                                  calendarId=cal['id'],
                                  timeMin=start.isoformat() if start else None,
@@ -1212,47 +1208,13 @@ class GoogleCalendarInterface:
             raise GcalcliError('Must specify a single calendar.')
 
         cal = self.cals[0]
-        cal_id = cal['id']
 
         for row in reader:
-            curr_event = None
-            mod_event = {}
+            action = row.get("action", ACTION_DEFAULT)
+            if action not in ACTIONS:
+                raise GcalcliError('Action "{}" not supported.'.format(action))
 
-            for fieldname, value in row.items():
-                handler = FIELD_HANDLERS[fieldname]
-
-                if fieldname in FIELDNAMES_READONLY:
-                    # Instead of changing mod_event, the Handler.patch() for
-                    # a readonly field checks against the current values.
-
-                    if curr_event is None:
-                        # XXX: id must be an earlier column before anything
-                        # readonly. Otherwise, there will be no eventId for
-                        # get()
-
-                        curr_event = self._retry_with_backoff(
-                            self.get_cal_service()
-                                .events()
-                                .get(
-                                    calendarId=cal_id,
-                                    eventId=mod_event['id']
-                                )
-                        )
-
-                    handler.patch(cal, curr_event, fieldname, value)
-                else:
-                    handler.patch(cal, mod_event, fieldname, value)
-
-            self._retry_with_backoff(
-                self.get_cal_service()
-                    .events()
-                    .patch(
-                        calendarId=cal_id,
-                        eventId=mod_event['id'],
-                        conferenceDataVersion=CONFERENCE_DATA_VERSION,
-                        body=mod_event
-                    )
-            )
+            getattr(actions, action)(row, cal, self)
 
     def CalQuery(self, cmd, start_text='', count=1):
         if not start_text:
@@ -1309,8 +1271,7 @@ class GoogleCalendarInterface:
             raise GcalcliError('You must only specify a single calendar\n')
 
         new_event = self._retry_with_backoff(
-            self.get_cal_service()
-                .events()
+            self.get_events()
                 .quickAdd(
                     calendarId=self.cals[0]['id'],
                     text=event_text
@@ -1327,8 +1288,7 @@ class GoogleCalendarInterface:
                                                       'method': m})
 
             new_event = self._retry_with_backoff(
-                            self.get_cal_service()
-                                .events()
+                            self.get_events()
                                 .patch(
                                     calendarId=self.cals[0]['id'],
                                     eventId=new_event['id'],
@@ -1387,7 +1347,7 @@ class GoogleCalendarInterface:
         event['attendees'] = list(map(lambda w: {'email': w}, who))
 
         event = self._add_reminders(event, reminders)
-        events = self.get_cal_service().events()
+        events = self.get_events()
         request = events.insert(calendarId=self.cals[0]['id'], body=event)
         new_event = self._retry_with_backoff(request)
 
@@ -1619,8 +1579,7 @@ class GoogleCalendarInterface:
 
                 if not verbose:
                     new_event = self._retry_with_backoff(
-                                    self.get_cal_service()
-                                        .events()
+                                    self.get_events()
                                         .insert(
                                             calendarId=self.cals[0]['id'],
                                             body=event
@@ -1638,8 +1597,7 @@ class GoogleCalendarInterface:
                     continue
                 if val.lower() == 'i':
                     new_event = self._retry_with_backoff(
-                                    self.get_cal_service()
-                                        .events()
+                                    self.get_events()
                                         .insert(
                                             calendarId=self.cals[0]['id'],
                                             body=event

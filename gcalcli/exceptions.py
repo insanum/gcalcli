@@ -21,6 +21,7 @@ class ReadonlyCheckError(ReadonlyError):
         message = self._fmt.format(curr_value, mod_value)
         super(ReadonlyCheckError, self).__init__(fieldname, message)
 
+
 def raise_one_cal_error(cals):
     raise GcalcliError(
         'You must only specify a single calendar\n'
