@@ -13,6 +13,7 @@ from gcalcli.utils import is_all_day
 FMT_DATE = '%Y-%m-%d'
 FMT_TIME = '%H:%M'
 TODAY = datetime.now().date()
+ACTION_DEFAULT = "patch"
 
 URL_PROPS = OrderedDict([('html_link', 'htmlLink'),
                          ('hangout_link', 'hangoutLink')])
@@ -248,6 +249,16 @@ class ID(SimpleSingleFieldHandler):
     fieldnames = ['id']
 
 
+class Action(SimpleSingleFieldHandler):
+    """Handler specifying event processing during an update."""
+
+    fieldnames = ['action']
+
+    @classmethod
+    def _get(cls, event):
+        return ACTION_DEFAULT
+
+
 HANDLERS = OrderedDict([('id', ID),
                         ('time', Time),
                         ('url', Url),
@@ -256,7 +267,8 @@ HANDLERS = OrderedDict([('id', ID),
                         ('location', Location),
                         ('description', Description),
                         ('calendar', Calendar),
-                        ('email', Email)])
+                        ('email', Email),
+                        ('action', Action)])
 HANDLERS_READONLY = {Url, Calendar}
 
 FIELD_HANDLERS = dict(chain.from_iterable(
