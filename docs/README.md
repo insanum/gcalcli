@@ -138,12 +138,16 @@ If desired, you can use your own Calendar API instead of the default API values.
 *NOTE*: these steps are optional!
 
 * Go to the [Google developer console](https://console.developers.google.com/)
-* Make a new project for gcalcli
+* Make a new project for gcalcli 
+  ([here](https://console.cloud.google.com/projectcreate))
 * On the sidebar under APIs & Auth, click APIs
-* Enable the Calendar API
-* On the sidebar click Credentials
+* Enable the Calendar API (click "Enable" on 
+  [this](https://console.cloud.google.com/marketplace/product/google/calendar-json.googleapis.com) page)
+* On the sidebar click Credentials 
+  ([link](https://console.cloud.google.com/projectselector2/apis/credentials))
 * Create a new Client ID. Set the type to Installed Application and the subtype
-  to Other. You will be asked to fill in some consent form information, but what
+  to Other (other users have had success in setting the Application Type to 'Desktop').
+  You will be asked to fill in some consent form information, but what
   you put here isn't important. It's just what will show up when gcalcli opens
   up the OAuth website. Anything optional can safely be left blank.
 * Go back to the credentials page and grab your ID and Secret.
