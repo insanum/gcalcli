@@ -1,6 +1,5 @@
 gcalcli
 =======
-[![Build Status](https://travis-ci.org/insanum/gcalcli.svg?branch=master)](https://travis-ci.org/insanum/gcalcli)
 
 #### Google Calendar Command Line Interface
 
