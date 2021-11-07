@@ -1,6 +1,8 @@
 gcalcli
 =======
 
+[![main](https://github.com/insanum/gcalcli/actions/workflows/main.yml/badge.svg)](https://github.com/insanum/gcalcli/actions/workflows/main.yml)
+
 #### Google Calendar Command Line Interface
 
 gcalcli is a Python application that allows you to access your Google
