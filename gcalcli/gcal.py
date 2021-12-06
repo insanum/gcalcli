@@ -1238,7 +1238,7 @@ class GoogleCalendarInterface:
                         e = day + dayend
                         if s > day + dayend:
                             s = e
-                    if e > maxday and e > s and e - s > mintime:
+                    if e > maxday and e > s and e - s >= mintime:
                         self.printer.msg(f"        {s.strftime('%H:%M')} to {e.strftime('%H:%M')}\n")
                     maxday = e
 
