@@ -336,8 +336,21 @@ def get_argument_parser():
 
     free = sub.add_parser(
             'free', parents=[details_parser, output_parser, start_end_parser],
-            help='get free',
+            help='get free time slots for a time period',
             description='Get free timeslots in week.')
+    free.add_argument('--mintime', type=str, default='00:30', nargs='?',
+                      help=('only list available blocks longer than this '
+                            'in minutes or form hh:mm'))
+    free.add_argument('--daystart', type=str, default='00:01', nargs='?',
+                      help=('only list time blocks after this time (hh:mm). '
+                            'If --timezone is set, then this time is in that '
+                            'timezone.'))
+    free.add_argument('--dayend', type=str, default='23:59', nargs='?',
+                      help=('only list time blocks before this time (hh:mm). '
+                            'If --timezone is set, then dayend is in that '
+                            'timezone.'))
+    free.add_argument('--timezone', type=str, default=None, nargs='?',
+                      help=('timezone to output free periods in.'))
 
     sub.add_parser(
             'calm', parents=[details_parser, output_parser, cal_query_parser],

@@ -30,8 +30,8 @@ from gcalcli.printer import Printer
 from gcalcli.conflicts import ShowConflicts
 
 from dateutil.relativedelta import relativedelta
-from datetime import datetime, timedelta, date
-from dateutil.tz import tzlocal
+from datetime import datetime, timedelta, date, tzinfo
+from dateutil.tz import tzlocal, gettz
 from dateutil.parser import parse
 from apiclient.discovery import build
 from apiclient.errors import HttpError
@@ -72,7 +72,7 @@ class GoogleCalendarInterface:
         # stored as detail, but provided as option: TODO: fix that
         self.details['width'] = options.get('width', 80)
         self._get_cached()
-
+        print('cals', cal_names)
         self._select_cals(cal_names)
 
     def _select_cals(self, selected_names):
@@ -1141,51 +1141,105 @@ class GoogleCalendarInterface:
                     self._calendar_color(cal)
             )
 
-    def _display_free(self, start, end, search=None,
+    def _display_free(self, start, end, mintime, daystart, dayend, timezone, search=None,
                                 year_date=False):
+        _debug = False
+        if timezone is None:
+            tz = start.tzinfo
+        else:
+            tz = gettz(timezone)
+        start = start.astimezone(tz)
+        end = end.astimezone(tz)
+        if _debug:
+            print(start, end)
+            print(tz)
+        # start and end are local, unless we specify the time zone
+        # all times are assumed the timezone set by timezone...
         event_list = self._search_for_events(start, end, search)
+        # should be hh:mm or int number of minutes:
+        if len(mintime) > 2 and ':' in mintime:
+            mintime = timedelta(hours=int(mintime[:2]), minutes=int(mintime[3:]))
+        else:
+            mintime = timedelta(minutes=int(mintime))
+        # should be hh:mm
+        daystart = timedelta(hours=int(daystart.split(':')[0]),
+                             minutes=int(daystart.split(':')[1]))
+        dayend = timedelta(hours=int(dayend.split(':')[0]),
+                             minutes=int(dayend.split(':')[1]))
+        ends = [start]  # end of busy blocks
+        starts = []
 
-        day = start.replace(hour=0, minute=0, second=0, microsecond=0)
-        dayst = start.replace(hour=9, minute=0, second=0, microsecond=0)
-        nextst = dayst
-        dayend = nextst.replace(hour=17)
-        prefix = dayst.strftime('%a %b %d')
-
-        self.printer.msg(f'\nAvailability {dayst.strftime("%b %d")} - {end.strftime("%b %d")} \n', 'yellow')
-        self.printer.msg('---------------------------- \n\n', 'yellow')
         for event in event_list:
-            while event['s'] > dayend:
-                self.printer.msg(prefix, 'green')
-                self.printer.msg(f" {nextst.strftime('%H:%M')} to ")
-                self.printer.msg(f"{dayend.strftime('%H:%M')}\n")
-                dayst = dayst + timedelta(days=1)
-                dayend = dayend + timedelta(days=1)
-                nextst = dayst
-                prefix = dayst.strftime('\n%a %b %d')
-            if (event['s'] > nextst):
-                self.printer.msg(prefix, 'green')
-                self.printer.msg(f" {nextst.strftime('%H:%M')} to ")
-                self.printer.msg(f"{event['s'].strftime('%H:%M')}\n")
-                nextst  = event['e']
-                prefix = '          '
-            if (event['s'] <= nextst) and (event['s'] >= dayst):
-                nextst  = event['e']
+            if _debug:
+                print(event['s'], event['e'], event['summary'])
+            if event['s'].astimezone(tz) > event['e'].astimezone(tz):
+                pass
+            elif event['s'].astimezone(tz) <= ends[-1]:
+                # this event overlaps with last
+                # so replace the previous end time with this one:
+                ends[-1] = event['e'].astimezone(tz)
+            else:
+                starts += [event['s'].astimezone(tz)]
+                ends += [event['e'].astimezone(tz)]
+        starts += [end]
 
-        # last event:
-        if event['e'] < dayend:
-            self.printer.msg(prefix, 'green')
-            self.printer.msg(f" {nextst.strftime('%H:%M')} to ")
-            self.printer.msg(f"{event['s'].strftime('%H:%M')}\n")
+        self.printer.msg(f'\nAvailability {start.strftime("%b %d")} - {end.strftime("%b %d")} \n', 'yellow')
+        self.printer.msg('---------------------------- \n\n', 'yellow')
 
-        # any trailing days with no events:
-        dayst = dayst + timedelta(days=1)
-        dayend = dayend + timedelta(days=1)
-        while dayst < end:
-            prefix = dayst.strftime('\n%a %b %d')
-            self.printer.msg(prefix, 'green')
-            self.printer.msg(f" {dayst.strftime('%H:%M')} to {dayend.strftime('%H:%M')}\n", )
-            dayst = dayst + timedelta(days=1)
-            dayend = dayend + timedelta(days=1)
+        # now we have a list of ends and starts for busy time.  These are
+        # the starts and ends of free time, so lets swap around.  This
+        # block also tests if a free block spans midnight and if it does,
+        # insert an end/start pair.  We do this because we want each day
+        # to get its own free blocks.
+        newstarts = []
+        newends = []
+        for s, e in zip(ends, starts):
+            if _debug:
+                print('s/e', s, e)
+            newstarts += [s]
+            midnight = s.replace(hour=0, minute=0, second=0) + timedelta(days=1)
+            if s < midnight < e:
+                # if free block spans midnight, insert midnight:
+                newstarts +=[midnight]
+                newends += [midnight - timedelta(seconds=1)]
+                while e > midnight + timedelta(days=1):
+                    # if the new free block spans midnight keep adding more
+                    midnight += timedelta(days=1)
+                    newstarts += [midnight]
+                    newends += [midnight - timedelta(seconds=1)]
+            newends += [e]
+
+        if _debug:
+            print('New:')
+            for s, e in zip(newstarts, newends):
+                print(s, e)
+
+        # now print for each day:
+        day = start.replace(hour=0, minute=0, second=0)
+        while day < end:
+            self.printer.msg(f"{day.strftime('%a %b %d')}:\n", 'green')
+            maxday = day
+
+            for s, e in zip(newstarts, newends):
+                if e - s < mintime:
+                    pass
+                elif s>=day and s<day+timedelta(days=1):
+                    # event is today.  But we need to trim depending on if it
+                    # is during working hours:
+                    if s < day+daystart:
+                        s = day + daystart
+                        if e < day + daystart:
+                            e = s
+                    if e > day+dayend:
+                        e = day + dayend
+                        if s > day + dayend:
+                            s = e
+                    if e > maxday and e > s and e - s > mintime:
+                        self.printer.msg(f"        {s.strftime('%H:%M')} to {e.strftime('%H:%M')}\n")
+                    maxday = e
+
+            day += timedelta(days=1)
+
 
     def _display_queried_events(self, start, end, search=None,
                                 year_date=False):
@@ -1262,12 +1316,15 @@ class GoogleCalendarInterface:
 
             getattr(actions, action)(row, cal, self)
 
-    def FreeQuery(self, start=None, end=None, count=1):
+    def FreeQuery(self, start=None, end=None, mintime=None,
+                 daystart=None, dayend=None, timezone=None, count=1):
         if not start:
             start = self.now.replace(hour=0, minute=0, second=0, microsecond=0)
         if not end:
             end = (start + timedelta(days=(count * 8)))
-        return self._display_free(start, end)
+        if not mintime:
+            mintime = '00:30'
+        return self._display_free(start, end, mintime, daystart, dayend, timezone)
 
     def CalQuery(self, cmd, start_text='', count=1):
         if not start_text:
