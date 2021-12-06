@@ -72,7 +72,6 @@ class GoogleCalendarInterface:
         # stored as detail, but provided as option: TODO: fix that
         self.details['width'] = options.get('width', 80)
         self._get_cached()
-        print('cals', cal_names)
         self._select_cals(cal_names)
 
     def _select_cals(self, selected_names):
@@ -1143,7 +1142,7 @@ class GoogleCalendarInterface:
 
     def _display_free(self, start, end, mintime, daystart, dayend, timezone, search=None,
                                 year_date=False):
-        _debug = False
+        _debug = True
         if timezone is None:
             tz = start.tzinfo
         else:
@@ -1157,22 +1156,23 @@ class GoogleCalendarInterface:
         # all times are assumed the timezone set by timezone...
         event_list = self._search_for_events(start, end, search)
         # should be hh:mm or int number of minutes:
-        if len(mintime) > 2 and ':' in mintime:
-            mintime = timedelta(hours=int(mintime[:2]), minutes=int(mintime[3:]))
-        else:
-            mintime = timedelta(minutes=int(mintime))
+        mintime = utils.get_timedelta_from_str(mintime)
         # should be hh:mm
-        daystart = timedelta(hours=int(daystart.split(':')[0]),
-                             minutes=int(daystart.split(':')[1]))
-        dayend = timedelta(hours=int(dayend.split(':')[0]),
-                             minutes=int(dayend.split(':')[1]))
+        daystart = utils.get_timedelta_from_str(daystart)
+        dayend = utils.get_timedelta_from_str(dayend)
+
         ends = [start]  # end of busy blocks
         starts = []
 
         for event in event_list:
             if _debug:
                 print(event['s'], event['e'], event['summary'])
-            if event['s'].astimezone(tz) > event['e'].astimezone(tz):
+
+            if 'transparency' in event and event['transparency'] == 'transparent':
+                if _debug:
+                    print('This event transparent: skip')
+                pass
+            elif event['s'].astimezone(tz) > event['e'].astimezone(tz):
                 pass
             elif event['s'].astimezone(tz) <= ends[-1]:
                 # this event overlaps with last
@@ -1184,7 +1184,11 @@ class GoogleCalendarInterface:
         starts += [end]
 
         self.printer.msg(f'\nAvailability {start.strftime("%b %d")} - {end.strftime("%b %d")} \n', 'yellow')
-        self.printer.msg('---------------------------- \n\n', 'yellow')
+        self.printer.msg('---------------------------- \n', 'yellow')
+        if tz != tzinfo('local'):
+            self.printer.msg(f'Timezone: {tz.tzname(starts[0])} \n\n', 'red')
+        else:
+            self.printer.msg('\n')
 
         # now we have a list of ends and starts for busy time.  These are
         # the starts and ends of free time, so lets swap around.  This
