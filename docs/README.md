@@ -133,7 +133,7 @@ authentication process will proceed. Simply follow the instructions.
 1. [Create a new Google project within the Google developer console](https://console.developers.google.com/projectcreate)
 1. [Enable the Google Calendar API](https://console.developers.google.com/apis/api/calendar-json.googleapis.com/)
 1. [Create new OAuth2 Consent Screen](https://console.developers.google.com/apis/credentials/consent/edit;newAppInternalUser=false)() for an "UI /Desktop Application".
-1. You only need to specify name: "GoogleCalendarCLI", email: <your@gmail.com>, developer_email: <your@gmail.com>
+1. You only need to specify name: e.g. "GoogleCalendarCLI", email: <your@gmail.com>, developer_email: <your@gmail.com>, and add your Gmail address (the one you want to do OAuth with as a **Test User**.
 1. [Create new OAuth2 Credentials](https://console.developers.google.com/apis/credentials/oauthclient)
    name: "GoogleCalendarCLI_Client1", type: "Desktop app" / "UI app"
 1. Grab your newly created `client ID` and `client secret` from the credentials page.
