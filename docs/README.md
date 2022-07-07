@@ -127,20 +127,31 @@ OAuth2 is used for authenticating with your Google account. The resulting token
 is placed in the `~/.gcalcli_oauth` file. When you first start gcalcli the
 authentication process will proceed. Simply follow the instructions.
 
+**You currently have to use your own Calendar API token.** Our Calendar API token is restricted to few users only and waits for Google's approval to be unlocked.
 
-#### **NOTE: you currently have to use your own Calendar API token.**
-(Our Calendar API token is restricted to few users only and waits for Google's approval to be unlocked.)
-1. [Create a new Google project within the Google developer console](https://console.developers.google.com/projectcreate)
-1. [Enable the Google Calendar API](https://console.developers.google.com/apis/api/calendar-json.googleapis.com/)
-1. [Create new OAuth2 Consent Screen](https://console.developers.google.com/apis/credentials/consent/edit;newAppInternalUser=false)() for an "UI /Desktop Application".
-1. You only need to specify name: e.g. "GoogleCalendarCLI", email: <your@gmail.com>, developer_email: <your@gmail.com>, and add your Gmail address (the one you want to do OAuth with as a **Test User**.
-1. [Create new OAuth2 Credentials](https://console.developers.google.com/apis/credentials/oauthclient)
-   name: "GoogleCalendarCLI_Client1", type: "Desktop app" / "UI app"
-1. Grab your newly created `client ID` and `client secret` from the credentials page.
-1. You need to call `gcalci` once with your `client id` and `client secret` to login via the `OAuth2 Authorization Screen`.
-  ``` gcalcli --client-id=xxxxxxxxxxxxxxx.apps.googleusercontent.com --client-secret=xxxxxxxxxxxxxxxxx list```
-  (The` OAuth2 authorization Screen` should be opened automatically in your default browser.)
-  **NOTE: Don't leave your secret in the terminal history. In most shells ` private_command --secret noone_shall_know_1234` (note the initial space character) won't leave an entry in the history. Check by calling `history | tail`.**
+1. [Create a New Project](https://console.developers.google.com/projectcreate) within the Google developer console
+   1. Activate the "Create" button.
+2. [Enable the Google Calendar API](https://console.developers.google.com/apis/api/calendar-json.googleapis.com/)
+   1. Activate the "Enable" button.
+3. [Create OAuth2 consent screen](https://console.developers.google.com/apis/credentials/consent/edit;newAppInternalUser=false) for an "UI /Desktop Application".
+   1. Fill out required App information section
+      1. Specify App name. Example: "gcalcli"
+      2. Specify User support email. Example: your@gmail.com
+   2. Fill out required Developer contact information
+      1. Specify Email addresses. Example: your@gmail.com
+   3. Activate the "Save and continue" button.
+   4. Scopes: activate the "Save and continue" button.
+   5. Test users
+      1. Add your@gmail.com
+      2. Activate the "Save and continue" button.
+4. [Create OAuth Client ID](https://console.developers.google.com/apis/credentials/oauthclient)
+   1. Specify Application type: Desktop app.
+   2. Activate the "Create" button.
+5. Grab your newly created Client ID (in the form "xxxxxxxxxxxxxxx.apps.googleusercontent.com") and Client Secret from the Credentials page.
+6. Call `gcalci` with your Client ID and Client Secret to login via the OAuth2 Authorization Screen.
+   ` gcalcli --client-id=xxxxxxxxxxxxxxx.apps.googleusercontent.com --client-secret=xxxxxxxxxxxxxxxxx list`.
+   In most shells, putting a space before the command will keep it, and therefore your secrets, out of history. Check with `history | tail`.
+7. This should automatically open the OAuth2 authorization screen in your default browser.
 
 #### HTTP Proxy Support
 
