@@ -155,7 +155,7 @@ authentication process will proceed. Simply follow the instructions.
    1. Specify Application type: Desktop app.
    2. Activate the "Create" button.
 5. Grab your newly created Client ID (in the form "xxxxxxxxxxxxxxx.apps.googleusercontent.com") and Client Secret from the Credentials page.
-6. Call `gcalci` with your Client ID and Client Secret to login via the OAuth2 Authorization Screen.
+6. Call `gcalcli` with your Client ID and Client Secret to login via the OAuth2 Authorization Screen.
    ` gcalcli --client-id=xxxxxxxxxxxxxxx.apps.googleusercontent.com --client-secret=xxxxxxxxxxxxxxxxx list`.
    In most shells, putting a space before the command will keep it, and therefore your secrets, out of history. Check with `history | tail`.
 7. This should automatically open the OAuth2 authorization screen in your default browser.
