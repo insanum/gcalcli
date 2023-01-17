@@ -40,6 +40,11 @@ Check your OS distribution for packages.
 apt-get install gcalcli
 ```
 
+### Void Linux 
+```sh
+xbps-install gcalcli
+```
+
 ### Install using [Nix](https://nixos.org/nix/)
 
 ```sh
