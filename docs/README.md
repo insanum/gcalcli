@@ -123,6 +123,7 @@ HowTo
     list                list available calendars
     edit                edit calendar events
     agenda              get an agenda for a time period
+    free                get free time slots for a time period
     updates             get updates since a datetime for a time period
     calw                get a week-based agenda in calendar format
     calm                get a month agenda in calendar format

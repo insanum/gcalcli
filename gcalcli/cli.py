@@ -172,6 +172,15 @@ def main():
                     start_text=parsed_args.start
             )
 
+        elif parsed_args.command == 'free':
+            gcal.FreeQuery(start=parsed_args.start,
+                           end=parsed_args.end,
+                           mintime=parsed_args.mintime,
+                           daystart=parsed_args.daystart,
+                           dayend=parsed_args.dayend,
+                           timezone=parsed_args.timezone,
+                           )
+
         elif parsed_args.command == 'calm':
             gcal.CalQuery(parsed_args.command, start_text=parsed_args.start)
 
