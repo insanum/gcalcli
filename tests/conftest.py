@@ -6,7 +6,7 @@ import pytest
 from datetime import datetime
 from dateutil.tz import tzlocal
 
-from apiclient.discovery import HttpMock, build
+from googleapiclient.discovery import HttpMock, build
 
 from gcalcli.argparsers import (get_color_parser,
                                 get_cal_query_parser,
