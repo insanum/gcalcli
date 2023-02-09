@@ -1252,10 +1252,12 @@ class GoogleCalendarInterface:
                 break
 
     def _search_for_events(self, start, end, search_text):
+        # Sort by 1.: event start time, 2.: event ID, 3.: calendar ID.
         event_list = []
-        for cal in self.cals:
+        for cal in sorted(self.cals, key=lambda x: x['id']):
             event_list.extend(
                 self._GetAllEvents(cal, start, end, search_text=search_text))
+        event_list.sort(key=lambda x: x['id'])
         event_list.sort(key=lambda x: x['s'])
         return event_list
 
