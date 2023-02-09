@@ -927,7 +927,11 @@ class GoogleCalendarInterface:
                 xstr = '%s  Reminder: (default)\n' % (details_indent)
                 self.printer.msg(xstr, 'default')
             elif 'overrides' in event['reminders']:
-                for rem in event['reminders']['overrides']:
+                # Sort by 1.: 'minutes', 2.: 'method'.
+                rems_sorted = sorted(event['reminders']['overrides'],
+                                     key=lambda x: x['method'])
+                rems_sorted.sort(key=lambda x: x['minutes'])
+                for rem in rems_sorted:
                     xstr = '%s  Reminder: %s %d minutes\n' % \
                            (details_indent, rem['method'], rem['minutes'])
                     self.printer.msg(xstr, 'default')
