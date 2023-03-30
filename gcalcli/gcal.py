@@ -33,8 +33,8 @@ from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta, date
 from dateutil.tz import tzlocal
 from dateutil.parser import parse
-from apiclient.discovery import build
-from apiclient.errors import HttpError
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from oauth2client.file import Storage
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client import tools
