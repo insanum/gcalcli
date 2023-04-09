@@ -5,7 +5,6 @@ from gcalcli import utils
 from gcalcli.details import DETAILS
 from gcalcli.deprecations import parser_allow_deprecated, DeprecatedStoreTrue
 from gcalcli.printer import valid_color_name
-from oauth2client import tools
 from shutil import get_terminal_size
 import copy as _copy
 import datetime
@@ -244,8 +243,7 @@ def get_argument_parser():
     parser = argparse.ArgumentParser(
             description='Google Calendar Command Line Interface',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            fromfile_prefix_chars='@',
-            parents=[tools.argparser])
+            fromfile_prefix_chars='@')
 
     parser.add_argument(
             '--version', action='version', version='%%(prog)s %s (%s)' %
