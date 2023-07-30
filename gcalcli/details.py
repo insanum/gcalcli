@@ -3,7 +3,6 @@
 from collections import OrderedDict
 from datetime import datetime
 from itertools import chain
-from typing import List
 
 from dateutil.parser import isoparse, parse
 
