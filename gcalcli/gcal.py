@@ -1,44 +1,43 @@
+from collections import namedtuple
 from csv import DictReader, excel_tab
+from datetime import date, datetime, timedelta
+from itertools import chain
+import json
 import os
+import random
 import re
 import shlex
-import httplib2
-from itertools import chain
-import time
-import textwrap
-import json
-import random
 import sys
+import textwrap
+import time
 from unicodedata import east_asian_width
+
+from apiclient.discovery import build
+from apiclient.errors import HttpError
+from dateutil.parser import parse
+from dateutil.relativedelta import relativedelta
+from dateutil.tz import tzlocal
+import httplib2
+from oauth2client import tools
+from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.file import Storage
+
+from . import __program__, __version__, actions, utils
+from .actions import ACTIONS
+from .conflicts import ShowConflicts
+from .details import _valid_title, ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS
+from .exceptions import GcalcliError
+from .printer import Printer
+from .utils import days_since_epoch, is_all_day
+from .validators import (get_input, get_override_color_id, PARSABLE_DATE,
+                         PARSABLE_DURATION, REMINDER, STR_ALLOW_EMPTY,
+                         STR_NOT_EMPTY, STR_TO_INT, VALID_COLORS)
+
 try:
     import cPickle as pickle
 except Exception:
     import pickle
 
-from gcalcli import __program__, __version__
-from gcalcli import actions, utils
-from gcalcli.actions import ACTIONS
-from gcalcli.details import (
-    _valid_title, ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS)
-from gcalcli.utils import days_since_epoch, is_all_day
-from gcalcli.validators import (
-    get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
-    VALID_COLORS, STR_ALLOW_EMPTY, REMINDER, PARSABLE_DURATION
-)
-from gcalcli.exceptions import GcalcliError
-from gcalcli.printer import Printer
-from gcalcli.conflicts import ShowConflicts
-
-from dateutil.relativedelta import relativedelta
-from datetime import datetime, timedelta, date
-from dateutil.tz import tzlocal
-from dateutil.parser import parse
-from apiclient.discovery import build
-from apiclient.errors import HttpError
-from oauth2client.file import Storage
-from oauth2client.client import OAuth2WebServerFlow
-from oauth2client import tools
-from collections import namedtuple
 
 EventTitle = namedtuple('EventTitle', ['title', 'color'])
 

@@ -7,8 +7,8 @@ from typing import List
 
 from dateutil.parser import isoparse, parse
 
-from gcalcli.exceptions import ReadonlyError, ReadonlyCheckError
-from gcalcli.utils import is_all_day
+from .exceptions import ReadonlyCheckError, ReadonlyError
+from .utils import is_all_day
 
 FMT_DATE = '%Y-%m-%d'
 FMT_TIME = '%H:%M'
