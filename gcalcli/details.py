@@ -3,7 +3,7 @@
 from collections import OrderedDict
 from datetime import datetime
 from itertools import chain
-from typing import List
+from typing import List  # python3.9: can just use `list`
 
 from dateutil.parser import isoparse, parse
 
@@ -33,8 +33,7 @@ class Handler:
     """Handler for a specific detail of an event."""
 
     # list of strings for fieldnames provided by this object
-    # XXX: py36+: change to `fieldnames: List[str]`
-    fieldnames = []  # type: List[str]
+    fieldnames: List[str] = []
 
     @classmethod
     def get(cls, event):
