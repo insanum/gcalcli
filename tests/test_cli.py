@@ -1,5 +1,6 @@
-from gcalcli.cli import run_add_prompt
 from argparse import Namespace
+
+from gcalcli.cli import run_add_prompt
 from gcalcli.printer import Printer
 
 
