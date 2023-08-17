@@ -1026,8 +1026,18 @@ class GoogleCalendarInterface:
 
         return selected
 
-    def _GetAllEvents(self, cal, events, end):
-
+    def _GetAllEvents(self, cal, start, end, search_text):
+        events = self._retry_with_backoff(
+                     self.get_events()
+                         .list(
+                             calendarId=cal['id'],
+                             timeMin=start.isoformat() if start else None,
+                             timeMax=end.isoformat() if end else None,
+                             q=search_text if search_text else None,
+                             singleEvents=True
+                         )
+                )
+      
         event_list = []
 
         while 1:
@@ -1079,6 +1089,10 @@ class GoogleCalendarInterface:
                              self.get_events()
                                  .list(
                                      calendarId=cal['id'],
+                                     timeMin=start.isoformat() if start else None,
+                                     timeMax=end.isoformat() if end else None,
+                                     q=search_text if search_text else None,
+                                     singleEvents=True,
                                      pageToken=pageToken
                                  )
                          )
@@ -1091,17 +1105,7 @@ class GoogleCalendarInterface:
 
         event_list = []
         for cal in self.cals:
-            events = self._retry_with_backoff(
-                         self.get_events()
-                             .list(
-                                 calendarId=cal['id'],
-                                 timeMin=start.isoformat() if start else None,
-                                 timeMax=end.isoformat() if end else None,
-                                 q=search_text if search_text else None,
-                                 singleEvents=True
-                             )
-                    )
-            event_list.extend(self._GetAllEvents(cal, events, end))
+            event_list.extend(self._GetAllEvents(cal, start, end, search_text))
 
         event_list.sort(key=lambda x: x['s'])
 
