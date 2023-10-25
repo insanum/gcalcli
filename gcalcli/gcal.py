@@ -10,6 +10,7 @@ import shlex
 import sys
 import textwrap
 import time
+from typing import List
 from unicodedata import east_asian_width
 
 from apiclient.discovery import build
@@ -23,6 +24,7 @@ from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.file import Storage
 
 from . import __program__, __version__, actions, utils
+from ._types import Cache, CalendarListEntry
 from .actions import ACTIONS
 from .conflicts import ShowConflicts
 from .details import _valid_title, ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS
@@ -47,8 +49,8 @@ PRINTER = Printer()
 
 class GoogleCalendarInterface:
 
-    cache = {}
-    all_cals = []
+    cache: Cache = {}
+    all_cals: List[CalendarListEntry] = []
     now = datetime.now(tzlocal())
     agenda_length = 5
     conflicts_lookahead_days = 30
