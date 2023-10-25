@@ -608,7 +608,7 @@ class GoogleCalendarInterface:
             for handler in handlers:
                 row.extend(handler.get(event))
 
-            output = ('\t'.join(row)).replace('\n', '''\\n''')
+            output = ('\t'.join(row)).replace('\n', r'\n')
             print(output)
 
     def _PrintEvent(self, event, prefix):
@@ -964,7 +964,7 @@ class GoogleCalendarInterface:
                 while True:
                     r = get_input(
                             self.printer, "Enter a valid reminder or '.' to"
-                                          "end: ", REMINDER
+                                          'end: ', REMINDER
                     )
                     if r == '.':
                         break
@@ -1169,11 +1169,11 @@ class GoogleCalendarInterface:
         event_list = [e for e in event_list
                       if (utils.get_time_from_str(e['updated']) >=
                           last_updated_datetime)]
-        print("Updates since:",
+        print('Updates since:',
               last_updated_datetime,
-              "events starting",
+              'events starting',
               start,
-              "until",
+              'until',
               end)
         return self._iterate_events(start, event_list, year_date=False)
 
@@ -1186,7 +1186,7 @@ class GoogleCalendarInterface:
 
         event_list = self._search_for_events(start, end, search_text)
         show_conflicts = ShowConflicts(
-                            lambda e: self._PrintEvent(e, "\t !!! Conflict: "))
+                            lambda e: self._PrintEvent(e, '\t !!! Conflict: '))
 
         return self._iterate_events(start,
                                     event_list,
@@ -1211,7 +1211,7 @@ class GoogleCalendarInterface:
         cal = self.cals[0]
 
         for row in reader:
-            action = row.get("action", ACTION_DEFAULT)
+            action = row.get('action', ACTION_DEFAULT)
             if action not in ACTIONS:
                 raise GcalcliError('Action "{}" not supported.'.format(action))
 
@@ -1321,7 +1321,7 @@ class GoogleCalendarInterface:
             try:
                 self.cals = [cals_with_write_perms[int(val)]]
             except IndexError:
-                raise GcalcliError('The entered number doesn\'t appear on the '
+                raise GcalcliError("The entered number doesn't appear on the "
                                    'list above\n')
 
         event = {}

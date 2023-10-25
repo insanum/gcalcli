@@ -13,7 +13,7 @@ from gcalcli.utils import is_all_day
 FMT_DATE = '%Y-%m-%d'
 FMT_TIME = '%H:%M'
 TODAY = datetime.now().date()
-ACTION_DEFAULT = "patch"
+ACTION_DEFAULT = 'patch'
 
 URL_PROPS = OrderedDict([('html_link', 'htmlLink'),
                          ('hangout_link', 'hangoutLink')])
