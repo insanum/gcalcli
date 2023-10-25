@@ -124,6 +124,20 @@ class Time(Handler):
             instant['timeZone'] = cal['timeZone']
 
 
+class Length(Handler):
+    """Handler for event duration."""
+
+    fieldnames = ['length']
+
+    @classmethod
+    def get(cls, event):
+        return [str(event['e'] - event['s'])]
+
+    @classmethod
+    def patch(cls, cal, event, fieldname, value):
+        raise NotImplementedError
+
+
 class Url(Handler):
     """Handler for HTML and legacy Hangout links."""
 
@@ -259,6 +273,7 @@ class Action(SimpleSingleFieldHandler):
 
 HANDLERS = OrderedDict([('id', ID),
                         ('time', Time),
+                        ('length', Length),
                         ('url', Url),
                         ('conference', Conference),
                         ('title', Title),
@@ -279,8 +294,7 @@ FIELDNAMES_READONLY = frozenset(fieldname
                                 in FIELD_HANDLERS.items()
                                 if handler in HANDLERS_READONLY)
 
-_DETAILS_WITHOUT_HANDLERS = ['length', 'reminders', 'attendees',
-                             'attachments', 'end']
+_DETAILS_WITHOUT_HANDLERS = ['reminders', 'attendees', 'attachments', 'end']
 
 DETAILS = list(HANDLERS.keys()) + _DETAILS_WITHOUT_HANDLERS
 DETAILS_DEFAULT = {'time', 'title'}
