@@ -42,6 +42,7 @@ except Exception:
 EventTitle = namedtuple('EventTitle', ['title', 'color'])
 
 CONFERENCE_DATA_VERSION = 1
+PRINTER = Printer()
 
 
 class GoogleCalendarInterface:
@@ -62,7 +63,7 @@ class GoogleCalendarInterface:
 
     UNIWIDTH = {'W': 2, 'F': 2, 'N': 1, 'Na': 1, 'H': 1, 'A': 1}
 
-    def __init__(self, cal_names=[], printer=Printer(), **options):
+    def __init__(self, cal_names=(), printer=PRINTER, **options):
         self.cals = []
         self.printer = printer
         self.options = options
