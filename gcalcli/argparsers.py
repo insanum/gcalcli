@@ -289,7 +289,7 @@ def get_argument_parser():
     sub.add_parser(
             'search', parents=[details_parser, output_parser, search_parser],
             help='search for events within an optional time period',
-            description='Provides case insenstive search for calendar events.')
+            description='Provides case insensitive search for calendar events.')
     sub.add_parser(
             'edit', parents=[details_parser, output_parser, search_parser],
             help='edit calendar events',
