@@ -1540,6 +1540,12 @@ class GoogleCalendarInterface:
                     event['attendees'].append({'displayName': attendee.name,
                                                'email': email})
 
+            if hasattr(ve, 'uid'):
+                uid = ve.uid.value.strip()
+                if verbose:
+                    print('UID..........%s' % uid)
+                event['iCalUID'] = uid
+
             return event
 
         try:
@@ -1565,6 +1571,7 @@ class GoogleCalendarInterface:
                 self.printer.err_msg('Error: ' + str(e) + '!\n')
                 sys.exit(1)
 
+        count = 0
         while True:
             try:
                 v = next(vobject.readComponents(f))
@@ -1580,38 +1587,32 @@ class GoogleCalendarInterface:
                 if dump:
                     continue
 
-                if not verbose:
-                    new_event = self._retry_with_backoff(
-                                    self.get_events()
-                                        .insert(
-                                            calendarId=self.cals[0]['id'],
-                                            body=event
-                                        )
-                                )
-                    hlink = new_event.get('htmlLink')
-                    self.printer.msg(
-                            'New event added: %s\n' % hlink, 'green'
-                    )
-                    continue
+                if verbose:
+                    self.printer.msg('\n[S]kip [i]mport [q]uit: ', 'magenta')
+                    val = input()
+                    if not val or val.lower() == 's':
+                        continue
+                    elif val.lower() == 'i':
+                        pass
+                    elif val.lower() == 'q':
+                        sys.exit(0)
+                    else:
+                        self.printer.err_msg('Error: invalid input\n')
+                        sys.exit(1)
 
-                self.printer.msg('\n[S]kip [i]mport [q]uit: ', 'magenta')
-                val = input()
-                if not val or val.lower() == 's':
-                    continue
-                if val.lower() == 'i':
-                    new_event = self._retry_with_backoff(
-                                    self.get_events()
-                                        .insert(
-                                            calendarId=self.cals[0]['id'],
-                                            body=event
-                                        )
-                                )
-                    hlink = new_event.get('htmlLink')
-                    self.printer.msg('New event added: %s\n' % hlink, 'green')
-                elif val.lower() == 'q':
-                    sys.exit(0)
+                if 'iCalUID' in event:
+                    method = self.get_events().import_
                 else:
-                    self.printer.err_msg('Error: invalid input\n')
-                    sys.exit(1)
-        # TODO: return the number of events added
-        return True
+                    method = self.get_events().insert
+                new_event = self._retry_with_backoff(
+                                method(
+                                    calendarId=self.cals[0]['id'],
+                                    body=event
+                                )
+                            )
+                hlink = new_event.get('htmlLink')
+                self.printer.msg(
+                        'New event added: %s\n' % hlink, 'green'
+                )
+                count += 1
+        return count
