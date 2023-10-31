@@ -69,7 +69,7 @@ pip install gcalcli
 ```sh
 git clone https://github.com/insanum/gcalcli.git
 cd gcalcli
-python setup.py install
+python -m pip install .
 ```
 
 ### Install optional package
