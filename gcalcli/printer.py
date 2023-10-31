@@ -46,7 +46,7 @@ ART_CHARS = {
 
 def valid_color_name(value):
     if value not in COLOR_NAMES:
-        raise argparse.ArgumentTypeError('%s is not a valid color' % value)
+        raise argparse.ArgumentTypeError('%s is not a valid color. Valid colours are: ' % (value, ", ".join(COLOR_NAMES)))
     return value
 
 
