@@ -19,9 +19,9 @@ from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
 import httplib2
-from oauth2client import tools
-from oauth2client.client import OAuth2WebServerFlow
-from oauth2client.file import Storage
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from google.auth.transport.requests import Request
 
 from . import __program__, __version__, actions, utils
 from ._types import Cache, CalendarListEntry
@@ -55,7 +55,7 @@ class GoogleCalendarInterface:
     agenda_length = 5
     conflicts_lookahead_days = 30
     max_retries = 5
-    auth_http = None
+    credentials = None
     cal_service = None
 
     ACCESS_OWNER = 'owner'
@@ -133,38 +133,45 @@ class GoogleCalendarInterface:
 
     def _google_auth(self):
         from argparse import Namespace
-        if not self.auth_http:
+        if not self.credentials:
             if self.options['config_folder']:
-                storage = Storage(
-                        os.path.expanduser(
-                                '%s/oauth' % self.options['config_folder']
-                        )
+                oauth_filepath = os.path.expanduser(
+                    '%s/oauth' % self.options['config_folder']
                 )
             else:
-                storage = Storage(os.path.expanduser('~/.gcalcli_oauth'))
-            credentials = storage.get()
-
-            if credentials is None or credentials.invalid:
-                credentials = tools.run_flow(
-                    OAuth2WebServerFlow(
-                        client_id=self.options['client_id'],
-                        client_secret=self.options['client_secret'],
-                        scope=['https://www.googleapis.com/auth/calendar'],
-                        user_agent=__program__ + '/' + __version__
-                    ),
-                    storage,
-                    Namespace(**self.options)
+                oauth_filepath = os.path.expanduser('~/.gcalcli_oauth')
+            if os.path.exists(oauth_filepath):
+                with open(oauth_filepath, 'rb') as gcalcli_oauth:
+                    credentials = pickle.load(gcalcli_oauth)
+            else:
+                flow = InstalledAppFlow.from_client_config(
+                    client_config={
+                        "installed": {
+                            "client_id": self.options['client_id'],
+                            "client_secret": self.options['client_secret'],
+                            "auth_uri":"https://accounts.google.com/o/oauth2/auth",
+                            "token_uri":"https://oauth2.googleapis.com/token",
+                            "auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs",
+                            "redirect_uris":["http://localhost"]
+                        }
+                    },
+                    scopes=['https://www.googleapis.com/auth/calendar']
                 )
+                credentials = flow.run_local_server()
+                with open(oauth_filepath, 'wb') as gcalcli_oauth:
+                    pickle.dump(credentials, gcalcli_oauth)
 
-            self.auth_http = credentials.authorize(httplib2.Http())
+            if credentials.expired:
+                credentials.refresh(Request())
 
-        return self.auth_http
+            self.credentials = credentials
+        return self.credentials
 
     def get_cal_service(self):
         if not self.cal_service:
             self.cal_service = build(serviceName='calendar',
                                      version='v3',
-                                     http=self._google_auth())
+                                     credentials=self._google_auth())
 
         return self.cal_service
 
