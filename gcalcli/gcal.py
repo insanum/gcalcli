@@ -157,7 +157,7 @@ class GoogleCalendarInterface:
                     },
                     scopes=['https://www.googleapis.com/auth/calendar']
                 )
-                credentials = flow.run_local_server()
+                credentials = flow.run_local_server(open_browser=False)
                 with open(oauth_filepath, 'wb') as gcalcli_oauth:
                     pickle.dump(credentials, gcalcli_oauth)
 
