@@ -7,8 +7,6 @@ import locale
 from shutil import get_terminal_size
 import sys
 
-from oauth2client import tools
-
 import gcalcli
 
 from . import utils
@@ -248,8 +246,7 @@ def get_argument_parser():
     parser = argparse.ArgumentParser(
             description='Google Calendar Command Line Interface',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            fromfile_prefix_chars='@',
-            parents=[tools.argparser])
+            fromfile_prefix_chars='@')
 
     parser.add_argument(
             '--version', action='version', version='%%(prog)s %s (%s)' %

@@ -20,7 +20,7 @@ Requirements
 * [dateutil](http://www.labix.org/python-dateutil)
 * [Google API Client](https://developers.google.com/api-client-library/python)
 * [httplib2](https://github.com/httplib2/httplib2)
-* [oauth2client](https://github.com/google/oauth2client)
+* [Google OAuth Library](https://github.com/googleapis/google-auth-library-python-oauthlib)
 * [parsedatetime](https://github.com/bear/parsedatetime)
 * A love for the command line!
 
