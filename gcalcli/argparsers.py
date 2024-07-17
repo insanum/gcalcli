@@ -1,16 +1,20 @@
 from __future__ import absolute_import
+
 import argparse
-import gcalcli
-from gcalcli import utils
-from gcalcli.details import DETAILS
-from gcalcli.deprecations import parser_allow_deprecated, DeprecatedStoreTrue
-from gcalcli.printer import valid_color_name
-from oauth2client import tools
-from shutil import get_terminal_size
 import copy as _copy
 import datetime
 import locale
+from shutil import get_terminal_size
 import sys
+
+from oauth2client import tools
+
+import gcalcli
+
+from . import utils
+from .deprecations import DeprecatedStoreTrue, parser_allow_deprecated
+from .details import DETAILS
+from .printer import valid_color_name
 
 PROGRAM_OPTIONS = {
         '--client-id': {'default': gcalcli.__API_CLIENT_ID__,

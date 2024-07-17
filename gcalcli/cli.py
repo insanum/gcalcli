@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#############################################################################
+# ######################################################################### #
 #                                                                           #
 #                                      (           (     (                  #
 #               (         (     (      )\ )   (    )\ )  )\ )               #
@@ -18,21 +18,19 @@
 #                                                                           #
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
 #                                                                           #
-#############################################################################
+# ######################################################################### #
+from collections import namedtuple
 import os
 import signal
 import sys
-from collections import namedtuple
 
-from gcalcli import utils
-from gcalcli.argparsers import get_argument_parser, handle_unparsed
-from gcalcli.exceptions import GcalcliError
-from gcalcli.gcal import GoogleCalendarInterface
-from gcalcli.printer import Printer, valid_color_name
-from gcalcli.validators import (
-        PARSABLE_DATE, REMINDER, STR_ALLOW_EMPTY, STR_NOT_EMPTY,
-        PARSABLE_DURATION, get_input
-)
+from . import utils
+from .argparsers import get_argument_parser, handle_unparsed
+from .exceptions import GcalcliError
+from .gcal import GoogleCalendarInterface
+from .printer import Printer, valid_color_name
+from .validators import (get_input, PARSABLE_DATE, PARSABLE_DURATION, REMINDER,
+                         STR_ALLOW_EMPTY, STR_NOT_EMPTY)
 
 CalName = namedtuple('CalName', ['name', 'color'])
 

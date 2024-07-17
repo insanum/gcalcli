@@ -1,6 +1,8 @@
-from gcalcli.conflicts import ShowConflicts
 from datetime import datetime
+
 from dateutil.tz import tzlocal
+
+from gcalcli.conflicts import ShowConflicts
 
 minimal_event = {
                     'e': datetime(2019, 1, 8, 15, 15, tzinfo=tzlocal()),

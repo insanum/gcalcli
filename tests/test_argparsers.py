@@ -1,7 +1,9 @@
-from gcalcli import argparsers
 from collections import namedtuple
 import shlex
+
 import pytest
+
+from gcalcli import argparsers
 
 
 def test_get_argparser():
