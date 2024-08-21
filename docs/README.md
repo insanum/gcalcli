@@ -69,7 +69,7 @@ pip install gcalcli
 ```sh
 git clone https://github.com/insanum/gcalcli.git
 cd gcalcli
-python setup.py install
+pip install .
 ```
 
 ### Install optional package
@@ -81,7 +81,7 @@ pip install vobject
 Features
 --------
 
- * OAuth2 authention with your Google account
+ * OAuth2 authentication with your Google account
  * list your calendars
  * show an agenda using a specified start/end date and time
  * show updates since a specified datetime for events between a start/end date and time
