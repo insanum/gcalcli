@@ -37,7 +37,7 @@ setup(name='gcalcli',
           'python-dateutil',
           'google-api-python-client>=1.4',
           'httplib2',
-          'oauth2client',
+          'google_auth_oauthlib',
           'parsedatetime',
       ],
       extras_require={
