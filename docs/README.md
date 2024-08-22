@@ -69,13 +69,13 @@ pip install gcalcli
 ```sh
 git clone https://github.com/insanum/gcalcli.git
 cd gcalcli
-python setup.py install
+pip install .
 ```
 
 ### Install optional package
 
 ```sh
-pip install vobject
+pip install .[vobject]
 ```
 
 Features
