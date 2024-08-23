@@ -14,6 +14,7 @@ authors = [
   { name = "Joshua Crowgey", email = "jcrowgey@uw.edu" },
 ]
 maintainers = [
+  { name = "David Barnett", email = "david@mumind.me" },
   { name = "Joshua Crowgey", email = "jcrowgey@uw.edu" },
 ]
 description = "Google Calendar Command Line Interface"
