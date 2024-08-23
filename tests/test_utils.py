@@ -1,7 +1,9 @@
-import gcalcli.utils as utils
 from datetime import datetime, timedelta
+
 from dateutil.tz import UTC
 import pytest
+
+import gcalcli.utils as utils
 
 
 def test_get_time_from_str():

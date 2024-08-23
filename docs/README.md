@@ -20,7 +20,7 @@ Requirements
 * [dateutil](http://www.labix.org/python-dateutil)
 * [Google API Client](https://developers.google.com/api-client-library/python)
 * [httplib2](https://github.com/httplib2/httplib2)
-* [oauth2client](https://github.com/google/oauth2client)
+* [Google OAuth Library](https://github.com/googleapis/google-auth-library-python-oauthlib)
 * [parsedatetime](https://github.com/bear/parsedatetime)
 * A love for the command line!
 
@@ -40,11 +40,23 @@ Check your OS distribution for packages.
 apt-get install gcalcli
 ```
 
+### Void Linux 
+```sh
+xbps-install gcalcli
+```
+
 ### Install using [Nix](https://nixos.org/nix/)
 
 ```sh
 nix-env -i gcalcli
 ```
+
+### Install using [Homebrew](https://brew.sh/) (MacOS)
+
+```sh
+brew install gcalcli
+```
+
 
 ### Install from PyPI
 
@@ -57,13 +69,13 @@ pip install gcalcli
 ```sh
 git clone https://github.com/insanum/gcalcli.git
 cd gcalcli
-python setup.py install
+pip install .
 ```
 
 ### Install optional package
 
 ```sh
-pip install vobject
+pip install .[vobject]
 ```
 
 Features
@@ -124,32 +136,34 @@ See the manual (`man (1) gcalcli`), or run with `--help`/`-h` for detailed usage
 #### Login Information
 
 OAuth2 is used for authenticating with your Google account. The resulting token
-is placed in the ~/.gcalcli_oauth file. When you first start gcalcli the
+is placed in the `~/.gcalcli_oauth` file. When you first start gcalcli the
 authentication process will proceed. Simply follow the instructions.
 
-If desired, you can use your own Calendar API instead of the default API values.
-*NOTE*: these steps are optional!
+**You currently have to use your own Calendar API token.** Our Calendar API token is restricted to few users only and waits for Google's approval to be unlocked.
 
-* Go to the [Google developer console](https://console.developers.google.com/)
-* Make a new project for gcalcli
-* On the sidebar under APIs & Auth, click APIs
-* Enable the Calendar API
-* On the sidebar click Credentials
-* Create a new Client ID. Set the type to Installed Application and the subtype
-  to Other. You will be asked to fill in some consent form information, but what
-  you put here isn't important. It's just what will show up when gcalcli opens
-  up the OAuth website. Anything optional can safely be left blank.
-* Go back to the credentials page and grab your ID and Secret.
-* If desired, add the client-id and client-secret to your .gcalclirc:
-
-        --client-id=xxxxxxxxxxxxxxx.apps.googleusercontent.com
-        --client-secret=xxxxxxxxxxxxxxxxx
-
-* Remove your existing OAuth information (typically ~/.gcalcli_oauth).
-* Run gcalcli with any desired argument, making sure the new client-id and
-  client-secret are passed on the command line or placed in your .gcalclirc. The
-  OAuth authorization page should be opened automatically in your default
-  browser.
+1. [Create a New Project](https://console.developers.google.com/projectcreate) within the Google developer console
+   1. Activate the "Create" button.
+2. [Enable the Google Calendar API](https://console.developers.google.com/apis/api/calendar-json.googleapis.com/)
+   1. Activate the "Enable" button.
+3. [Create OAuth2 consent screen](https://console.developers.google.com/apis/credentials/consent/edit;newAppInternalUser=false) for an "UI /Desktop Application".
+   1. Fill out required App information section
+      1. Specify App name. Example: "gcalcli"
+      2. Specify User support email. Example: your@gmail.com
+   2. Fill out required Developer contact information
+      1. Specify Email addresses. Example: your@gmail.com
+   3. Activate the "Save and continue" button.
+   4. Scopes: activate the "Save and continue" button.
+   5. Test users
+      1. Add your@gmail.com
+      2. Activate the "Save and continue" button.
+4. [Create OAuth Client ID](https://console.developers.google.com/apis/credentials/oauthclient)
+   1. Specify Application type: Desktop app.
+   2. Activate the "Create" button.
+5. Grab your newly created Client ID (in the form "xxxxxxxxxxxxxxx.apps.googleusercontent.com") and Client Secret from the Credentials page.
+6. Call `gcalcli` with your Client ID and Client Secret to login via the OAuth2 Authorization Screen.
+   ` gcalcli --client-id=xxxxxxxxxxxxxxx.apps.googleusercontent.com --client-secret=xxxxxxxxxxxxxxxxx list`.
+   In most shells, putting a space before the command will keep it, and therefore your secrets, out of history. Check with `history | tail`.
+7. This should automatically open the OAuth2 authorization screen in your default browser.
 
 #### HTTP Proxy Support
 
@@ -253,7 +267,7 @@ exec herbstluftwm # :-)
 ```
 
 By default gcalcli executes the notify-send command for notifications. Most
-common Linux desktop enviroments already contain a DBUS notification daemon
+common Linux desktop environments already contain a DBUS notification daemon
 that supports libnotify so it should automagically just work. If you're like
 me and use nothing that is common I highly recommend the
 [dunst](https://github.com/knopwob/dunst) dmenu'ish notification daemon.
@@ -283,7 +297,7 @@ ${execpi 300 gcalcli --conky calw 3}
 You may need to increase the `text_buffer_size` in your conkyrc file.  Users
 have reported that the default of 256 bytes is too small for busy calendars.
 
-Additionaly you need to set `--lineart=unicode` to output unicode-characters
+Additionally you need to set `--lineart=unicode` to output unicode-characters
 for box drawing. To avoid misaligned borders use a monospace font like 'DejaVu
 Sans Mono'. On Python2 it might be necessary to set the environment variable
 `PYTHONIOENCODING=utf8` if you are using characters beyond ascii. For

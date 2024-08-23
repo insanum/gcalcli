@@ -1,13 +1,9 @@
 import pytest
 
-from gcalcli.validators import validate_input, ValidationError
-from gcalcli.validators import (STR_NOT_EMPTY,
-                                PARSABLE_DATE,
-                                PARSABLE_DURATION,
-                                STR_TO_INT,
-                                STR_ALLOW_EMPTY,
-                                REMINDER,
-                                VALID_COLORS)
+from gcalcli.validators import (PARSABLE_DATE, PARSABLE_DURATION, REMINDER,
+                                STR_ALLOW_EMPTY, STR_NOT_EMPTY, STR_TO_INT,
+                                VALID_COLORS, validate_input, ValidationError)
+
 # Tests required:
 #
 # * Title: any string, not blank

@@ -1,12 +1,12 @@
 import calendar
-import time
+from datetime import datetime, timedelta
 import locale
 import re
-from dateutil.tz import tzlocal
-from dateutil.parser import parse as dateutil_parse
-from datetime import datetime, timedelta
-from parsedatetime.parsedatetime import Calendar
+import time
 
+from dateutil.parser import parse as dateutil_parse
+from dateutil.tz import tzlocal
+from parsedatetime.parsedatetime import Calendar
 
 locale.setlocale(locale.LC_ALL, '')
 fuzzy_date_parse = Calendar().parse
@@ -143,3 +143,12 @@ def agenda_time_fmt(dt, military):
     hour_min_fmt = '%H:%M' if military else '%I:%M'
     ampm = '' if military else dt.strftime('%p').lower()
     return dt.strftime(hour_min_fmt).lstrip('0') + ampm
+
+
+def is_all_day(event):
+    # XXX: currently gcalcli represents all-day events as those that both begin
+    # and end at midnight. This is ambiguous with Google Calendar events that
+    # are not all-day but happen to begin and end at midnight.
+
+    return (event['s'].hour == 0 and event['s'].minute == 0
+            and event['e'].hour == 0 and event['e'].minute == 0)

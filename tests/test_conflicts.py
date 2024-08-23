@@ -1,15 +1,17 @@
-from gcalcli.conflicts import ShowConflicts
 from datetime import datetime
+
 from dateutil.tz import tzlocal
+
+from gcalcli.conflicts import ShowConflicts
 
 minimal_event = {
                     'e': datetime(2019, 1, 8, 15, 15, tzinfo=tzlocal()),
-                    'id': 'minimial_event',
+                    'id': 'minimal_event',
                     's': datetime(2019, 1, 8, 14, 15, tzinfo=tzlocal())
                  }
 minimal_event_overlapping = {
                     'e': datetime(2019, 1, 8, 16, 15, tzinfo=tzlocal()),
-                    'id': 'minimial_event_overlapping',
+                    'id': 'minimal_event_overlapping',
                     's': datetime(2019, 1, 8, 14, 30, tzinfo=tzlocal())
                  }
 minimal_event_nonoverlapping = {

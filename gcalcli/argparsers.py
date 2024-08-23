@@ -1,18 +1,18 @@
 from __future__ import absolute_import
+
 import argparse
-import gcalcli
-from gcalcli import utils
-from gcalcli.deprecations import parser_allow_deprecated, DeprecatedStoreTrue
-from gcalcli.printer import valid_color_name
-from oauth2client import tools
-from shutil import get_terminal_size
 import copy as _copy
 import datetime
 import locale
+from shutil import get_terminal_size
+import sys
 
-DETAILS = ['calendar', 'location', 'length', 'reminders', 'description',
-           'url', 'conference', 'attendees', 'email', 'attachments', 'end']
+import gcalcli
 
+from . import utils
+from .deprecations import DeprecatedStoreTrue, parser_allow_deprecated
+from .details import DETAILS
+from .printer import valid_color_name
 
 PROGRAM_OPTIONS = {
         '--client-id': {'default': gcalcli.__API_CLIENT_ID__,
@@ -246,8 +246,7 @@ def get_argument_parser():
     parser = argparse.ArgumentParser(
             description='Google Calendar Command Line Interface',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            fromfile_prefix_chars='@',
-            parents=[tools.argparser])
+            fromfile_prefix_chars='@')
 
     parser.add_argument(
             '--version', action='version', version='%%(prog)s %s (%s)' %
@@ -287,7 +286,8 @@ def get_argument_parser():
     sub.add_parser(
             'search', parents=[details_parser, output_parser, search_parser],
             help='search for events within an optional time period',
-            description='Provides case insenstive search for calendar events.')
+            description='Provides case insensitive search for calendar '
+            'events.')
     sub.add_parser(
             'edit', parents=[details_parser, output_parser, search_parser],
             help='edit calendar events',
@@ -307,6 +307,13 @@ def get_argument_parser():
             parents=[details_parser, output_parser, start_end_parser],
             help='get an agenda for a time period',
             description='Get an agenda for a time period.')
+
+    agendaupdate = sub.add_parser(
+            'agendaupdate',
+            help='update calendar from agenda TSV file',
+            description='Update calendar from agenda TSV file.')
+    agendaupdate.add_argument(
+        'file', type=argparse.FileType('r'), nargs='?', default=sys.stdin)
 
     sub.add_parser(
             'updates',
@@ -358,7 +365,8 @@ def get_argument_parser():
     )
     add.add_argument('--title', default=None, type=str, help='Event title')
     add.add_argument(
-            '--who', default=[], type=str, action='append', help='Event title')
+            '--who', default=[], type=str, action='append', 
+            help='Event participant (may be provided multiple times)')
     add.add_argument('--where', default=None, type=str, help='Event location')
     add.add_argument('--when', default=None, type=str, help='Event time')
     add.add_argument(

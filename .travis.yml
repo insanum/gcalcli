@@ -1,8 +1,13 @@
 sudo: false
 language: python
+arch:
+  - amd64
+  - ppc64le
 python:
         - "3.5"
         - "3.6"
         - "3.7"
+before_install:
+  - sudo chown -Rvf $USER:$GROUP ~/.cache/pip/wheels
 install: pip install tox-travis
 script: tox
