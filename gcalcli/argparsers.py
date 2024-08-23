@@ -29,11 +29,12 @@ PROGRAM_OPTIONS = {
                           'help': 'Whether to include ~/.gcalclirc when ' +
                                   'using configFolder'},
         '--calendar': {'default': [], 'type': str, 'action': 'append',
-                       'help': 'Which calendars to use ' + 
-                               'format is --calendar "Calendar Name#optionalcolor" ' +
-                               'the #optionalcolor suffix is option chosen may correspond ' +
-                               'to the name of a valid ANSII color ' +
-                               'this option may be called multiple times to display additional calendars'},
+                       'help': 'Which calendars to use, in the format '
+                               '"CalendarName" or "CalendarName#color", where '
+                               'the #color suffix is the name of a valid ANSI '
+                               'color (such as "brightblue"). This option may '
+                               'be called multiple times to display '
+                               'additional calendars.'},
         '--default-calendar': {'default': [], 'type': str, 'action': 'append',
                                'dest': 'defaultCalendar',
                                'help': 'Optional default calendar to use if ' +
@@ -369,7 +370,7 @@ def get_argument_parser():
     )
     add.add_argument('--title', default=None, type=str, help='Event title')
     add.add_argument(
-            '--who', default=[], type=str, action='append', 
+            '--who', default=[], type=str, action='append',
             help='Event participant (may be provided multiple times)')
     add.add_argument('--where', default=None, type=str, help='Event location')
     add.add_argument('--when', default=None, type=str, help='Event time')
