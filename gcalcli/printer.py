@@ -19,17 +19,17 @@ ART_CHARS = {
         'bte': '\033(0\x76\033(B',
         'ute': '\033(0\x77\033(B'},
     'unicode': {
-        'hrz': b'\xe2\x94\x80',
-        'vrt': b'\xe2\x94\x82',
-        'lrc': b'\xe2\x94\x98',
-        'urc': b'\xe2\x94\x90',
-        'ulc': b'\xe2\x94\x8c',
-        'llc': b'\xe2\x94\x94',
-        'crs': b'\xe2\x94\xbc',
-        'lte': b'\xe2\x94\x9c',
-        'rte': b'\xe2\x94\xa4',
-        'bte': b'\xe2\x94\xb4',
-        'ute': b'\xe2\x94\xac'},
+        'hrz': '\u2500',
+        'vrt': '\u2502',
+        'lrc': '\u2518',
+        'urc': '\u2510',
+        'ulc': '\u250c',
+        'llc': '\u2514',
+        'crs': '\u253c',
+        'lte': '\u251c',
+        'rte': '\u2524',
+        'bte': '\u2534',
+        'ute': '\u252c'},
     'ascii': {
         'hrz': '-',
         'vrt': '|',
@@ -46,7 +46,7 @@ ART_CHARS = {
 
 def valid_color_name(value):
     if value not in COLOR_NAMES:
-        raise argparse.ArgumentTypeError('%s is not a valid color' % value)
+        raise argparse.ArgumentTypeError('%s is not a valid color. Valid colours are: ' % (value, ", ".join(COLOR_NAMES)))
     return value
 
 

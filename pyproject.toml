@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools >= 61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gcalcli"
+dynamic = ["version"]
+requires-python = ">= 3.8"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Eric Davis", email = "edavis@insanum.com" },
+  { name = "Brian Hartvigsen", email = "brian.andrew@brianandjenny.com" },
+  { name = "Joshua Crowgey", email = "jcrowgey@uw.edu" },
+]
+maintainers = [
+  { name = "David Barnett", email = "david@mumind.me" },
+  { name = "Joshua Crowgey", email = "jcrowgey@uw.edu" },
+]
+description = "Google Calendar Command Line Interface"
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+]
+dependencies = [
+  "python-dateutil",
+  "google-api-python-client>=1.4",
+  "httplib2",
+  "google_auth_oauthlib",
+  "parsedatetime",
+]
+
+[project.urls]
+Homepage = "https://github.com/insanum/gcalcli"
+Repository = "https://github.com/insanum/gcalcli"
+
+[project.optional-dependencies]
+vobject = ["vobject"]
+
+[tool.setuptools.data-files]
+"share/man/man1" = ["docs/man1/gcalcli.1"]
+
+[tool.setuptools.dynamic]
+version = { attr = "gcalcli.__version__" }
+
+[project.scripts]
+gcalcli = "gcalcli.cli:main"
+
+[tool.distutils.bdist_wheel]
+universal = true
+
+[tool.isort]
+profile = "google"
+force_single_line = false
+float_to_top = true
+combine_star = true
+py_version = 3
+
+[[tool.mypy.overrides]]
+module = ["gcalcli"]
+ignore_missing_imports = true

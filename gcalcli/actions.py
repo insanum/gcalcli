@@ -1,8 +1,7 @@
 """Handlers for specific agendaupdate actions."""
 
-from gcalcli.details import FIELD_HANDLERS, FIELDNAMES_READONLY
-from gcalcli.exceptions import ReadonlyError
-
+from .details import FIELD_HANDLERS, FIELDNAMES_READONLY
+from .exceptions import ReadonlyError
 
 CONFERENCE_DATA_VERSION = 1
 

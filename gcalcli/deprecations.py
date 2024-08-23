@@ -2,8 +2,8 @@ import argparse
 import functools
 
 import gcalcli
-from gcalcli.printer import valid_color_name, Printer
 
+from .printer import Printer, valid_color_name
 
 printer = Printer()
 

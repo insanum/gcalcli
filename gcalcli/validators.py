@@ -1,8 +1,7 @@
 import re
 
-from gcalcli.exceptions import ValidationError
-from gcalcli.utils import (REMINDER_REGEX, get_time_from_str,
-                           get_timedelta_from_str)
+from .exceptions import ValidationError
+from .utils import get_time_from_str, get_timedelta_from_str, REMINDER_REGEX
 
 # TODO: in the future, pull these from the API
 # https://developers.google.com/calendar/v3/reference/colors
