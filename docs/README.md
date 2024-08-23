@@ -267,7 +267,7 @@ exec herbstluftwm # :-)
 ```
 
 By default gcalcli executes the notify-send command for notifications. Most
-common Linux desktop enviroments already contain a DBUS notification daemon
+common Linux desktop environments already contain a DBUS notification daemon
 that supports libnotify so it should automagically just work. If you're like
 me and use nothing that is common I highly recommend the
 [dunst](https://github.com/knopwob/dunst) dmenu'ish notification daemon.
@@ -297,7 +297,7 @@ ${execpi 300 gcalcli --conky calw 3}
 You may need to increase the `text_buffer_size` in your conkyrc file.  Users
 have reported that the default of 256 bytes is too small for busy calendars.
 
-Additionaly you need to set `--lineart=unicode` to output unicode-characters
+Additionally you need to set `--lineart=unicode` to output unicode-characters
 for box drawing. To avoid misaligned borders use a monospace font like 'DejaVu
 Sans Mono'. On Python2 it might be necessary to set the environment variable
 `PYTHONIOENCODING=utf8` if you are using characters beyond ascii. For
