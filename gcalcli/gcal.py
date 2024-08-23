@@ -776,7 +776,7 @@ class GoogleCalendarInterface:
                     self.printer.msg(xstr, 'default')
 
         if self.details.get('email') \
-                and 'email' in event['creator'] \
+                and 'email' in event.get('creator', {}) \
                 and event['creator']['email'].strip():
             xstr = '%s  Email: %s\n' % (
                 details_indent,
