@@ -365,7 +365,8 @@ def get_argument_parser():
     )
     add.add_argument('--title', default=None, type=str, help='Event title')
     add.add_argument(
-            '--who', default=[], type=str, action='append', help='Event participants')
+            '--who', default=[], type=str, action='append', 
+            help='Event participant (may be provided multiple times)')
     add.add_argument('--where', default=None, type=str, help='Event location')
     add.add_argument('--when', default=None, type=str, help='Event time')
     add.add_argument(
