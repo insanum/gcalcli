@@ -13,17 +13,15 @@ import time
 from typing import List
 from unicodedata import east_asian_width
 
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
-import httplib2
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from google.auth.transport.requests import Request
 
-from . import __program__, __version__, actions, utils
+from . import actions, utils
 from ._types import Cache, CalendarListEntry
 from .actions import ACTIONS
 from .conflicts import ShowConflicts
@@ -132,7 +130,6 @@ class GoogleCalendarInterface:
         return None
 
     def _google_auth(self):
-        from argparse import Namespace
         if not self.credentials:
             if self.options['config_folder']:
                 oauth_filepath = os.path.expanduser(
@@ -149,10 +146,12 @@ class GoogleCalendarInterface:
                         "installed": {
                             "client_id": self.options['client_id'],
                             "client_secret": self.options['client_secret'],
-                            "auth_uri":"https://accounts.google.com/o/oauth2/auth",
-                            "token_uri":"https://oauth2.googleapis.com/token",
-                            "auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs",
-                            "redirect_uris":["http://localhost"]
+                            "auth_uri":
+                                "https://accounts.google.com/o/oauth2/auth",
+                            "token_uri": "https://oauth2.googleapis.com/token",
+                            "auth_provider_x509_cert_url":
+                                "https://www.googleapis.com/oauth2/v1/certs",
+                            "redirect_uris": ["http://localhost"]
                         }
                     },
                     scopes=['https://www.googleapis.com/auth/calendar']
