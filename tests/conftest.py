@@ -2,8 +2,8 @@ from datetime import datetime
 import os
 import sys
 
-from apiclient.discovery import build, HttpMock
 from dateutil.tz import tzlocal
+from googleapiclient.discovery import build, HttpMock
 import pytest
 
 from gcalcli.argparsers import (get_cal_query_parser, get_color_parser,
