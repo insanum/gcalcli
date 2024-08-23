@@ -1,15 +1,21 @@
 from __future__ import absolute_import
 
+import os
 from datetime import datetime
 from json import load
-import os
 
+import pytest
 from dateutil.tz import tzutc
 
-from gcalcli.argparsers import (get_cal_query_parser, get_color_parser,
-                                get_conflicts_parser, get_output_parser,
-                                get_search_parser, get_start_end_parser,
-                                get_updates_parser)
+from gcalcli.argparsers import (
+    get_cal_query_parser,
+    get_color_parser,
+    get_conflicts_parser,
+    get_output_parser,
+    get_search_parser,
+    get_start_end_parser,
+    get_updates_parser,
+)
 from gcalcli.cli import parse_cal_names
 from gcalcli.gcal import GoogleCalendarInterface
 from gcalcli.utils import parse_reminder
@@ -215,6 +221,9 @@ def test_modify_event(PatchedGCalI):
             gcal._edit_event, opts.text, opts.start, opts.end) == 0
 
 
+@pytest.mark.skipif(
+        os.name == 'nt',
+        reason='Known unicode encode/decode issue, see insanum/gcalcli#387.')
 def test_import(PatchedGCalI):
     cal_names = parse_cal_names(['jcrowgey@uw.edu'])
     gcal = PatchedGCalI(cal_names=cal_names, default_reminders=True)
