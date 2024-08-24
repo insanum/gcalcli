@@ -214,6 +214,25 @@ def test_declined_event_matching_attendee_accepted(PatchedGCalI):
     assert not gcal._DeclinedEvent(event)
 
 
+def test_declined_event_aliased_attendee(PatchedGCalI):
+    """Should detect declined events if attendee has self=True (#620)."""
+    gcal = PatchedGCalI()
+    event = {
+        'gcalcli_cal': {
+            'id': 'user@email.com',
+        },
+        'attendees': [
+            {
+                'email': 'user@otherdomain.com',
+                'self': True,
+                'responseStatus': 'declined',
+            },
+        ]
+    }
+    assert gcal._DeclinedEvent(event), \
+        "Must detect declined 'self' events regardless of email"
+
+
 def test_modify_event(PatchedGCalI):
     opts = get_search_parser().parse_args(['test'])
     gcal = PatchedGCalI(**vars(opts))
