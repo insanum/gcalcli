@@ -16,10 +16,10 @@ from unicodedata import east_asian_width
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import InstalledAppFlow # type: ignore
+from googleapiclient.discovery import build # type: ignore
+from googleapiclient.errors import HttpError # type: ignore
+from google.auth.transport.requests import Request # type: ignore
 
 from . import actions, utils
 from ._types import Cache, CalendarListEntry
@@ -34,7 +34,7 @@ from .validators import (get_input, get_override_color_id, PARSABLE_DATE,
                          STR_NOT_EMPTY, STR_TO_INT, VALID_COLORS)
 
 try:
-    import cPickle as pickle
+    import cPickle as pickle # type: ignore
 except Exception:
     import pickle
 

@@ -1,5 +1,6 @@
 import argparse
 import functools
+from typing import Any
 
 import gcalcli
 
@@ -70,7 +71,7 @@ BASE_OPTS = {'program': {'type': str,
                         'action': DeprecatedStoreTrue}}
 
 
-OPTIONS = {
+OPTIONS: dict[str, dict[str, Any]] = {
     'program': {
         "--client_id": {'default': gcalcli.__API_CLIENT_ID__},
         "--client_secret": {'default': gcalcli.__API_CLIENT_SECRET__},

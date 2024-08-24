@@ -6,7 +6,7 @@ import time
 
 from dateutil.parser import parse as dateutil_parse
 from dateutil.tz import tzlocal
-from parsedatetime.parsedatetime import Calendar
+from parsedatetime.parsedatetime import Calendar # type: ignore
 
 locale.setlocale(locale.LC_ALL, '')
 fuzzy_date_parse = Calendar().parse
