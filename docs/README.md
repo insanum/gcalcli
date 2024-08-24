@@ -22,11 +22,12 @@ Requirements
 * [httplib2](https://github.com/httplib2/httplib2)
 * [Google OAuth Library](https://github.com/googleapis/google-auth-library-python-oauthlib)
 * [parsedatetime](https://github.com/bear/parsedatetime)
+* [argcomplete](https://kislyuk.github.io/argcomplete)
 * A love for the command line!
 
 ### Optional packages
 
-* [vobject](http://vobject.skyhouseconsulting.com) Python module
+* [vobject](https://py-vobject.github.io/) Python module
   Used for ics/vcal importing.
 
 Installation
@@ -98,6 +99,7 @@ Features
  * work against specific calendars (by calendar name w/ regex)
  * flag file support for specifying option defaults
  * colored output and unicode character support
+ * custom shell completion for bash, zsh, fish, etc
  * super fun hacking with shell scripts, cron, screen, tmux, conky, etc
 
 Screenshots
@@ -164,6 +166,22 @@ authentication process will proceed. Simply follow the instructions.
    ` gcalcli --client-id=xxxxxxxxxxxxxxx.apps.googleusercontent.com --client-secret=xxxxxxxxxxxxxxxxx list`.
    In most shells, putting a space before the command will keep it, and therefore your secrets, out of history. Check with `history | tail`.
 7. This should automatically open the OAuth2 authorization screen in your default browser.
+
+#### Shell completion
+
+gcalcli provides command completion you can configure in bash, zsh, fish, etc using the [https://kislyuk.github.io/argcomplete/] library.
+
+To enable it, follow argcomplete's setup instructions to ensure your shell can find the completion hooks.
+
+```shell
+gcalcli <TAB>
+add
+agenda
+agendaupdate
+...
+```
+
+NOTE: Setup for fish and other shells is currently explained [under "contrib"](https://github.com/kislyuk/argcomplete/tree/develop/contrib) instead of their main docs, and their centralized "global activation" mechanism doesn't seem to be supported yet for those shells.
 
 #### HTTP Proxy Support
 
