@@ -1267,20 +1267,37 @@ class GoogleCalendarInterface:
 
         self._GraphEvents(cmd, start, count, event_list)
 
+    def _prompt_for_calendar(self, cals):
+        if not cals:
+            raise GcalcliError('No available calendar to use')
+        if len(cals) == 1:
+            return cals[0]
+        # Calendar not specified. Prompt the user to select it
+        writers = (self.ACCESS_OWNER, self.ACCESS_WRITER)
+        cals_with_write_perms = [cal for cal in self.cals
+                                 if cal['accessRole'] in writers]
+
+        print('\n'.join(f"{idx} {cal['summary']}"
+                        for idx, cal in enumerate(cals_with_write_perms)))
+        val = get_input(self.printer, 'Specify calendar from above: ',
+                        STR_TO_INT)
+        try:
+            return cals_with_write_perms[int(val)]
+        except IndexError:
+            raise GcalcliError(
+                f'Invalid selection from the list above: {val}\n')
+
     def QuickAddEvent(self, event_text, reminders=None):
         """Wrapper around Google Calendar API's quickAdd"""
         if not event_text:
             raise GcalcliError('event_text is required for a quickAdd')
 
-        if len(self.cals) != 1:
-            # TODO: get a better name for this exception class
-            # and use it elsewhere
-            raise GcalcliError('You must only specify a single calendar\n')
+        calendar = self._prompt_for_calendar(self.cals)
 
         new_event = self._retry_with_backoff(
             self.get_events()
                 .quickAdd(
-                    calendarId=self.cals[0]['id'],
+                    calendarId=calendar['id'],
                     text=event_text
                 )
         )
@@ -1297,7 +1314,7 @@ class GoogleCalendarInterface:
             new_event = self._retry_with_backoff(
                             self.get_events()
                                 .patch(
-                                    calendarId=self.cals[0]['id'],
+                                    calendarId=calendar['id'],
                                     eventId=new_event['id'],
                                     body=rem
                                 )
@@ -1311,24 +1328,7 @@ class GoogleCalendarInterface:
 
     def AddEvent(self, title, where, start, end, descr, who, reminders, color):
 
-        if len(self.cals) != 1:
-            # Calendar not specified. Prompt the user to select it
-            writers = (self.ACCESS_OWNER, self.ACCESS_WRITER)
-            cals_with_write_perms = [cal for cal in self.cals
-                                     if cal['accessRole'] in writers]
-
-            cal_names_with_idx = []
-            for idx, cal in enumerate(cals_with_write_perms):
-                cal_names_with_idx.append(str(idx) + ' ' + cal['summary'])
-            cal_names_with_idx = '\n'.join(cal_names_with_idx)
-            print(cal_names_with_idx)
-            val = get_input(self.printer, 'Specify calendar from above: ',
-                            STR_TO_INT)
-            try:
-                self.cals = [cals_with_write_perms[int(val)]]
-            except IndexError:
-                raise GcalcliError("The entered number doesn't appear on the "
-                                   'list above\n')
+        calendar = self._prompt_for_calendar(self.cals)
 
         event = {}
         event['summary'] = title
@@ -1339,9 +1339,9 @@ class GoogleCalendarInterface:
 
         else:
             event['start'] = {'dateTime': start,
-                              'timeZone': self.cals[0]['timeZone']}
+                              'timeZone': calendar['timeZone']}
             event['end'] = {'dateTime': end,
-                            'timeZone': self.cals[0]['timeZone']}
+                            'timeZone': calendar['timeZone']}
 
         if where:
             event['location'] = where
@@ -1355,7 +1355,7 @@ class GoogleCalendarInterface:
 
         event = self._add_reminders(event, reminders)
         events = self.get_events()
-        request = events.insert(calendarId=self.cals[0]['id'], body=event)
+        request = events.insert(calendarId=calendar['id'], body=event)
         new_event = self._retry_with_backoff(request)
 
         if self.details.get('url'):
