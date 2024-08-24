@@ -1,8 +1,10 @@
 from __future__ import absolute_import
 
+import io
 import os
 from datetime import datetime
 from json import load
+import re
 
 import pytest
 from dateutil.tz import tzutc
@@ -100,16 +102,34 @@ def test_add_event(PatchedGCalI):
     cal_names = parse_cal_names(['jcrowgey@uw.edu'])
     gcal = PatchedGCalI(
             cal_names=cal_names, allday=False, default_reminders=True)
-    title = 'test event'
-    where = 'anywhere'
-    start = 'now'
-    end = 'tomorrow'
-    descr = 'testing'
-    who = 'anyone'
-    reminders = None
-    color = "banana"
-    assert gcal.AddEvent(
-        title, where, start, end, descr, who, reminders, color)
+    assert gcal.AddEvent(title='test event',
+                         where='anywhere',
+                         start='now',
+                         end='tomorrow',
+                         descr='testing',
+                         who='anyone',
+                         reminders=None,
+                         color='banana')
+
+
+def test_add_event_with_cal_prompt(PatchedGCalI, capsys, monkeypatch):
+    cal_names = parse_cal_names(['jcrowgey@uw.edu', 'joshuacrowgey@gmail.com'])
+    gcal = PatchedGCalI(
+            cal_names=cal_names, allday=False, default_reminders=True)
+    # Fake selecting calendar 0 at the prompt
+    monkeypatch.setattr('sys.stdin', io.StringIO('0\n'))
+    assert gcal.AddEvent(title='test event',
+                         where='',
+                         start='now',
+                         end='tomorrow',
+                         descr='',
+                         who='',
+                         reminders=None,
+                         color='')
+    captured = capsys.readouterr()
+    assert re.match(
+        r'(?sm)^0 .*\n1 .*\n.*Specify calendar.*$', captured.out), \
+        f'Unexpected stderr: {captured.out}'
 
 
 def test_add_event_override_color(capsys, default_options,
@@ -127,9 +147,23 @@ def test_add_event_override_color(capsys, default_options,
 def test_quick_add(PatchedGCalI):
     cal_names = parse_cal_names(['jcrowgey@uw.edu'])
     gcal = PatchedGCalI(cal_names=cal_names)
-    event_text = 'quick test event'
-    reminder = '5m sms'
-    assert gcal.QuickAddEvent(event_text, reminders=[reminder])
+    assert gcal.QuickAddEvent(
+        event_text='quick test event',
+        reminders=['5m sms'])
+
+
+def test_quick_add_with_cal_prompt(PatchedGCalI, capsys, monkeypatch):
+    cal_names = parse_cal_names(['jcrowgey@uw.edu', 'joshuacrowgey@gmail.com'])
+    gcal = PatchedGCalI(cal_names=cal_names)
+    # Fake selecting calendar 0 at the prompt
+    monkeypatch.setattr('sys.stdin', io.StringIO('0\n'))
+    assert gcal.QuickAddEvent(
+        event_text='quick test event',
+        reminders=['5m sms'])
+    captured = capsys.readouterr()
+    assert re.match(
+        r'(?sm)^0 .*\n1 .*\n.*Specify calendar.*$', captured.out), \
+        f'Unexpected stderr: {captured.out}'
 
 
 def test_text_query(PatchedGCalI):
