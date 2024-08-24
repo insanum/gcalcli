@@ -1117,12 +1117,9 @@ class GoogleCalendarInterface:
         return event_list
 
     def _DeclinedEvent(self, event):
-        if 'attendees' in event:
-            attendees = [a for a in event['attendees']
-                         if a['email'] == event['gcalcli_cal']['id']]
-            if attendees and attendees[0]['responseStatus'] == 'declined':
-                return True
-        return False
+        return any(a['responseStatus'] == 'declined'
+                   for a in event.get('attendees', [])
+                   if 'self' in a or a['email'] == event['gcalcli_cal']['id'])
 
     def ListAllCalendars(self):
         access_len = 0
