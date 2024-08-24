@@ -6,7 +6,6 @@ from datetime import datetime
 from json import load
 import re
 
-import pytest
 from dateutil.tz import tzutc
 
 from gcalcli.argparsers import (
@@ -274,14 +273,11 @@ def test_modify_event(PatchedGCalI):
             gcal._edit_event, opts.text, opts.start, opts.end) == 0
 
 
-@pytest.mark.skipif(
-        os.name == 'nt',
-        reason='Known unicode encode/decode issue, see insanum/gcalcli#387.')
 def test_import(PatchedGCalI):
     cal_names = parse_cal_names(['jcrowgey@uw.edu'])
     gcal = PatchedGCalI(cal_names=cal_names, default_reminders=True)
     vcal_path = TEST_DATA_DIR + '/vv.txt'
-    assert gcal.ImportICS(icsFile=open(vcal_path))
+    assert gcal.ImportICS(icsFile=open(vcal_path, errors='replace'))
 
 
 def test_parse_reminder():

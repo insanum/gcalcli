@@ -318,7 +318,10 @@ def get_argument_parser():
             help='update calendar from agenda TSV file',
             description='Update calendar from agenda TSV file.')
     agendaupdate.add_argument(
-        'file', type=argparse.FileType('r'), nargs='?', default=sys.stdin)
+        'file',
+        type=argparse.FileType('r', errors='replace'),
+        nargs='?',
+        default=sys.stdin)
 
     sub.add_parser(
             'updates',
@@ -395,7 +398,10 @@ def get_argument_parser():
             'must be specified.  Reads from stdin when no file argument is '
             'provided.')
     _import.add_argument(
-            'file', type=argparse.FileType('r'), nargs='?', default=None)
+            'file',
+            type=argparse.FileType('r', errors='replace'),
+            nargs='?',
+            default=None)
     _import.add_argument(
             '--verbose', '-v', action='count', help='Be verbose on imports')
     _import.add_argument(
