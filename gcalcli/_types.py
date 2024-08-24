@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any, Dict, List, TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from googleapiclient._apis.calendar.v3.schemas import ( # type: ignore
+    from googleapiclient._apis.calendar.v3.schemas import (  # type: ignore
         CalendarListEntry,
         Event as GoogleEvent
     )
