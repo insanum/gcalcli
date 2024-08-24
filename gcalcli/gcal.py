@@ -1238,7 +1238,8 @@ class GoogleCalendarInterface:
                 start = start.replace(hour=0, minute=0, second=0,
                                       microsecond=0)
             except Exception:
-                self.printer.err_msg('Error: failed to parse start time\n')
+                self.printer.err_msg(
+                    f'Error: failed to parse start time {start_text!r}\n')
                 return
 
         # convert start date to the beginning of the week or month
