@@ -7,7 +7,7 @@ name = "gcalcli"
 dynamic = ["version"]
 requires-python = ">= 3.8"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = { text = "MIT" }
 authors = [
   { name = "Eric Davis", email = "edavis@insanum.com" },
   { name = "Brian Hartvigsen", email = "brian.andrew@brianandjenny.com" },
