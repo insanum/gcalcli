@@ -151,3 +151,11 @@ def is_all_day(event):
 
     return (event['s'].hour == 0 and event['s'].minute == 0
             and event['e'].hour == 0 and event['e'].minute == 0)
+
+def localize_datetime(dt):
+    if not hasattr(dt, 'tzinfo'):  # Why are we skipping these?
+        return dt
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=tzlocal())
+    else:
+        return dt.astimezone(tzlocal())

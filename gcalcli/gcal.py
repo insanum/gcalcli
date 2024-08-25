@@ -18,10 +18,10 @@ from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
 from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError  # type: ignore
+from googleapiclient.errors import HttpError
 from google.auth.transport.requests import Request  # type: ignore
 
-from . import actions, utils
+from . import actions, ics, utils
 from ._types import Cache, CalendarListEntry
 from .actions import ACTIONS
 from .conflicts import ShowConflicts
@@ -103,15 +103,6 @@ class GoogleCalendarInterface:
             # Add relevant matches to the list of calendars we want to
             # operate against
             self.cals += matches
-
-    @staticmethod
-    def _localize_datetime(dt):
-        if not hasattr(dt, 'tzinfo'):  # Why are we skipping these?
-            return dt
-        if dt.tzinfo is None:
-            return dt.replace(tzinfo=tzlocal())
-        else:
-            return dt.astimezone(tzlocal())
 
     def _retry_with_backoff(self, method):
         for n in range(self.max_retries):
@@ -1055,7 +1046,7 @@ class GoogleCalendarInterface:
                     # all date events
                     event['s'] = parse(event['start']['date'])
 
-                event['s'] = self._localize_datetime(event['s'])
+                event['s'] = utils.localize_datetime(event['s'])
 
                 if 'dateTime' in event['end']:
                     event['e'] = parse(event['end']['dateTime'])
@@ -1063,7 +1054,7 @@ class GoogleCalendarInterface:
                     # all date events
                     event['e'] = parse(event['end']['date'])
 
-                event['e'] = self._localize_datetime(event['e'])
+                event['e'] = utils.localize_datetime(event['e'])
 
                 # For all-day events, Google seems to assume that the event
                 # time is based in the UTC instead of the local timezone.  Here
@@ -1428,129 +1419,21 @@ class GoogleCalendarInterface:
 
     def ImportICS(self, verbose=False, dump=False, reminders=None,
                   icsFile=None):
-
-        def CreateEventFromVOBJ(ve):
-
-            event = {}
-
-            if verbose:
-                print('+----------------+')
-                print('| Calendar Event |')
-                print('+----------------+')
-
-            if hasattr(ve, 'summary'):
-                if verbose:
-                    print('Event........%s' % ve.summary.value)
-                event['summary'] = ve.summary.value
-
-            if hasattr(ve, 'location'):
-                if verbose:
-                    print('Location.....%s' % ve.location.value)
-                event['location'] = ve.location.value
-
-            if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
-                self.printer.err_msg(
-                        'Error: event does not have a dtstart and dtend!\n'
-                )
-                return None
-
-            if verbose:
-                if ve.dtstart.value:
-                    print('Start........%s' % ve.dtstart.value.isoformat())
-                if ve.dtend.value:
-                    print('End..........%s' % ve.dtend.value.isoformat())
-                if ve.dtstart.value:
-                    print('Local Start..%s' %
-                          self._localize_datetime(ve.dtstart.value)
-                          )
-                if ve.dtend.value:
-                    print('Local End....%s' %
-                          self._localize_datetime(ve.dtend.value)
-                          )
-
-            if hasattr(ve, 'rrule'):
-                if verbose:
-                    print('Recurrence...%s' % ve.rrule.value)
-
-                event['recurrence'] = ['RRULE:' + ve.rrule.value]
-
-            if hasattr(ve, 'dtstart') and ve.dtstart.value:
-                # XXX
-                # Timezone madness! Note that we're using the timezone for the
-                # calendar being added to. This is OK if the event is in the
-                # same timezone. This needs to be changed to use the timezone
-                # from the DTSTART and DTEND values. Problem is, for example,
-                # the TZID might be "Pacific Standard Time" and Google expects
-                # a timezone string like "America/Los_Angeles". Need to find a
-                # way in python to convert to the more specific timezone
-                # string.
-                # XXX
-                # print ve.dtstart.params['X-VOBJ-ORIGINAL-TZID'][0]
-                # print self.cals[0]['timeZone']
-                # print dir(ve.dtstart.value.tzinfo)
-                # print vars(ve.dtstart.value.tzinfo)
-
-                start = ve.dtstart.value.isoformat()
-                if isinstance(ve.dtstart.value, datetime):
-                    event['start'] = {'dateTime': start,
-                                      'timeZone': self.cals[0]['timeZone']}
-                else:
-                    event['start'] = {'date': start}
-
-                event = self._add_reminders(event, reminders)
-
-                # Can only have an end if we have a start, but not the other
-                # way around apparently...  If there is no end, use the start
-                if hasattr(ve, 'dtend') and ve.dtend.value:
-                    end = ve.dtend.value.isoformat()
-                    if isinstance(ve.dtend.value, datetime):
-                        event['end'] = {'dateTime': end,
-                                        'timeZone': self.cals[0]['timeZone']}
-                    else:
-                        event['end'] = {'date': end}
-
-                else:
-                    event['end'] = event['start']
-
-            if hasattr(ve, 'description') and ve.description.value.strip():
-                descr = ve.description.value.strip()
-                if verbose:
-                    print('Description:\n%s' % descr)
-                event['description'] = descr
-
-            if hasattr(ve, 'organizer'):
-                if ve.organizer.value.startswith('MAILTO:'):
-                    email = ve.organizer.value[7:]
-                else:
-                    email = ve.organizer.value
-                if verbose:
-                    print('organizer:\n %s' % email)
-                event['organizer'] = {'displayName': ve.organizer.name,
-                                      'email': email}
-
-            if hasattr(ve, 'attendee_list'):
-                if verbose:
-                    print('attendees:')
-                event['attendees'] = []
-                for attendee in ve.attendee_list:
-                    if attendee.value.upper().startswith('MAILTO:'):
-                        email = attendee.value[7:]
-                    else:
-                        email = attendee.value
-                    if verbose:
-                        print(' %s' % email)
-
-                    event['attendees'].append({'displayName': attendee.name,
-                                               'email': email})
-
-            return event
-
-        try:
-            import vobject
-        except ImportError:
+        if not ics.has_vobject_support():
             self.printer.err_msg(
-                    'Python vobject module not installed!\n'
+                'Python vobject module not installed!\n'
             )
+            self.printer.msg(
+                'To use the import command, you need to first install the '
+                '"vobject" extra.\n'
+                'For setup instructions, see '
+                "https://github.com/insanum/gcalcli and documentation for the "
+                'gcalcli package on your platform.\n')
+            sys_path_str = '\n  '.join(sys.path)
+            self.printer.debug_msg(
+                'Searched for vobject using python interpreter at '
+                f'"{sys.executable}" with module search path:\n'
+                f"  {sys_path_str}\n")
             sys.exit(1)
 
         if dump:
@@ -1568,53 +1451,45 @@ class GoogleCalendarInterface:
                 self.printer.err_msg('Error: ' + str(e) + '!\n')
                 sys.exit(1)
 
-        while True:
-            try:
-                v = next(vobject.readComponents(f))
-            except StopIteration:
-                break
+        events_to_import = ics.get_events(
+            f,
+            verbose=verbose,
+            default_tz=self.cals[0]['timeZone'],
+            printer=self.printer)
+        for event in events_to_import:
+            if not event:
+                continue
 
-            for ve in v.vevent_list:
-                event = CreateEventFromVOBJ(ve)
+            if dump:
+                continue
 
-                if not event:
-                    continue
-
-                if dump:
-                    continue
-
-                if not verbose:
-                    new_event = self._retry_with_backoff(
-                                    self.get_events()
-                                        .insert(
-                                            calendarId=self.cals[0]['id'],
-                                            body=event
-                                        )
-                                )
-                    hlink = new_event.get('htmlLink')
-                    self.printer.msg(
-                            'New event added: %s\n' % hlink, 'green'
+            self._add_reminders(event, reminders)
+            if not verbose:
+                new_event = self._retry_with_backoff(
+                    self.get_events().insert(
+                        calendarId=self.cals[0]['id'], body=event
                     )
-                    continue
+                )
+                hlink = new_event.get('htmlLink')
+                self.printer.msg('New event added: %s\n' % hlink, 'green')
+                continue
 
-                self.printer.msg('\n[S]kip [i]mport [q]uit: ', 'magenta')
-                val = input()
-                if not val or val.lower() == 's':
-                    continue
-                if val.lower() == 'i':
-                    new_event = self._retry_with_backoff(
-                                    self.get_events()
-                                        .insert(
-                                            calendarId=self.cals[0]['id'],
-                                            body=event
-                                        )
-                                )
-                    hlink = new_event.get('htmlLink')
-                    self.printer.msg('New event added: %s\n' % hlink, 'green')
-                elif val.lower() == 'q':
-                    sys.exit(0)
-                else:
-                    self.printer.err_msg('Error: invalid input\n')
-                    sys.exit(1)
+            self.printer.msg('\n[S]kip [i]mport [q]uit: ', 'magenta')
+            val = input()
+            if not val or val.lower() == 's':
+                continue
+            if val.lower() == 'i':
+                new_event = self._retry_with_backoff(
+                    self.get_events().insert(
+                        calendarId=self.cals[0]['id'], body=event
+                    )
+                )
+                hlink = new_event.get('htmlLink')
+                self.printer.msg('New event added: %s\n' % hlink, 'green')
+            elif val.lower() == 'q':
+                sys.exit(0)
+            else:
+                self.printer.err_msg('Error: invalid input\n')
+                sys.exit(1)
         # TODO: return the number of events added
         return True
