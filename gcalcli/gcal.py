@@ -1423,6 +1423,17 @@ class GoogleCalendarInterface:
             self.printer.err_msg(
                 'Python vobject module not installed!\n'
             )
+            self.printer.msg(
+                'To use the import command, you need to first install the '
+                '"vobject" extra.\n'
+                'For setup instructions, see '
+                "https://github.com/insanum/gcalcli and documentation for the "
+                'gcalcli package on your platform.\n')
+            sys_path_str = '\n  '.join(sys.path)
+            self.printer.debug_msg(
+                'Searched for vobject using python interpreter at '
+                f'"{sys.executable}" with module search path:\n'
+                f"  {sys_path_str}\n")
             sys.exit(1)
 
         if dump:

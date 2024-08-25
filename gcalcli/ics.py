@@ -1,13 +1,12 @@
 """Helpers for working with iCal/ics format."""
 
-from datetime import datetime
 import importlib.util
 import io
+from datetime import datetime
 from typing import Any, Dict, Iterable, Optional
 
 from gcalcli.printer import Printer
 from gcalcli.utils import localize_datetime
-
 
 EventBody = Dict[str, Any]
 
