@@ -56,12 +56,19 @@ gcalcli = "gcalcli.cli:main"
 [tool.distutils.bdist_wheel]
 universal = true
 
-[tool.isort]
-profile = "google"
-force_single_line = false
-float_to_top = true
-combine_star = true
-py_version = 3
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.lint]
+# Enable Errors, Warnings, Flakes
+select = ["E", "W", "F"]
+
+[tool.ruff.format]
+# Permit mixed quote style, project currently uses a mix of both.
+quote-style = "preserve"
+
+[tool.ruff.lint.extend-per-file-ignores]
+"*.pyi" = ["E501"]
 
 [tool.mypy]
 mypy_path = "gcalcli:stubs:tests"
