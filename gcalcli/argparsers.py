@@ -377,19 +377,25 @@ def get_argument_parser():
             help='Event participant (may be provided multiple times)')
     add.add_argument('--where', default=None, type=str, help='Event location')
     add.add_argument('--when', default=None, type=str, help='Event time')
+    # Allow either --duration or --end, but not both.
+    end_group = add.add_mutually_exclusive_group()
+    end_group.add_argument(
+        '--duration', default=None, type=int,
+        help='Event duration in minutes (or days if --allday is given). '
+        'Alternative to --end.')
+    end_group.add_argument(
+        '--end', default=None, type=str,
+        help='Event ending time. Alternative to --duration.')
     add.add_argument(
-            '--duration', default=None, type=int,
-            help='Event duration in minutes or days if --allday is given.')
+        '--description', default=None, type=str, help='Event description')
     add.add_argument(
-            '--description', default=None, type=str, help='Event description')
+        '--allday', action='store_true', dest='allday', default=False,
+        help='If --allday is given, the event will be an all-day event '
+        '(possibly multi-day if --duration is greater than 1). The time part '
+        'of the --when will be ignored.')
     add.add_argument(
-            '--allday', action='store_true', dest='allday', default=False,
-            help='If --allday is given, the event will be an all-day event '
-            '(possibly multi-day if --duration is greater than 1). The '
-            'time part of the --when will be ignored.')
-    add.add_argument(
-            '--noprompt', action='store_false', dest='prompt', default=True,
-            help='Don\'t prompt for missing data when adding events')
+        '--noprompt', action='store_false', dest='prompt', default=True,
+        help='Don\'t prompt for missing data when adding events')
 
     _import = sub.add_parser(
             'import', parents=[remind_parser],
@@ -403,10 +409,10 @@ def get_argument_parser():
             nargs='?',
             default=None)
     _import.add_argument(
-            '--verbose', '-v', action='count', help='Be verbose on imports')
+        '--verbose', '-v', action='count', help='Be verbose on imports')
     _import.add_argument(
-            '--dump', '-d', action='store_true',
-            help='Print events and don\'t import')
+        '--dump', '-d', action='store_true',
+        help='Print events and don\'t import')
 
     default_cmd = 'notify-send -u critical -i appointment-soon -a gcalcli %s'
     remind = sub.add_parser(

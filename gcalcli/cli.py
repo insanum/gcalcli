@@ -62,7 +62,7 @@ def run_add_prompt(parsed_args, printer):
             printer, 'Location: ', STR_ALLOW_EMPTY)
     if parsed_args.when is None:
         parsed_args.when = get_input(printer, 'When: ', PARSABLE_DATE)
-    if parsed_args.duration is None:
+    if parsed_args.duration is None and parsed_args.end is None:
         if parsed_args.allday:
             prompt = 'Duration (days): '
         else:
@@ -190,9 +190,10 @@ def main():
             # calculate "when" time:
             try:
                 estart, eend = utils.get_times_from_duration(
-                        parsed_args.when, parsed_args.duration,
-                        parsed_args.allday
-                )
+                    parsed_args.when,
+                    duration=parsed_args.duration,
+                    end=parsed_args.end,
+                    allday=parsed_args.allday)
             except ValueError as exc:
                 printer.err_msg(str(exc))
                 # Since we actually need a valid start and end time in order to

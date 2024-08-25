@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import locale
 import re
 import time
+from typing import Tuple
 
 from dateutil.parser import parse as dateutil_parse
 from dateutil.tz import tzlocal
@@ -53,34 +54,32 @@ def set_locale(new_locale):
                 '!\n Check supported locales of your system.\n')
 
 
-def get_times_from_duration(when, duration=0, allday=False):
-
+def get_times_from_duration(
+    when, duration=0, end=None, allday=False
+) -> Tuple[str, str]:
     try:
         start = get_time_from_str(when)
     except Exception:
         raise ValueError('Date and time is invalid: %s\n' % (when))
 
-    if allday:
+    if end is not None:
+        stop = get_time_from_str(end)
+    elif allday:
         try:
             stop = start + timedelta(days=float(duration))
         except Exception:
             raise ValueError(
-                    'Duration time (days) is invalid: %s\n' % (duration))
-
-        start = start.date().isoformat()
-        stop = stop.date().isoformat()
-
+                'Duration time (days) is invalid: %s\n' % (duration)
+            )
+        start = start.date()
+        stop = stop.date()
     else:
         try:
             stop = start + get_timedelta_from_str(duration)
         except Exception:
-            raise ValueError(
-                    'Duration time is invalid: %s\n' % (duration))
+            raise ValueError('Duration time is invalid: %s\n' % (duration))
 
-        start = start.isoformat()
-        stop = stop.isoformat()
-
-    return start, stop
+    return start.isoformat(), stop.isoformat()
 
 
 def get_time_from_str(when):
