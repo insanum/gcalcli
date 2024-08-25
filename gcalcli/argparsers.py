@@ -17,10 +17,10 @@ from .details import DETAILS
 from .printer import valid_color_name
 
 PROGRAM_OPTIONS = {
-        '--client-id': {'default': gcalcli.__API_CLIENT_ID__,
+        '--client-id': {'default': None,
                         'type': str,
                         'help': 'API client_id'},
-        '--client-secret': {'default': gcalcli.__API_CLIENT_SECRET__,
+        '--client-secret': {'default': None,
                             'type': str,
                             'help': 'API client_secret'},
         '--config-folder': {'default': None, 'type': str,
