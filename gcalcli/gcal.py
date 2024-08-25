@@ -17,7 +17,7 @@ from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
 from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
-from googleapiclient.discovery import build  # type: ignore
+from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError  # type: ignore
 from google.auth.transport.requests import Request  # type: ignore
 
