@@ -4,8 +4,10 @@ import argparse
 import copy as _copy
 import datetime
 import locale
-from shutil import get_terminal_size
 import sys
+from shutil import get_terminal_size
+
+import argcomplete  # type: ignore
 
 import gcalcli
 
@@ -431,5 +433,8 @@ def get_argument_parser():
     remind.add_argument(
             '--use_reminders', action=DeprecatedStoreTrue,
             help=argparse.SUPPRESS)
+
+    # Enrich with argcomplete options.
+    argcomplete.autocomplete(parser)
 
     return parser
