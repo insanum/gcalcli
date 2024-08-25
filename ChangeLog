@@ -5,7 +5,9 @@ v4.4.0
     placeholder chars instead of blowing up
   * Fix `--lineart` option failing with unicode errors
   * `quick` command now prompts for which calendar to use when ambiguous
-  * Fix --nodeclined option failing on events with aliased email
+  * Fix `--nodeclined` option failing on events with aliased email
+  * `add` command now supports `--end` as an alternative to `--duration`
+    (michaelPotter)
 
 v4.3.0
   * Adds 'conference' to details display (michaelhoffman)
