@@ -1,0 +1,26 @@
+from _typeshed import Incomplete
+from email.generator import Generator as BytesGenerator
+
+__all__ = ['build', 'build_from_document', 'fix_method_name', 'key2param']
+
+class _BytesGenerator(BytesGenerator): ...
+
+def fix_method_name(name): ...
+def key2param(key): ...
+def build(serviceName, version, http: Incomplete | None = None, discoveryServiceUrl=..., developerKey: Incomplete | None = None, model: Incomplete | None = None, requestBuilder=..., credentials: Incomplete | None = None, cache_discovery: bool = True, cache: Incomplete | None = None): ...
+def build_from_document(service, base: Incomplete | None = None, future: Incomplete | None = None, http: Incomplete | None = None, developerKey: Incomplete | None = None, model: Incomplete | None = None, requestBuilder=..., credentials: Incomplete | None = None): ...
+
+class ResourceMethodParameters:
+    argmap: Incomplete
+    required_params: Incomplete
+    repeated_params: Incomplete
+    pattern_params: Incomplete
+    query_params: Incomplete
+    path_params: Incomplete
+    param_types: Incomplete
+    enum_params: Incomplete
+    def __init__(self, method_desc) -> None: ...
+    def set_parameters(self, method_desc) -> None: ...
+
+class Resource:
+    def __init__(self, http, baseUrl, model, requestBuilder, developerKey, resourceDesc, rootDesc, schema) -> None: ...

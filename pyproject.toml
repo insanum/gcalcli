@@ -40,6 +40,9 @@ Repository = "https://github.com/insanum/gcalcli"
 [project.optional-dependencies]
 vobject = ["vobject"]
 
+[tool.setuptools]
+packages = ["gcalcli"]
+
 [tool.setuptools.data-files]
 "share/man/man1" = ["docs/man1/gcalcli.1"]
 
@@ -59,6 +62,5 @@ float_to_top = true
 combine_star = true
 py_version = 3
 
-[[tool.mypy.overrides]]
-module = ["gcalcli"]
-ignore_missing_imports = true
+[tool.mypy]
+mypy_path = "gcalcli:stubs:tests"
