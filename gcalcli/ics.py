@@ -134,4 +134,10 @@ def CreateEventFromVOBJ(
                 {'displayName': attendee.name, 'email': email}
             )
 
+    if hasattr(ve, 'uid'):
+        uid = ve.uid.value.strip()
+        if verbose:
+            print(f'UID..........{uid}')
+        event['iCalUID'] = uid
+
     return event

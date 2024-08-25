@@ -1464,32 +1464,36 @@ class GoogleCalendarInterface:
                 continue
 
             self._add_reminders(event, reminders)
-            if not verbose:
-                new_event = self._retry_with_backoff(
-                    self.get_events().insert(
-                        calendarId=self.cals[0]['id'], body=event
-                    )
-                )
-                hlink = new_event.get('htmlLink')
-                self.printer.msg('New event added: %s\n' % hlink, 'green')
-                continue
 
-            self.printer.msg('\n[S]kip [i]mport [q]uit: ', 'magenta')
-            val = input()
-            if not val or val.lower() == 's':
-                continue
-            if val.lower() == 'i':
-                new_event = self._retry_with_backoff(
-                    self.get_events().insert(
-                        calendarId=self.cals[0]['id'], body=event
-                    )
-                )
-                hlink = new_event.get('htmlLink')
-                self.printer.msg('New event added: %s\n' % hlink, 'green')
-            elif val.lower() == 'q':
-                sys.exit(0)
+            if not verbose:
+                # Don't prompt, just assume user wants to import.
+                pass
             else:
-                self.printer.err_msg('Error: invalid input\n')
-                sys.exit(1)
+                # Prompt for whether to import.
+                self.printer.msg('\n[S]kip [i]mport [q]uit: ', 'magenta')
+                val = input()
+                if not val or val.lower() == 's':
+                    continue
+                elif val.lower() == 'q':
+                    sys.exit(0)
+                elif val.lower() == 'i':
+                    # Import requested, continue
+                    pass
+                else:
+                    self.printer.err_msg('Error: invalid input\n')
+                    sys.exit(1)
+
+            # Import event
+            import_method = (
+                self.get_events().import_ if 'iCalUID' in event
+                else self.get_events().insert)
+            new_event = self._retry_with_backoff(
+                import_method(
+                    calendarId=self.cals[0]['id'], body=event
+                )
+            )
+            hlink = new_event.get('htmlLink')
+            self.printer.msg(f'New event added: {hlink}\n', 'green')
+
         # TODO: return the number of events added
         return True
