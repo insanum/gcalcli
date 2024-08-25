@@ -2,11 +2,9 @@ from __future__ import absolute_import
 
 import io
 import os
+import re
 from datetime import datetime
 from json import load
-import re
-
-from dateutil.tz import tzutc
 
 from gcalcli.argparsers import (
     get_cal_query_parser,
@@ -18,7 +16,6 @@ from gcalcli.argparsers import (
     get_updates_parser,
 )
 from gcalcli.cli import parse_cal_names
-from gcalcli.gcal import GoogleCalendarInterface
 from gcalcli.utils import parse_reminder
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
@@ -329,15 +326,6 @@ def test_parse_cal_names(PatchedGCalI):
     cal_names = parse_cal_names(['jcrowgey@uw.edu'])
     gcal = PatchedGCalI(cal_names=cal_names)
     assert gcal.AgendaQuery() == 0
-
-
-def test_localize_datetime(PatchedGCalI):
-    dt = GoogleCalendarInterface._localize_datetime(datetime.now())
-    assert dt.tzinfo is not None
-
-    dt = datetime.now(tzutc())
-    dt = GoogleCalendarInterface._localize_datetime(dt)
-    assert dt.tzinfo is not None
 
 
 def test_iterate_events(capsys, PatchedGCalI):

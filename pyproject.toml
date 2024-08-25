@@ -32,6 +32,7 @@ dependencies = [
   "google_auth_oauthlib",
   "parsedatetime",
   "argcomplete",
+  "google-api-python-client-stubs",
 ]
 
 [project.urls]

@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 
-from dateutil.tz import UTC
 import pytest
+from dateutil.tz import UTC, tzutc
 
-import gcalcli.utils as utils
+from gcalcli import utils
 
 
 def test_get_time_from_str():
@@ -72,3 +72,12 @@ def test_days_since_epoch():
 def test_set_locale():
     with pytest.raises(ValueError):
         utils.set_locale('not_a_real_locale')
+
+
+def test_localize_datetime(PatchedGCalI):
+    dt = utils.localize_datetime(datetime.now())
+    assert dt.tzinfo is not None
+
+    dt = datetime.now(tzutc())
+    dt = utils.localize_datetime(dt)
+    assert dt.tzinfo is not None
