@@ -10,9 +10,10 @@ import shlex
 import sys
 import textwrap
 import time
-from typing import List
+from typing import Iterable, List
 from unicodedata import east_asian_width
 
+import googleapiclient.http
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
@@ -22,7 +23,7 @@ from googleapiclient.errors import HttpError
 from google.auth.transport.requests import Request  # type: ignore
 
 from . import actions, ics, utils
-from ._types import Cache, CalendarListEntry
+from ._types import Cache, CalendarListEntry, Event
 from .actions import ACTIONS
 from .conflicts import ShowConflicts
 from .details import _valid_title, ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS
@@ -104,7 +105,7 @@ class GoogleCalendarInterface:
             # operate against
             self.cals += matches
 
-    def _retry_with_backoff(self, method):
+    def _retry_with_backoff(self, method: googleapiclient.http.HttpRequest):
         for n in range(self.max_retries):
             try:
                 return method.execute()
@@ -199,21 +200,16 @@ class GoogleCalendarInterface:
                 pass
                 # fall through
 
-        cal_list = self._retry_with_backoff(
-            self.get_cal_service().calendarList().list()
-        )
-
+        pageToken = None
         while True:
-            for cal in cal_list['items']:
-                self.all_cals.append(cal)
+            cal_list = self._retry_with_backoff(
+                self.get_cal_service().calendarList().list(
+                    pageToken=pageToken)
+            )
+
+            self.all_cals.extend(cal_list['items'])
             page_token = cal_list.get('nextPageToken')
-            if page_token:
-                cal_list = self._retry_with_backoff(
-                    self.get_cal_service().calendarList().list(
-                        pageToken=page_token
-                    )
-                )
-            else:
+            if not page_token:
                 break
 
         self.all_cals.sort(key=lambda x: x['accessRole'])
@@ -1025,25 +1021,20 @@ class GoogleCalendarInterface:
 
         return selected
 
-    def _GetAllEvents(self, cal, start, end, search_text):
-        events = self._retry_with_backoff(
-                     self.get_events()
-                         .list(
-                             calendarId=cal['id'],
-                             timeMin=start.isoformat() if start else None,
-                             timeMax=end.isoformat() if end else None,
-                             q=search_text if search_text else None,
-                             singleEvents=True
-                         )
-                )
-      
-        event_list = []
-
-        while 1:
-            if 'items' not in events:
-                break
-
-            for event in events['items']:
+    def _GetAllEvents(self, cal, start, end, search_text) -> Iterable[Event]:
+        pageToken = None
+        while True:
+            events = self._retry_with_backoff(
+                    self.get_events()
+                    .list(
+                        calendarId=cal['id'],
+                        timeMin=start.isoformat() if start else None,
+                        timeMax=end.isoformat() if end else None,
+                        q=search_text if search_text else None,
+                        singleEvents=True,
+                        pageToken=pageToken)
+                    )
+            for event in events.get('items', []):
 
                 event['gcalcli_cal'] = cal
 
@@ -1080,34 +1071,18 @@ class GoogleCalendarInterface:
                 if event['s'].year >= 2038 or event['e'].year >= 2038:
                     continue
 
-                event_list.append(event)
+                yield event
 
             pageToken = events.get('nextPageToken')
-            if pageToken:
-                events = self._retry_with_backoff(
-                             self.get_events()
-                                 .list(
-                                     calendarId=cal['id'],
-                                     timeMin=start.isoformat() if start else None,
-                                     timeMax=end.isoformat() if end else None,
-                                     q=search_text if search_text else None,
-                                     singleEvents=True,
-                                     pageToken=pageToken
-                                 )
-                         )
-            else:
+            if not pageToken:
                 break
 
-        return event_list
-
     def _search_for_events(self, start, end, search_text):
-
         event_list = []
         for cal in self.cals:
-            event_list.extend(self._GetAllEvents(cal, start, end, search_text))
-
+            event_list.extend(
+                self._GetAllEvents(cal, start, end, search_text=search_text))
         event_list.sort(key=lambda x: x['s'])
-
         return event_list
 
     def _DeclinedEvent(self, event):
