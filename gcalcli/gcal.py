@@ -22,7 +22,7 @@ from googleapiclient.errors import HttpError
 from google.auth.transport.requests import Request  # type: ignore
 
 from . import actions, ics, utils
-from ._types import Cache, CalendarListEntry
+from ._types import Cache, CalendarListEntry, Event
 from .actions import ACTIONS
 from .conflicts import ShowConflicts
 from .details import _valid_title, ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS
@@ -1417,6 +1417,21 @@ class GoogleCalendarInterface:
         if not pid:
             os.execvp(cmd[0], cmd)
 
+    def _event_should_use_new_import_api(
+            self, event: Event, cal: CalendarListEntry
+    ) -> bool:
+        """Evaluates whether a given event should use the newer "import" API.
+
+        Returns true if the user hasn't opted out and the event is cleanly
+        importable.
+        """
+        if not self.options.get('use_legacy_import'):
+            return False
+        event_includes_self = any(
+                'self' in a or a['email'] == cal['id']
+                for a in event.get('attendees', []))
+        return 'iCalUID' in event and event_includes_self
+
     def ImportICS(self, verbose=False, dump=False, reminders=None,
                   icsFile=None):
         if not ics.has_vobject_support():
@@ -1456,6 +1471,18 @@ class GoogleCalendarInterface:
             verbose=verbose,
             default_tz=self.cals[0]['timeZone'],
             printer=self.printer)
+        if not dump and any(
+                self._event_should_use_new_import_api(event, self.cals[0])
+                for event in events_to_import):
+            self.printer.msg(
+                '\n'
+                'NOTE: This import will use a new graceful import feature in '
+                'gcalcli to avoid creating duplicate events (see '
+                'https://github.com/insanum/gcalcli/issues/492).\n'
+                'If you see any issues, you can cancel and retry with '
+                '--use-legacy-import to restore the old behavior.\n\n')
+            time.sleep(1)
+
         for event in events_to_import:
             if not event:
                 continue
@@ -1485,15 +1512,35 @@ class GoogleCalendarInterface:
 
             # Import event
             import_method = (
-                self.get_events().import_ if 'iCalUID' in event
+                self.get_events().import_ if (
+                    self._event_should_use_new_import_api(event, self.cals[0]))
                 else self.get_events().insert)
-            new_event = self._retry_with_backoff(
-                import_method(
-                    calendarId=self.cals[0]['id'], body=event
+            try:
+                new_event = self._retry_with_backoff(
+                    import_method(calendarId=self.cals[0]['id'], body=event))
+            except HttpError as e:
+                try:
+                    is_skipped_dupe = any(detail.get('reason') == 'duplicate'
+                                          for detail in e.error_details)
+                except Exception:
+                    # Fail gracefully so weird error responses don't blow up.
+                    is_skipped_dupe = False
+                event_label = (
+                    f'"{event["summary"]}"' if event.get('summary')
+                    else f"with start {event['start']}"
                 )
-            )
-            hlink = new_event.get('htmlLink')
-            self.printer.msg(f'New event added: {hlink}\n', 'green')
+                if is_skipped_dupe:
+                    # TODO: #492 - Offer to force import dupe anyway?
+                    self.printer.msg(
+                        f'Skipped duplicate event {event_label}.\n')
+                else:
+                    self.printer.err_msg(
+                        f'Failed to import event {event_label}.\n')
+                    self.printer.msg(f'Event details: {event}\n')
+                    self.printer.debug_msg(f'Error details: {e}\n')
+            else:
+                hlink = new_event.get('htmlLink')
+                self.printer.msg(f'New event added: {hlink}\n', 'green')
 
         # TODO: return the number of events added
         return True

@@ -2,6 +2,8 @@ v4.4.0
   * Fix lots of bugs by switching from deprecated oauth2client to
     google_auth_oauthlib
   * Friendlier help output when `import` command is missing vobject extra
+  * `import` command more gracefully handles existing events to avoid duplicates
+    and unnecessary edits (tsheinen, cryhot)
   * Handle encoding/decoding errors more gracefully by replacing with
     placeholder chars instead of blowing up
   * Fix `--lineart` option failing with unicode errors

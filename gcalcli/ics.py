@@ -3,7 +3,7 @@
 import importlib.util
 import io
 from datetime import datetime
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, List, Optional
 
 from gcalcli.printer import Printer
 from gcalcli.utils import localize_datetime
@@ -17,14 +17,18 @@ def has_vobject_support() -> bool:
 
 def get_events(
     ics: io.TextIOBase, verbose: bool, default_tz: str, printer: Printer
-) -> Iterable[Optional[EventBody]]:
+) -> List[Optional[EventBody]]:
     import vobject
 
+    events: List[Optional[EventBody]] = []
     for v in vobject.readComponents(ics):
-        for ve in v.vevent_list:
-            yield CreateEventFromVOBJ(
+        events.extend(
+            CreateEventFromVOBJ(
                 ve, verbose=verbose, default_tz=default_tz, printer=printer
             )
+            for ve in v.vevent_list
+        )
+    return events
 
 
 def CreateEventFromVOBJ(
@@ -139,5 +143,10 @@ def CreateEventFromVOBJ(
         if verbose:
             print(f'UID..........{uid}')
         event['iCalUID'] = uid
+    if hasattr(ve, 'sequence'):
+        sequence = ve.sequence.value.strip()
+        if verbose:
+            print(f'Sequence.....{sequence}')
+        event['sequence'] = sequence
 
     return event

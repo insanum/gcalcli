@@ -277,6 +277,14 @@ def test_import(PatchedGCalI):
     assert gcal.ImportICS(icsFile=open(vcal_path, errors='replace'))
 
 
+def test_legacy_import(PatchedGCalI):
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'])
+    gcal = PatchedGCalI(
+        cal_names=cal_names, default_reminders=True, use_legacy_import=True)
+    vcal_path = TEST_DATA_DIR + '/vv.txt'
+    assert gcal.ImportICS(icsFile=open(vcal_path, errors='replace'))
+
+
 def test_parse_reminder():
     MINS_PER_DAY = 60 * 24
     MINS_PER_WEEK = MINS_PER_DAY * 7
