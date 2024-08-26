@@ -40,6 +40,7 @@ Test coverage for new functionality is helpful, but not always required. Feel fr
 Make sure you've installed [tox](https://tox.wiki/) and a supported python version, then run
 
 ```shell
+git submodule update --init
 tox
 ```
 
