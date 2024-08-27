@@ -44,4 +44,4 @@ git submodule update --init
 tox
 ```
 
-You can follow up in the issue tracker to ask questions or report issues.
+See [tests/README.md](tests/README.md) for more info on the tests.
