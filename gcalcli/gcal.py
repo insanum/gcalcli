@@ -17,12 +17,10 @@ import googleapiclient.http
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
-from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from google.auth.transport.requests import Request  # type: ignore
 
-from . import actions, ics, utils
+from . import actions, auth, ics, utils
 from ._types import Cache, CalendarListEntry, Event
 from .actions import ACTIONS
 from .conflicts import ShowConflicts
@@ -122,40 +120,54 @@ class GoogleCalendarInterface:
         return None
 
     def _google_auth(self):
+        if self.credentials:
+            return self.credentials
+
+        # Try loading cached credentials
+        if self.options['config_folder']:
+            oauth_filepath = os.path.expanduser(
+                '%s/oauth' % self.options['config_folder']
+            )
+        else:
+            oauth_filepath = os.path.expanduser('~/.gcalcli_oauth')
+        if os.path.exists(oauth_filepath):
+            with open(oauth_filepath, 'rb') as gcalcli_oauth:
+                self.credentials = pickle.load(gcalcli_oauth)
+
         if not self.credentials:
-            if self.options['config_folder']:
-                oauth_filepath = os.path.expanduser(
-                    '%s/oauth' % self.options['config_folder']
+            # No cached credentials, start auth flow
+            self.printer.msg(
+                'Not yet authenticated. Starting auth flow...\n', 'yellow')
+            self.printer.msg(
+                'NOTE: See https://github.com/insanum/gcalcli for '
+                'help/troubleshooting.\n')
+            missing_info = [opt for opt in ['client_id', 'client_secret']
+                            if self.options.get(opt) is None]
+            if missing_info:
+                self.printer.msg(
+                    f"You'll be asked for a {' and '.join(missing_info)} "
+                    'that you should have set up for yourself in Google '
+                    'dev console.\n'
                 )
-            else:
-                oauth_filepath = os.path.expanduser('~/.gcalcli_oauth')
-            if os.path.exists(oauth_filepath):
-                with open(oauth_filepath, 'rb') as gcalcli_oauth:
-                    credentials = pickle.load(gcalcli_oauth)
-            else:
-                flow = InstalledAppFlow.from_client_config(
-                    client_config={
-                        "installed": {
-                            "client_id": self.options['client_id'],
-                            "client_secret": self.options['client_secret'],
-                            "auth_uri":
-                                "https://accounts.google.com/o/oauth2/auth",
-                            "token_uri": "https://oauth2.googleapis.com/token",
-                            "auth_provider_x509_cert_url":
-                                "https://www.googleapis.com/oauth2/v1/certs",
-                            "redirect_uris": ["http://localhost"]
-                        }
-                    },
-                    scopes=['https://www.googleapis.com/auth/calendar']
-                )
-                credentials = flow.run_local_server(open_browser=False)
-                with open(oauth_filepath, 'wb') as gcalcli_oauth:
-                    pickle.dump(credentials, gcalcli_oauth)
+            client_id = self.options.get('client_id')
+            if client_id is None:
+                self.printer.msg('Client ID: ', 'magenta')
+                client_id = input()
+            client_secret = self.options.get('client_secret')
+            if client_secret is None:
+                self.printer.msg('Client Secret: ', 'magenta')
+                client_secret = input()
+            self.printer.msg(
+                'Now click the link below and follow directions to '
+                'authenticate.\n', 'yellow')
+            self.printer.msg(
+                'You will likely see a security warning page and need to '
+                'click "Advanced" and "Go to gcalcli (unsafe)" to proceed.\n')
+            self.credentials = auth.authenticate(client_id, client_secret)
+            with open(oauth_filepath, 'wb') as gcalcli_oauth:
+                pickle.dump(self.credentials, gcalcli_oauth)
 
-            if credentials.expired:
-                credentials.refresh(Request())
-
-            self.credentials = credentials
+        auth.refresh_if_expired(self.credentials)
         return self.credentials
 
     def get_cal_service(self):
