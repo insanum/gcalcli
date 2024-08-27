@@ -139,8 +139,9 @@ class GoogleCalendarInterface:
             self.printer.msg(
                 'Not yet authenticated. Starting auth flow...\n', 'yellow')
             self.printer.msg(
-                'NOTE: See https://github.com/insanum/gcalcli for '
-                'help/troubleshooting.\n')
+                'NOTE: See '
+                'https://github.com/insanum/gcalcli/blob/HEAD/docs/api-auth.md '
+                'for help/troubleshooting.\n')
             missing_info = [opt for opt in ['client_id', 'client_secret']
                             if self.options.get(opt) is None]
             if missing_info:
