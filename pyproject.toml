@@ -9,13 +9,13 @@ requires-python = ">= 3.8"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [
-  { name = "Eric Davis", email = "edavis@insanum.com" },
-  { name = "Brian Hartvigsen", email = "brian.andrew@brianandjenny.com" },
-  { name = "Joshua Crowgey", email = "jcrowgey@uw.edu" },
+  { name = "Eric Davis" },
+  { name = "Brian Hartvigsen" },
+  { name = "Joshua Crowgey" },
 ]
 maintainers = [
-  { name = "David Barnett", email = "david@mumind.me" },
-  { name = "Joshua Crowgey", email = "jcrowgey@uw.edu" },
+  { name = "David Barnett" },
+  { name = "Martin Dengler" },
 ]
 description = "Google Calendar Command Line Interface"
 classifiers = [
@@ -35,8 +35,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/insanum/gcalcli"
 Repository = "https://github.com/insanum/gcalcli"
+Issues = "https://github.com/insanum/gcalcli/issues"
+Changelog = "https://github.com/insanum/gcalcli/blob/HEAD/ChangeLog"
 
 [project.optional-dependencies]
 vobject = ["vobject"]
