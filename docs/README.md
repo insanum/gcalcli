@@ -90,18 +90,6 @@ cd gcalcli
 pip install .[vobject]
 ```
 
-## More screenshots
-
-![gcalcli 1](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/gcalcli_1.png)
-
-![gcalcli 2](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/gcalcli_2.png)
-
-![gcalcli 3](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_3.png)
-
-Reminder popup:
-
-![Reminder popup](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_4.png)
-
 ## Usage
 
 `gcalcli` provides a series of subcommands with the following functionality:
@@ -119,7 +107,7 @@ Reminder popup:
 
 See the manual (`man (1) gcalcli`), or run with `--help`/`-h` for detailed usage.
 
-### Login Information
+### Initial setup
 
 OAuth2 is used for authenticating with your Google account. The resulting token
 is placed in the `~/.gcalcli_oauth` file. When you first start gcalcli the
@@ -127,29 +115,14 @@ authentication process will proceed. Simply follow the instructions.
 
 **You currently have to use your own Calendar API token.** Our Calendar API token is restricted to few users only and waits for Google's approval to be unlocked.
 
-1. [Create a New Project](https://console.developers.google.com/projectcreate) within the Google developer console
-   1. Activate the "Create" button.
-2. [Enable the Google Calendar API](https://console.developers.google.com/apis/api/calendar-json.googleapis.com/)
-   1. Activate the "Enable" button.
-3. [Create OAuth2 consent screen](https://console.developers.google.com/apis/credentials/consent/edit;newAppInternalUser=false) for an "UI /Desktop Application".
-   1. Fill out required App information section
-      1. Specify App name. Example: "gcalcli"
-      2. Specify User support email. Example: your@gmail.com
-   2. Fill out required Developer contact information
-      1. Specify Email addresses. Example: your@gmail.com
-   3. Activate the "Save and continue" button.
-   4. Scopes: activate the "Save and continue" button.
-   5. Test users
-      1. Add your@gmail.com
-      2. Activate the "Save and continue" button.
-4. [Create OAuth Client ID](https://console.developers.google.com/apis/credentials/oauthclient)
-   1. Specify Application type: Desktop app.
-   2. Activate the "Create" button.
-5. Grab your newly created Client ID (in the form "xxxxxxxxxxxxxxx.apps.googleusercontent.com") and Client Secret from the Credentials page.
-6. Call `gcalcli` with your Client ID and Client Secret to login via the OAuth2 Authorization Screen.
-   ` gcalcli --client-id=xxxxxxxxxxxxxxx.apps.googleusercontent.com --client-secret=xxxxxxxxxxxxxxxxx list`.
-   In most shells, putting a space before the command will keep it, and therefore your secrets, out of history. Check with `history | tail`.
-7. This should automatically open the OAuth2 authorization screen in your default browser.
+Set up your Google "project" and auth token as explained in docs/api-auth.md,
+then run gcalcli passing a `--client-id` to finish setup:
+
+```shell
+$ gcalcli --client-id=xxxxxxxxxxxxxxx.apps.googleusercontent.com list
+```
+
+Enter the client secret when prompted and follow its directions to complete the permission flow.
 
 ### Shell completion
 
@@ -348,3 +321,15 @@ Of course your hardstatus line is most likely very different than this:
 backtick 1 60 60 screen_agenda
 hardstatus "[ %1` ]"
 ```
+
+## More screenshots
+
+![gcalcli 1](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_1.png)
+
+![gcalcli 2](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_2.png)
+
+![gcalcli 3](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_3.png)
+
+Reminder popup:
+
+![Reminder popup](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_4.png)

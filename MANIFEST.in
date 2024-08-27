@@ -1,3 +1,4 @@
 include ChangeLog
 include README.md
-include docs/**/*
+
+graft docs
