@@ -92,15 +92,15 @@ pip install .[vobject]
 
 ## More screenshots
 
-![gcalcli 1](https://github.com/insanum/gcalcli/raw/main/docs/gcalcli_1.png)
+![gcalcli 1](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/gcalcli_1.png)
 
-![gcalcli 2](https://github.com/insanum/gcalcli/raw/main/docs/gcalcli_2.png)
+![gcalcli 2](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/gcalcli_2.png)
 
-![gcalcli 3](https://github.com/insanum/gcalcli/raw/main/docs/gcalcli_3.png)
+![gcalcli 3](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_3.png)
 
 Reminder popup:
 
-![Reminder popup](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_4.png)
+![Reminder popup](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_4.png)
 
 ## Usage
 
