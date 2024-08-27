@@ -90,18 +90,6 @@ cd gcalcli
 pip install .[vobject]
 ```
 
-## More screenshots
-
-![gcalcli 1](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/gcalcli_1.png)
-
-![gcalcli 2](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/gcalcli_2.png)
-
-![gcalcli 3](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_3.png)
-
-Reminder popup:
-
-![Reminder popup](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_4.png)
-
 ## Usage
 
 `gcalcli` provides a series of subcommands with the following functionality:
@@ -333,3 +321,15 @@ Of course your hardstatus line is most likely very different than this:
 backtick 1 60 60 screen_agenda
 hardstatus "[ %1` ]"
 ```
+
+## More screenshots
+
+![gcalcli 1](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_1.png)
+
+![gcalcli 2](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_2.png)
+
+![gcalcli 3](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_3.png)
+
+Reminder popup:
+
+![Reminder popup](https://raw.githubusercontent.com/insanum/gcalcli/HEAD/docs/gcalcli_4.png)
