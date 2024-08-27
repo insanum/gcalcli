@@ -105,15 +105,15 @@ Features
 Screenshots
 -----------
 
-![gcalcli 5](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_5.png)
+![gcalcli 5](https://github.com/insanum/gcalcli/raw/main/docs/gcalcli_5.png)
 
-![gcalcli 1](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_1.png)
+![gcalcli 1](https://github.com/insanum/gcalcli/raw/main/docs/gcalcli_1.png)
 
-![gcalcli 2](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_2.png)
+![gcalcli 2](https://github.com/insanum/gcalcli/raw/main/docs/gcalcli_2.png)
 
-![gcalcli 3](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_3.png)
+![gcalcli 3](https://github.com/insanum/gcalcli/raw/main/docs/gcalcli_3.png)
 
-![gcalcli 4](https://github.com/insanum/gcalcli/raw/master/docs/gcalcli_4.png)
+![gcalcli 4](https://github.com/insanum/gcalcli/raw/main/docs/gcalcli_4.png)
 
 HowTo
 -----
