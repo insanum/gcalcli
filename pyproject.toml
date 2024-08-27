@@ -58,6 +58,7 @@ universal = true
 
 [tool.ruff]
 line-length = 80
+extend-exclude = ["tests/cli/"]
 
 [tool.ruff.lint]
 # Enable Errors, Warnings, Flakes
