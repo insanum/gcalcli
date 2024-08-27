@@ -415,6 +415,13 @@ def get_argument_parser():
     _import.add_argument(
         '--dump', '-d', action='store_true',
         help='Print events and don\'t import')
+    _import.add_argument(
+        '--use-legacy-import',
+        action='store_true',
+        help='Use legacy "insert" operation instead of new graceful "import" '
+        'operation when importing calendar events. Note this option will be '
+        'removed in future releases.',
+    )
 
     default_cmd = 'notify-send -u critical -i appointment-soon -a gcalcli %s'
     remind = sub.add_parser(
