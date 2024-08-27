@@ -7,6 +7,7 @@ dist/
 venv/
 htmlcov/
 
+/gcalcli/_version.py
 gcalcli.egg-info
 
 .coverage
