@@ -10,7 +10,7 @@ import shlex
 import sys
 import textwrap
 import time
-from typing import Iterable, List
+from typing import Iterable
 from unicodedata import east_asian_width
 
 import googleapiclient.http
@@ -47,7 +47,7 @@ PRINTER = Printer()
 class GoogleCalendarInterface:
 
     cache: Cache = {}
-    all_cals: List[CalendarListEntry] = []
+    all_cals: list[CalendarListEntry] = []
     now = datetime.now(tzlocal())
     agenda_length = 5
     conflicts_lookahead_days = 30
