@@ -15,7 +15,7 @@ gcalcli uses the [Google Calendar API version 3](https://developers.google.com/g
 
 ## Features
 
- * OAuth2 authention with your Google account
+ * OAuth2 authentication with your Google account
  * list your calendars
  * show an agenda using a specified start/end date and time
  * show updates since a specified datetime for events between a start/end date and time
@@ -115,7 +115,8 @@ authentication process will proceed. Simply follow the instructions.
 
 **You currently have to use your own Calendar API token.** Our Calendar API token is restricted to few users only and waits for Google's approval to be unlocked.
 
-Set up your Google "project" and auth token as explained in docs/api-auth.md,
+Set up your Google "project" and auth token as explained in
+[docs/auth-api.md](https://github.com/insanum/gcalcli/blob/HEAD/docs/api-auth.md),
 then run gcalcli passing a `--client-id` to finish setup:
 
 ```shell
@@ -162,7 +163,7 @@ command line parameter per line.
 
 In the current version, the flag file only supports the global options (options
 against the `gcalcli` program itself).  The plan, longer term, is to support a
-a configuration formation (probably toml or ini), which will allow for
+configuration formation (probably toml or ini), which will allow for
 configuration of subcommands (such as `add`, `agenda`, `calw`, etc.)
 
 Example:
