@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '/*.md'
+      - '/ChangeLog'
+      - '/LICENSE'
+      - 'docs/**'
 
 permissions:
   contents: read
