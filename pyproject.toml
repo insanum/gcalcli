@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gcalcli"
 dynamic = ["version"]
-requires-python = ">= 3.8"
+requires-python = ">= 3.10"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [
@@ -26,12 +26,12 @@ classifiers = [
   "Programming Language :: Python :: 3",
 ]
 dependencies = [
-  "python-dateutil",
-  "google-api-python-client>=1.4",
-  "httplib2",
-  "google_auth_oauthlib",
-  "parsedatetime",
   "argcomplete",
+  "google-api-python-client>=1.4",
+  "google_auth_oauthlib",
+  "httplib2",
+  "parsedatetime",
+  "python-dateutil",
   # dev dependencies
   "google-api-python-client-stubs",
   "types-python-dateutil",
@@ -58,9 +58,6 @@ version_file = "gcalcli/_version.py"
 
 [project.scripts]
 gcalcli = "gcalcli.cli:main"
-
-[tool.distutils.bdist_wheel]
-universal = true
 
 [tool.ruff]
 line-length = 80
