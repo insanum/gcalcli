@@ -3,12 +3,12 @@
 import importlib.util
 import io
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from gcalcli.printer import Printer
 from gcalcli.utils import localize_datetime
 
-EventBody = Dict[str, Any]
+EventBody = dict[str, Any]
 
 
 def has_vobject_support() -> bool:
@@ -17,10 +17,10 @@ def has_vobject_support() -> bool:
 
 def get_events(
     ics: io.TextIOBase, verbose: bool, default_tz: str, printer: Printer
-) -> List[Optional[EventBody]]:
+) -> list[Optional[EventBody]]:
     import vobject
 
-    events: List[Optional[EventBody]] = []
+    events: list[Optional[EventBody]] = []
     for v in vobject.readComponents(ics):
         events.extend(
             CreateEventFromVOBJ(

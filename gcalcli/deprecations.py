@@ -1,6 +1,6 @@
 import argparse
 import functools
-from typing import Any, Dict
+from typing import Any
 
 from .printer import Printer, valid_color_name
 
@@ -69,7 +69,7 @@ BASE_OPTS = {'program': {'type': str,
                         'action': DeprecatedStoreTrue}}
 
 
-OPTIONS: Dict[str, Dict[str, Any]] = {
+OPTIONS: dict[str, dict[str, Any]] = {
     'program': {
         "--client_id": {'default': None},
         "--client_secret": {'default': None},
