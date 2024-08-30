@@ -32,6 +32,7 @@ dependencies = [
   "httplib2",
   "parsedatetime",
   "python-dateutil",
+  "truststore",
   # dev dependencies
   "google-api-python-client-stubs",
   "types-python-dateutil",

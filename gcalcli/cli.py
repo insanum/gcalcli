@@ -24,6 +24,7 @@ from collections import namedtuple
 import os
 import signal
 import sys
+import truststore
 
 from . import utils
 from .argparsers import get_argument_parser, handle_unparsed
@@ -86,6 +87,8 @@ def run_add_prompt(parsed_args, printer):
 
 def main():
     parser = get_argument_parser()
+    # import trusted certificate store to enable SSL, e.g., behind firewalls
+    truststore.inject_into_ssl()
     try:
         argv = sys.argv[1:]
         gcalclirc = os.path.expanduser('~/.gcalclirc')
