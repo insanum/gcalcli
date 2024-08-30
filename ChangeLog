@@ -1,3 +1,6 @@
+v4.5.0
+  * Drop support for python <3.10
+  * Respect locally-installed certificates (ajkessel)
 v4.4.0
   * Fix lots of bugs by switching from deprecated oauth2client to
     google_auth_oauthlib
