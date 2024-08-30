@@ -33,11 +33,6 @@ dependencies = [
   "parsedatetime",
   "python-dateutil",
   "truststore",
-  # dev dependencies
-  "google-api-python-client-stubs",
-  "types-python-dateutil",
-  "types-requests",
-  "types-vobject",
 ]
 
 [project.urls]
@@ -47,6 +42,12 @@ Changelog = "https://github.com/insanum/gcalcli/blob/HEAD/ChangeLog"
 
 [project.optional-dependencies]
 vobject = ["vobject"]
+dev = [
+  "google-api-python-client-stubs",
+  "types-python-dateutil",
+  "types-requests",
+  "types-vobject",
+]
 
 [tool.setuptools]
 packages = ["gcalcli"]
