@@ -44,4 +44,8 @@ git submodule update --init
 tox
 ```
 
+NOTE: You'll also want to install the "dev" extra in any development environment you're using
+that's not managed by tox (by changing install commands `gcalcli`->`gcalcli[dev]` or
+`.`->`.[dev]`).
+
 See [tests/README.md](tests/README.md) for more info on the tests.
