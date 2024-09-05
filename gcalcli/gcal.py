@@ -132,7 +132,16 @@ class GoogleCalendarInterface:
             oauth_filepath = os.path.expanduser('~/.gcalcli_oauth')
         if os.path.exists(oauth_filepath):
             with open(oauth_filepath, 'rb') as gcalcli_oauth:
-                self.credentials = pickle.load(gcalcli_oauth)
+                try:
+                    self.credentials = pickle.load(gcalcli_oauth)
+                except pickle.UnpicklingError as e:
+                    self.printer.err_msg(
+                        f"Couldn't parse {oauth_filepath}.\n"
+                        "The file may be corrupt or be incompatible with this "
+                        "version of gcalcli. It probably has to be removed and "
+                        "provisioning done again.\n"
+                    )
+                    raise e
 
         if not self.credentials:
             # No cached credentials, start auth flow
