@@ -131,28 +131,48 @@ class GoogleCalendarInterface:
         else:
             oauth_filepath = os.path.expanduser('~/.gcalcli_oauth')
         if os.path.exists(oauth_filepath):
+            needs_write = False
             with open(oauth_filepath, 'rb') as gcalcli_oauth:
                 try:
                     self.credentials = pickle.load(gcalcli_oauth)
-                except pickle.UnpicklingError as e:
-                    self.printer.err_msg(
-                        f"Couldn't parse {oauth_filepath}.\n"
-                        "The file may be corrupt or be incompatible with this "
-                        "version of gcalcli. It probably has to be removed and "
-                        "provisioning done again.\n"
-                    )
-                    raise e
+                except (pickle.UnpicklingError, EOFError) as e:
+                    # Try reading as legacy json format as fallback.
+                    try:
+                        gcalcli_oauth.seek(0)
+                        self.credentials = auth.creds_from_legacy_json(
+                            json.load(gcalcli_oauth)
+                        )
+                        needs_write = True
+                    except (OSError, ValueError, EOFError):
+                        pass
+                    if not self.credentials:
+                        self.printer.err_msg(
+                            f"Couldn't parse {oauth_filepath}.\n"
+                            "The file may be corrupt or be incompatible with "
+                            "this version of gcalcli. It probably has to be "
+                            "removed and provisioning done again.\n"
+                        )
+                        raise e
+            if needs_write:
+                # Save back loaded creds to file (for legacy conversion case).
+                with open(oauth_filepath, 'wb') as gcalcli_oauth:
+                    pickle.dump(self.credentials, gcalcli_oauth)
 
         if not self.credentials:
             # No cached credentials, start auth flow
             self.printer.msg(
-                'Not yet authenticated. Starting auth flow...\n', 'yellow')
+                'Not yet authenticated. Starting auth flow...\n', 'yellow'
+            )
             self.printer.msg(
                 'NOTE: See '
                 'https://github.com/insanum/gcalcli/blob/HEAD/docs/api-auth.md '
-                'for help/troubleshooting.\n')
-            missing_info = [opt for opt in ['client_id', 'client_secret']
-                            if self.options.get(opt) is None]
+                'for help/troubleshooting.\n'
+            )
+            missing_info = [
+                opt
+                for opt in ['client_id', 'client_secret']
+                if self.options.get(opt) is None
+            ]
             if missing_info:
                 self.printer.msg(
                     f"You'll be asked for a {' and '.join(missing_info)} "
@@ -169,10 +189,13 @@ class GoogleCalendarInterface:
                 client_secret = input()
             self.printer.msg(
                 'Now click the link below and follow directions to '
-                'authenticate.\n', 'yellow')
+                'authenticate.\n',
+                'yellow',
+            )
             self.printer.msg(
                 'You will likely see a security warning page and need to '
-                'click "Advanced" and "Go to gcalcli (unsafe)" to proceed.\n')
+                'click "Advanced" and "Go to gcalcli (unsafe)" to proceed.\n'
+            )
             self.credentials = auth.authenticate(client_id, client_secret)
             with open(oauth_filepath, 'wb') as gcalcli_oauth:
                 pickle.dump(self.credentials, gcalcli_oauth)
