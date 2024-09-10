@@ -1,9 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import sys
+from types import SimpleNamespace
 
 from dateutil.tz import tzlocal
 from googleapiclient.discovery import build, HttpMock
+import google.oauth2.reauth
 import pytest
 
 from gcalcli.argparsers import (get_cal_query_parser, get_color_parser,
@@ -60,74 +62,44 @@ def default_options():
 
 
 @pytest.fixture
-def PatchedGCalIForEvents(monkeypatch):
+def PatchedGCalIForEvents(PatchedGCalI, monkeypatch):
     def mocked_search_for_events(self, start, end, search_text):
         return mock_event
 
-    def mocked_calendar_service(self):
-        http = HttpMock(
-                TEST_DATA_DIR + '/cal_service_discovery.json',
-                {'status': '200'})
-        if not self.cal_service:
-            self.cal_service = build(
-                    serviceName='calendar', version='v3', http=http)
-        return self.cal_service
-
-    def mocked_calendar_list(self):
-        http = HttpMock(
-                TEST_DATA_DIR + '/cal_list.json', {'status': '200'})
-        request = self.get_cal_service().calendarList().list()
-        cal_list = request.execute(http=http)
-        self.all_cals = [cal for cal in cal_list['items']]
-        if not self.cal_service:
-            self.cal_service = build(
-                 serviceName='calendar', version='v3', http=http)
-        return self.cal_service
-
-    def mocked_msg(self, msg, colorname='default', file=sys.stdout):
-        # ignores file and always writes to stdout
-        if self.use_color:
-            msg = self.colors[colorname] + msg + self.colors['default']
-        sys.stdout.write(msg)
-
     monkeypatch.setattr(
-            GoogleCalendarInterface, '_search_for_events',
-            mocked_search_for_events
+        GoogleCalendarInterface, '_search_for_events', mocked_search_for_events
     )
-    monkeypatch.setattr(
-            GoogleCalendarInterface, 'get_cal_service', mocked_calendar_service
-    )
-    monkeypatch.setattr(
-            GoogleCalendarInterface, '_get_cached', mocked_calendar_list
-    )
-    monkeypatch.setattr(Printer, 'msg', mocked_msg)
 
-    def _init(**opts):
-        return GoogleCalendarInterface(use_cache=False, **opts)
-
-    return _init
+    return PatchedGCalI
 
 
 @pytest.fixture
-def PatchedGCalI(monkeypatch):
-    def mocked_calendar_service(self):
+def PatchedGCalI(gcali_patches):
+    gcali_patches.stub_out_cal_service()
+    return gcali_patches.GCalI
+
+
+@pytest.fixture
+def gcali_patches(monkeypatch):
+    def mocked_cal_service(self):
         http = HttpMock(
-                TEST_DATA_DIR + '/cal_service_discovery.json',
-                {'status': '200'})
+            TEST_DATA_DIR + '/cal_service_discovery.json', {'status': '200'}
+        )
         if not self.cal_service:
             self.cal_service = build(
-                    serviceName='calendar', version='v3', http=http)
+                serviceName='calendar', version='v3', http=http
+            )
         return self.cal_service
 
     def mocked_calendar_list(self):
-        http = HttpMock(
-                TEST_DATA_DIR + '/cal_list.json', {'status': '200'})
+        http = HttpMock(TEST_DATA_DIR + '/cal_list.json', {'status': '200'})
         request = self.get_cal_service().calendarList().list()
         cal_list = request.execute(http=http)
         self.all_cals = [cal for cal in cal_list['items']]
         if not self.cal_service:
             self.cal_service = build(
-                 serviceName='calendar', version='v3', http=http)
+                serviceName='calendar', version='v3', http=http
+            )
         return self.cal_service
 
     def mocked_msg(self, msg, colorname='default', file=sys.stdout):
@@ -137,14 +109,35 @@ def PatchedGCalI(monkeypatch):
         sys.stdout.write(msg)
 
     monkeypatch.setattr(
-            GoogleCalendarInterface, 'get_cal_service', mocked_calendar_service
-    )
-    monkeypatch.setattr(
-            GoogleCalendarInterface, '_get_cached', mocked_calendar_list
+        GoogleCalendarInterface, '_get_cached', mocked_calendar_list
     )
     monkeypatch.setattr(Printer, 'msg', mocked_msg)
 
     def _init(**opts):
         return GoogleCalendarInterface(use_cache=False, **opts)
 
-    return _init
+    return SimpleNamespace(
+        GCalI=_init,
+        stub_out_cal_service=lambda: monkeypatch.setattr(
+            GoogleCalendarInterface, 'get_cal_service', mocked_cal_service
+        ),
+    )
+
+
+@pytest.fixture
+def patched_google_reauth(monkeypatch):
+    def mocked_refresh_grant(*args, **kw):
+        expiry = datetime.now() + timedelta(minutes=60)
+        grant_response = {}
+        return (
+            'some_access_token',
+            'some_refresh_token',
+            expiry,
+            grant_response,
+            'some_rapt_token',
+        )
+
+    monkeypatch.setattr(
+        google.oauth2.reauth, 'refresh_grant', mocked_refresh_grant
+    )
+    return monkeypatch

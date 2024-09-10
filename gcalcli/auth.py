@@ -1,5 +1,6 @@
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2.credentials import Credentials
 
 
 def authenticate(client_id: str, client_secret: str):
@@ -10,8 +11,7 @@ def authenticate(client_id: str, client_secret: str):
                 "client_secret": client_secret,
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token",
-                "auth_provider_x509_cert_url":
-                    "https://www.googleapis.com/oauth2/v1/certs",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
                 "redirect_uris": ["http://localhost"],
             }
         },
@@ -24,3 +24,19 @@ def authenticate(client_id: str, client_secret: str):
 def refresh_if_expired(credentials) -> None:
     if credentials.expired:
         credentials.refresh(Request())
+
+
+def creds_from_legacy_json(data):
+    kwargs = {
+        k: v
+        for k, v in data.items()
+        if k
+        in (
+            'client_id',
+            'client_secret',
+            'refresh_token',
+            'token_uri',
+            'scopes',
+        )
+    }
+    return Credentials(data['access_token'], **kwargs)
