@@ -1,3 +1,5 @@
+from contextlib import closing
+import socket
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.oauth2.credentials import Credentials
@@ -17,16 +19,35 @@ def authenticate(client_id: str, client_secret: str):
         },
         scopes=["https://www.googleapis.com/auth/calendar"],
     )
-    try:
-        credentials = flow.run_local_server(open_browser=False)
-    except RecursionError:
-        raise OSError(
-            'Failed to fetch credentials. If this is a nonstandard gcalcli '
-            'install, please try again with a system-installed gcalcli as a '
-            'workaround.\n'
-            'Details: https://github.com/insanum/gcalcli/issues/735.'
-        )
+    credentials = None
+    attempt_num = 0
+    # Retry up to 5 attempts with different random ports.
+    while credentials is None:
+        port = _free_local_port()
+        try:
+            credentials = flow.run_local_server(open_browser=False, port=port)
+        except OSError as e:
+            if e.errno == 98 and attempt_num < 4:
+                # Will get retried with a different port.
+                attempt_num += 1
+            else:
+                raise
+        except RecursionError:
+            raise OSError(
+                'Failed to fetch credentials. If this is a nonstandard gcalcli '
+                'install, please try again with a system-installed gcalcli as '
+                'a workaround.\n'
+                'Details: https://github.com/insanum/gcalcli/issues/735.'
+            )
     return credentials
+
+
+def _free_local_port():
+    # See https://stackoverflow.com/a/45690594.
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        s.bind(('', 0))
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        return s.getsockname()[1]
 
 
 def refresh_if_expired(credentials) -> None:
