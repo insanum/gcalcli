@@ -17,7 +17,15 @@ def authenticate(client_id: str, client_secret: str):
         },
         scopes=["https://www.googleapis.com/auth/calendar"],
     )
-    credentials = flow.run_local_server(open_browser=False)
+    try:
+        credentials = flow.run_local_server(open_browser=False)
+    except RecursionError:
+        raise OSError(
+            'Failed to fetch credentials. If this is a nonstandard gcalcli '
+            'install, please try again with a system-installed gcalcli as a '
+            'workaround.\n'
+            'Details: https://github.com/insanum/gcalcli/issues/735.'
+        )
     return credentials
 
 
