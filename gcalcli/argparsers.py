@@ -17,49 +17,80 @@ from .details import DETAILS
 from .printer import valid_color_name
 
 PROGRAM_OPTIONS = {
-        '--client-id': {'default': None,
-                        'type': str,
-                        'help': 'API client_id'},
-        '--client-secret': {'default': None,
-                            'type': str,
-                            'help': 'API client_secret'},
-        '--config-folder': {'default': None, 'type': str,
-                            'help': 'Optional directory to load/store all ' +
-                                    'configuration information'},
-        '--noincluderc': {'action': 'store_false',
-                          'dest': 'includeRc',
-                          'help': 'Whether to include ~/.gcalclirc when ' +
-                                  'using configFolder'},
-        '--calendar': {'default': [], 'type': str, 'action': 'append',
-                       'help': 'Which calendars to use, in the format '
-                               '"CalendarName" or "CalendarName#color", where '
-                               'the #color suffix is the name of a valid ANSI '
-                               'color (such as "brightblue"). This option may '
-                               'be called multiple times to display '
-                               'additional calendars.'},
-        '--default-calendar': {'default': [], 'type': str, 'action': 'append',
-                               'dest': 'defaultCalendar',
-                               'help': 'Optional default calendar to use if ' +
-                                       'no --calendar options are given'},
-        '--locale': {'default': '', 'type': str, 'help': 'System locale'},
-        '--refresh': {'action': 'store_true', 'dest': 'refresh_cache',
-                      'default': False,
-                      'help': 'Delete and refresh cached data'},
-        '--nocache': {'action': 'store_false', 'dest': 'use_cache',
-                      'default': True,
-                      'help': 'Execute command without using cache'},
-        '--conky': {'action': 'store_true', 'default': False,
-                    'help': 'Use Conky color codes'},
-        '--nocolor': {'action': 'store_false', 'default': True,
-                      'dest': 'color',
-                      'help': 'Enable/Disable all color output'},
-        '--lineart': {'default': 'fancy',
-                      'choices': ['fancy', 'unicode', 'ascii'],
-                      'help': 'Choose line art style for calendars: ' +
-                              '"fancy": for VTcodes, "unicode" for ' +
-                              'Unicode box drawing characters, "ascii" ' +
-                              'for old-school plusses, hyphens and pipes.'},
-        }
+    '--client-id': {'default': None, 'type': str, 'help': 'API client_id'},
+    '--client-secret': {
+        'default': None,
+        'type': str,
+        'help': 'API client_secret',
+    },
+    '--noauth_local_server': {
+        'action': 'store_false',
+        'dest': 'auth_local_server',
+        'help': 'Provide instructions for authenticating from a remote system '
+        'using port forwarding.\nNote: Previously this option invoked an '
+        '"Out-Of-Band" variant of the auth flow, but that deprecated mechanism '
+        'is no longer supported.',
+    },
+    '--config-folder': {
+        'default': None,
+        'type': str,
+        'help': 'Optional directory to load/store all configuration '
+        'information',
+    },
+    '--noincluderc': {
+        'action': 'store_false',
+        'dest': 'includeRc',
+        'help': 'Whether to include ~/.gcalclirc when using configFolder',
+    },
+    '--calendar': {
+        'default': [],
+        'type': str,
+        'action': 'append',
+        'help': 'Which calendars to use, in the format "CalendarName" or '
+        '"CalendarName#color", where the #color suffix is the name of a valid '
+        'ANSI color (such as "brightblue"). This option may be called multiple '
+        'times to display additional calendars.',
+    },
+    '--default-calendar': {
+        'default': [],
+        'type': str,
+        'action': 'append',
+        'dest': 'defaultCalendar',
+        'help': 'Optional default calendar to use if no --calendar options are '
+        'given',
+    },
+    '--locale': {'default': '', 'type': str, 'help': 'System locale'},
+    '--refresh': {
+        'action': 'store_true',
+        'dest': 'refresh_cache',
+        'default': False,
+        'help': 'Delete and refresh cached data',
+    },
+    '--nocache': {
+        'action': 'store_false',
+        'dest': 'use_cache',
+        'default': True,
+        'help': 'Execute command without using cache',
+    },
+    '--conky': {
+        'action': 'store_true',
+        'default': False,
+        'help': 'Use Conky color codes',
+    },
+    '--nocolor': {
+        'action': 'store_false',
+        'default': True,
+        'dest': 'color',
+        'help': 'Enable/Disable all color output',
+    },
+    '--lineart': {
+        'default': 'fancy',
+        'choices': ['fancy', 'unicode', 'ascii'],
+        'help': 'Choose line art style for calendars: "fancy": for VTcodes, '
+        '"unicode" for Unicode box drawing characters, "ascii" for old-school '
+        'plusses, hyphens and pipes.',
+    },
+}
 
 
 class DetailsAction(argparse._AppendAction):
