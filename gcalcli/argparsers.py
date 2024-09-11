@@ -4,6 +4,7 @@ import argparse
 import copy as _copy
 import datetime
 import locale
+import pathlib
 import sys
 from shutil import get_terminal_size
 
@@ -33,9 +34,12 @@ PROGRAM_OPTIONS = {
     },
     '--config-folder': {
         'default': None,
-        'type': str,
-        'help': 'Optional directory to load/store all configuration '
-        'information',
+        'type': pathlib.Path,
+        'help': 'Optional directory used to load config files. If unset, '
+        'gcalclirc will be read from ~/.gcalclirc instead of '
+        'CONFIG_FOLDER/gcalclirc. Note: this path is also used to determine '
+        'fallback paths to check for cache/oauth files to be migrated into '
+        'their proper data dir paths.',
     },
     '--noincluderc': {
         'action': 'store_false',

@@ -1,12 +1,15 @@
 from collections import namedtuple
 from csv import DictReader, excel_tab
 from datetime import date, datetime, timedelta
+import functools
 from itertools import chain
 import json
 import os
+import pathlib
 import random
 import re
 import shlex
+import shutil
 import sys
 import textwrap
 import time
@@ -19,8 +22,9 @@ from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+import platformdirs
 
-from . import actions, auth, ics, utils
+from . import __program__, actions, auth, ics, utils
 from ._types import Cache, CalendarListEntry, Event
 from .actions import ACTIONS
 from .conflicts import ShowConflicts
@@ -119,20 +123,35 @@ class GoogleCalendarInterface:
 
         return None
 
+    @staticmethod
+    def default_data_dir() -> pathlib.Path:
+        return platformdirs.user_data_path(__program__)
+
+    @functools.cache
+    def data_file_path(self, name: str) -> pathlib.Path:
+        path = self.default_data_dir().joinpath(name)
+        explicit_config: pathlib.Path = self.options['config_folder']
+        if explicit_config:
+            legacy_path = explicit_config.joinpath(name)
+        else:
+            legacy_path = pathlib.Path(f'~/.gcalcli_{name}').expanduser()
+        if not path.exists() and legacy_path.exists():
+            self.printer.msg(
+                f'Moving {name} file from legacy path {legacy_path} to '
+                f'{path}...\n')
+            path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(legacy_path, path)
+        return path
+
     def _google_auth(self):
         if self.credentials:
             return self.credentials
 
         # Try loading cached credentials
-        if self.options['config_folder']:
-            oauth_filepath = os.path.expanduser(
-                '%s/oauth' % self.options['config_folder']
-            )
-        else:
-            oauth_filepath = os.path.expanduser('~/.gcalcli_oauth')
-        if os.path.exists(oauth_filepath):
+        oauth_filepath = self.data_file_path('oauth')
+        if oauth_filepath.exists():
             needs_write = False
-            with open(oauth_filepath, 'rb') as gcalcli_oauth:
+            with oauth_filepath.open('rb') as gcalcli_oauth:
                 try:
                     self.credentials = pickle.load(gcalcli_oauth)
                 except (pickle.UnpicklingError, EOFError) as e:
@@ -155,7 +174,8 @@ class GoogleCalendarInterface:
                         raise e
             if needs_write:
                 # Save back loaded creds to file (for legacy conversion case).
-                with open(oauth_filepath, 'wb') as gcalcli_oauth:
+                oauth_filepath.parent.mkdir(parents=True, exist_ok=True)
+                with oauth_filepath.open('wb') as gcalcli_oauth:
                     pickle.dump(self.credentials, gcalcli_oauth)
 
         if not self.credentials:
@@ -202,6 +222,7 @@ class GoogleCalendarInterface:
                 printer=self.printer,
                 local=self.options['auth_local_server'],
             )
+            oauth_filepath.parent.mkdir(parents=True, exist_ok=True)
             with open(oauth_filepath, 'wb') as gcalcli_oauth:
                 pickle.dump(self.credentials, gcalcli_oauth)
 
@@ -220,19 +241,10 @@ class GoogleCalendarInterface:
         return self.get_cal_service().events()
 
     def _get_cached(self):
-        if self.options['config_folder']:
-            cache_file = os.path.expanduser(
-                    '%s/cache' % self.options['config_folder']
-            )
-        else:
-            cache_file = os.path.expanduser('~/.gcalcli_cache')
+        cache_path = self.data_file_path('cache')
 
         if self.options['refresh_cache']:
-            try:
-                os.remove(cache_file)
-            except OSError:
-                pass
-                # fall through
+            cache_path.unlink(missing_ok=True)
 
         self.cache = {}
         self.all_cals = []
@@ -241,7 +253,7 @@ class GoogleCalendarInterface:
             # note that we need to use pickle for cache data since we stuff
             # various non-JSON data in the runtime storage structures
             try:
-                with open(cache_file, 'rb') as _cache_:
+                with cache_path.open('rb') as _cache_:
                     self.cache = pickle.load(_cache_)
                     self.all_cals = self.cache['all_cals']
                 # XXX assuming data is valid, need some verification check here
@@ -266,7 +278,8 @@ class GoogleCalendarInterface:
 
         if self.options['use_cache']:
             self.cache['all_cals'] = self.all_cals
-            with open(cache_file, 'wb') as _cache_:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            with cache_path.open('wb') as _cache_:
                 pickle.dump(self.cache, _cache_)
 
     def _calendar_color(self, event, override_color=False):

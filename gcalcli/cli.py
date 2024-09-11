@@ -96,7 +96,7 @@ def main():
             # We want .gcalclirc to be sourced before any other --flagfile
             # params since we may be told to use a specific config folder, we
             # need to store generated argv in temp variable
-            tmp_argv = ['@%s' % gcalclirc, ] + argv
+            tmp_argv = [f'@{gcalclirc}'] + argv
         else:
             tmp_argv = argv
 
@@ -107,17 +107,18 @@ def main():
         sys.exit(1)
 
     if parsed_args.config_folder:
-        if not os.path.exists(os.path.expanduser(parsed_args.config_folder)):
-            os.makedirs(os.path.expanduser(parsed_args.config_folder))
-        if os.path.exists(os.path.expanduser('%s/gcalclirc' %
-                                             parsed_args.config_folder)):
-            rc_path = ['@%s/gcalclirc' % parsed_args.config_folder, ]
-            if not parsed_args.includeRc:
-                tmp_argv = rc_path + argv
-            else:
-                tmp_argv = rc_path + tmp_argv
+        parsed_args.config_folder = parsed_args.config_folder.expanduser()
+        gcalclirc_path = parsed_args.config_folder.joinpath('gcalclirc')
+        if gcalclirc_path.exists():
+            # TODO: Should this precedence be flipped to:
+            # ['@~/.gcalclirc', '@CONFIG_FOLDER/gcalclirc', ...]?
+            tmp_argv = [f'@{gcalclirc_path}'] + (
+                tmp_argv if parsed_args.includeRc else argv
+            )
 
         (parsed_args, unparsed) = parser.parse_known_args(tmp_argv)
+        if parsed_args.config_folder:
+            parsed_args.config_folder = parsed_args.config_folder.expanduser()
 
     printer = Printer(
             conky=parsed_args.conky, use_color=parsed_args.color,
