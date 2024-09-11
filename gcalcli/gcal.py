@@ -49,7 +49,6 @@ PRINTER = Printer()
 
 
 class GoogleCalendarInterface:
-
     cache: Cache = {}
     all_cals: list[CalendarListEntry] = []
     now = datetime.now(tzlocal())
@@ -58,6 +57,9 @@ class GoogleCalendarInterface:
     max_retries = 5
     credentials = None
     cal_service = None
+    # Special override to bypass all auth and defer the auth-related failures
+    # as late as possible, for testing.
+    userless_mode: bool = False
 
     ACCESS_OWNER = 'owner'
     ACCESS_WRITER = 'writer'
@@ -66,15 +68,24 @@ class GoogleCalendarInterface:
 
     UNIWIDTH = {'W': 2, 'F': 2, 'N': 1, 'Na': 1, 'H': 1, 'A': 1}
 
-    def __init__(self, cal_names=(), printer=PRINTER, **options):
+    def __init__(
+        self, cal_names=(), printer=PRINTER, userless_mode=False, **options
+    ):
         self.cals = []
         self.printer = printer
         self.options = options
+        self.userless_mode = userless_mode
 
         self.details = options.get('details', {})
         # stored as detail, but provided as option: TODO: fix that
         self.details['width'] = options.get('width', 80)
-        self._get_cached()
+        if self.userless_mode:
+            print(
+                "Running in GCALCLI_USERLESS_MODE. Most operations will fail!",
+                file=sys.stderr,
+            )
+        else:
+            self._get_cached()
 
         self._select_cals(cal_names)
 
@@ -138,7 +149,8 @@ class GoogleCalendarInterface:
         if not path.exists() and legacy_path.exists():
             self.printer.msg(
                 f'Moving {name} file from legacy path {legacy_path} to '
-                f'{path}...\n')
+                f'{path}...\n'
+            )
             path.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(legacy_path, path)
         return path
@@ -230,10 +242,12 @@ class GoogleCalendarInterface:
         return self.credentials
 
     def get_cal_service(self):
-        if not self.cal_service:
-            self.cal_service = build(serviceName='calendar',
-                                     version='v3',
-                                     credentials=self._google_auth())
+        if not self.cal_service and not self.userless_mode:
+            self.cal_service = build(
+                serviceName='calendar',
+                version='v3',
+                credentials=self._google_auth(),
+            )
 
         return self.cal_service
 
