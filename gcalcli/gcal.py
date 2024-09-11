@@ -196,7 +196,12 @@ class GoogleCalendarInterface:
                 'You will likely see a security warning page and need to '
                 'click "Advanced" and "Go to gcalcli (unsafe)" to proceed.\n'
             )
-            self.credentials = auth.authenticate(client_id, client_secret)
+            self.credentials = auth.authenticate(
+                client_id,
+                client_secret,
+                printer=self.printer,
+                local=self.options['auth_local_server'],
+            )
             with open(oauth_filepath, 'wb') as gcalcli_oauth:
                 pickle.dump(self.credentials, gcalcli_oauth)
 
