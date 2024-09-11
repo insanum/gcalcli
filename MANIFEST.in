@@ -1,4 +1,6 @@
 include ChangeLog
 include README.md
+exclude .git*
 
 graft docs
+prune .github
