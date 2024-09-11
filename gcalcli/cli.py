@@ -143,8 +143,12 @@ def main():
         parsed_args.calendar = parsed_args.defaultCalendar
 
     cal_names = parse_cal_names(parsed_args.calendar)
+    userless_mode = bool(os.environ.get('GCALCLI_USERLESS_MODE'))
     gcal = GoogleCalendarInterface(
-            cal_names=cal_names, printer=printer, **vars(parsed_args)
+        cal_names=cal_names,
+        printer=printer,
+        userless_mode=userless_mode,
+        **vars(parsed_args),
     )
 
     try:
