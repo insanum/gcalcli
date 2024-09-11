@@ -4,11 +4,13 @@ import argparse
 import copy as _copy
 import datetime
 import locale
+import os
 import pathlib
 import sys
 from shutil import get_terminal_size
 
 import argcomplete  # type: ignore
+import platformdirs
 
 import gcalcli
 
@@ -33,13 +35,10 @@ PROGRAM_OPTIONS = {
         'is no longer supported.',
     },
     '--config-folder': {
-        'default': None,
+        'default': os.environ.get('GCALCLI_CONFIG'),
         'type': pathlib.Path,
-        'help': 'Optional directory used to load config files. If unset, '
-        'gcalclirc will be read from ~/.gcalclirc instead of '
-        'CONFIG_FOLDER/gcalclirc. Note: this path is also used to determine '
-        'fallback paths to check for cache/oauth files to be migrated into '
-        'their proper data dir paths.',
+        'help': 'Optional directory used to load config files. Deprecated: '
+        'prefer $GCALCLI_CONFIG.',
     },
     '--noincluderc': {
         'action': 'store_false',
@@ -283,12 +282,51 @@ def handle_unparsed(unparsed, namespace):
     return parser.parse_args(unparsed, namespace=namespace)
 
 
+class RawDescArgDefaultsHelpFormatter(
+    argparse.RawDescriptionHelpFormatter, argparse.ArgumentDefaultsHelpFormatter
+):
+    pass
+
+
+DESCRIPTION = """\
+Google Calendar Command Line Interface
+
+configuration:
+  %(prog)s supports a few other configuration mechanisms in addition to
+  the command-line arguments listed below.
+
+  $GCALCLI_CONFIG={config_dir!r}
+    Path to user config directory.
+    Note: this path is also used to determine fallback paths to check
+    for cache/oauth files to be migrated into their proper data dir
+    paths.
+
+  gcalclirc @ {rc_paths}
+    A flag file listing additional command-line args to always pass,
+    one per line.
+    Note: Use this sparingly and prefer other configuration mechanisms
+    where available. This flag file mechanism can be brittle
+    (example: https://github.com/insanum/gcalcli/issues/513).
+"""
+
+
 @parser_allow_deprecated(name='program')
 def get_argument_parser():
+    config_dir = (
+        os.environ.get('GCALCLI_CONFIG') or platformdirs.user_config_dir()
+    )
+    rc_paths = [pathlib.Path(config_dir).joinpath('gcalclirc')]
+    legacy_rc_path = pathlib.Path.home().joinpath('.gcalclirc')
+    if legacy_rc_path.exists():
+        rc_paths.append(legacy_rc_path)
+
     parser = argparse.ArgumentParser(
-            description='Google Calendar Command Line Interface',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-            fromfile_prefix_chars='@')
+        description=DESCRIPTION.format(
+            config_dir=config_dir, rc_paths=', '.join(str(p) for p in rc_paths)
+        ),
+        formatter_class=RawDescArgDefaultsHelpFormatter,
+        fromfile_prefix_chars='@',
+    )
 
     parser.add_argument(
             '--version', action='version', version='%%(prog)s %s (%s)' %

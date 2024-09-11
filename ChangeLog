@@ -5,6 +5,7 @@ v4.5.0
     from a remote system using port forwarding
   * Migrate data files like ~/.gcalcli_oauth into standard data file paths
     (with fallback to migrate detected files into the new paths)
+  * Add support for $GCALCLI_CONFIG env var and deprecate --config-folder
 
 v4.4.0
   * Fix lots of bugs by switching from deprecated oauth2client to
