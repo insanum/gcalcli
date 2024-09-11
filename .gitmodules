@@ -7,3 +7,6 @@
 [submodule "tests/cli/test_helper/bats-assert"]
 	path = tests/cli/test_helper/bats-assert
 	url = https://github.com/bats-core/bats-assert.git
+[submodule "tests/cli/test_helper/bats-snapshot"]
+	path = tests/cli/test_helper/bats-snapshot
+	url = https://github.com/markkong318/bats-snapshot.git
