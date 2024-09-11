@@ -1,12 +1,12 @@
-from datetime import datetime, timedelta
 import os
 import sys
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 
-from dateutil.tz import tzlocal
-from googleapiclient.discovery import build, HttpMock
 import google.oauth2.reauth
 import pytest
+from dateutil.tz import tzlocal
+from googleapiclient.discovery import HttpMock, build
 
 from gcalcli.argparsers import (get_cal_query_parser, get_color_parser,
                                 get_output_parser)
@@ -113,11 +113,22 @@ def gcali_patches(monkeypatch):
     )
     monkeypatch.setattr(Printer, 'msg', mocked_msg)
 
-    def _init(**opts):
-        return GoogleCalendarInterface(use_cache=False, **opts)
+    def data_file_path_stub(self, name):
+        stubbed_path = getattr(self, '_stubbed_data_path', None)
+        if stubbed_path is None:
+            return None
+        return stubbed_path.joinpath(name)
+    monkeypatch.setattr(
+        GoogleCalendarInterface, 'data_file_path', data_file_path_stub)
+
+    orig_init = GoogleCalendarInterface.__init__
+    def modified_init(self, *args, data_path=None, **kwargs):
+        self._stubbed_data_path = data_path
+        return orig_init(self, *args, **kwargs, use_cache=False)
+    monkeypatch.setattr(GoogleCalendarInterface, '__init__', modified_init)
 
     return SimpleNamespace(
-        GCalI=_init,
+        GCalI=GoogleCalendarInterface,
         stub_out_cal_service=lambda: monkeypatch.setattr(
             GoogleCalendarInterface, 'get_cal_service', mocked_cal_service
         ),

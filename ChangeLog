@@ -3,6 +3,8 @@ v4.5.0
   * Respect locally-installed certificates (ajkessel)
   * Re-add a `--noauth_local_server` to provide instructions for authenticating
     from a remote system using port forwarding
+  * Migrate data files like ~/.gcalcli_oauth into standard data file paths
+    (with fallback to migrate detected files into the new paths)
 
 v4.4.0
   * Fix lots of bugs by switching from deprecated oauth2client to

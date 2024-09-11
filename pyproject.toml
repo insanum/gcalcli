@@ -31,6 +31,7 @@ dependencies = [
   "google_auth_oauthlib",
   "httplib2",
   "parsedatetime",
+  "platformdirs",
   "python-dateutil",
   "truststore",
 ]
