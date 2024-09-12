@@ -8,7 +8,7 @@
       "type": "object",
       "description": "Settings about the set of calendars gcalcli operates on",
       "properties": {
-        "default-calendar": {
+        "default-calendars": {
           "type": "array",
           "items": { "type": "string" },
           "description": "Calendar(s) to use as default for certain commands when no explicit target calendar is otherwise specified"
