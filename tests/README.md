@@ -51,3 +51,8 @@ individually with `tox -e cli`.
 NOTE: They'll fail if you haven't initialized the repo submodules for Bats yet, so if you hit
 errors for missing test runner files, make sure you've run `git submodule update --init` in the
 repo.
+
+Some tests may fail on `assert_snapshot` calls from the
+[bats-snapshot](https://github.com/markkong318/bats-snapshot) helper, in which case you can easily
+update snapshots by finding and deleting the corresponding .snap file in \__snapshots__/, rerunning
+the cli tests, and then reviewing the updated snapshot file to make sure the diff is expected.
