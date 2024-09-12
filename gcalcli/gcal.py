@@ -93,7 +93,9 @@ class GoogleCalendarInterface:
             raise GcalcliError('this object should not already have cals')
 
         if not selected_names:
-            self.cals = self.all_cals
+            ignore_cals = self.options['ignore_calendars']
+            self.cals = [c for c in self.all_cals
+                         if c['summary'] not in ignore_cals]
             return
 
         for cal_name in selected_names:
@@ -1163,29 +1165,26 @@ class GoogleCalendarInterface:
                    if 'self' in a or a['email'] == event['gcalcli_cal']['id'])
 
     def ListAllCalendars(self):
-        access_len = 0
-
-        for cal in self.all_cals:
-            length = len(cal['accessRole'])
-            if length > access_len:
-                access_len = length
-
-        if access_len < len('Access'):
-            access_len = len('Access')
+        access_len = max(len(cal['accessRole']) for cal in self.all_cals)
+        access_len = max(access_len, len('Access'))
 
         _format = ' %0' + str(access_len) + 's  %s\n'
 
         self.printer.msg(
-                _format % ('Access', 'Title'), self.options['color_title']
+            _format % ('Access', 'Title'), self.options['color_title']
         )
         self.printer.msg(
-                _format % ('------', '-----'), self.options['color_title']
+            _format % ('------', '-----'), self.options['color_title']
         )
 
         for cal in self.all_cals:
+            name = cal['summary']
+            ignored = name in self.options['ignore_calendars']
+            if ignored:
+                name = f'{name} (ignored)'
             self.printer.msg(
-                    _format % (cal['accessRole'], cal['summary']),
-                    self._calendar_color(cal)
+                _format % (cal['accessRole'], name),
+                self._calendar_color(cal) if not ignored else 'brightblack'
             )
 
     def _display_queried_events(self, start, end, search=None,

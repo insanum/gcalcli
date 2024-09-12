@@ -124,6 +124,7 @@ def gcali_patches(monkeypatch):
     orig_init = GoogleCalendarInterface.__init__
     def modified_init(self, *args, data_path=None, **kwargs):
         self._stubbed_data_path = data_path
+        kwargs.setdefault('ignore_calendars', [])
         return orig_init(self, *args, **kwargs, use_cache=False)
     monkeypatch.setattr(GoogleCalendarInterface, '__init__', modified_init)
 

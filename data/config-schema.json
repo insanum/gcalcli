@@ -11,7 +11,12 @@
         "default-calendars": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Calendar(s) to use as default for certain commands when no explicit target calendar is otherwise specified"
+          "description": "Calendars to use as default for certain commands when no explicit target calendar is otherwise specified"
+        },
+        "ignore-calendars": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Calendars to ignore by default (unless explicitly included using --calendar) when running commands against all calendars"
         }
       }
     }
