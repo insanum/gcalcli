@@ -3,9 +3,9 @@ usage: gcalcli [-h] [--version] [--client-id CLIENT_ID]
                [--client-secret CLIENT_SECRET] [--noauth_local_server]
                [--config-folder CONFIG_FOLDER] [--noincluderc]
                [--calendar CALENDAR]
-               [--default-calendar DEFAULTCALENDAR] [--locale LOCALE]
-               [--refresh] [--nocache] [--conky] [--nocolor]
-               [--lineart {fancy,unicode,ascii}]
+               [--default-calendar DEFAULT_CALENDARS]
+               [--locale LOCALE] [--refresh] [--nocache] [--conky]
+               [--nocolor] [--lineart {fancy,unicode,ascii}]
                {list,search,edit,delete,agenda,agendaupdate,updates,conflicts,calw,calm,quick,add,import,remind}
                ...
 
@@ -82,7 +82,7 @@ options:
                         color (such as "brightblue"). This option may
                         be called multiple times to display additional
                         calendars. (default: [])
-  --default-calendar DEFAULTCALENDAR
+  --default-calendar DEFAULT_CALENDARS
                         Optional default calendar to use if no
                         --calendar options are given (default: [])
   --locale LOCALE       System locale (default: )

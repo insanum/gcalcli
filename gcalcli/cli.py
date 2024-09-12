@@ -115,13 +115,18 @@ def main():
 
     config_dir = env.default_config_dir()
     config_filepath = config_dir.joinpath('config.toml')
-    opts_from_config = argparse.Namespace()
+    opts_from_config = argparse.Namespace(
+        default_calendars=[],
+        ignore_calendars=[],
+    )
     if config_filepath.exists():
         with config_filepath.open('rb') as config_file:
             config = tomllib.load(config_file)
-            opts_from_config.defaultCalendar = config.get('calendars', {}).get(
-                'default-calendars', []
-            )
+            cals_config = config.get('calendars', {})
+            opts_from_config.default_calendars.extend(
+                cals_config.get('default-calendars', []))
+            opts_from_config.ignore_calendars.extend(
+                cals_config.get('ignore-calendars', []))
 
     if parsed_args.config_folder:
         parsed_args.config_folder = parsed_args.config_folder.expanduser()
@@ -159,9 +164,13 @@ def main():
             printer.err_msg(str(exc))
 
     if len(parsed_args.calendar) == 0:
-        parsed_args.calendar = parsed_args.defaultCalendar
+        parsed_args.calendar = parsed_args.default_calendars
 
     cal_names = parse_cal_names(parsed_args.calendar)
+    # Only ignore calendars if they're not explicitly in --calendar list.
+    parsed_args.ignore_calendars[:] = [c for c in parsed_args.ignore_calendars
+                                       if c not in [c2.name
+                                                    for c2 in cal_names]]
     userless_mode = bool(os.environ.get('GCALCLI_USERLESS_MODE'))
     gcal = GoogleCalendarInterface(
         cal_names=cal_names,

@@ -69,7 +69,7 @@ PROGRAM_OPTIONS = {
         'default': [],
         'type': str,
         'action': 'append',
-        'dest': 'defaultCalendar',
+        'dest': 'default_calendars',
         'help': 'Optional default calendar to use if no --calendar options are '
         'given',
     },
