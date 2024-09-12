@@ -120,7 +120,7 @@ def main():
         with config_filepath.open('rb') as config_file:
             config = tomllib.load(config_file)
             opts_from_config.defaultCalendar = config.get('calendars', {}).get(
-                'default-calendar', []
+                'default-calendars', []
             )
 
     if parsed_args.config_folder:

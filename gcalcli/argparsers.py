@@ -293,11 +293,17 @@ configuration:
   %(prog)s supports a few other configuration mechanisms in addition to
   the command-line arguments listed below.
 
-  $GCALCLI_CONFIG={config_dir!r}
+  $GCALCLI_CONFIG={config_dir}
     Path to user config directory.
     Note: this path is also used to determine fallback paths to check
     for cache/oauth files to be migrated into their proper data dir
     paths.
+
+  {config_file}
+    A toml config file where some general-purpose settings can be
+    configured.
+    Schema:
+    https://raw.githubusercontent.com/insanum/gcalcli/HEAD/data/config-schema.json
 
   gcalclirc @ {rc_paths}
     A flag file listing additional command-line args to always pass,
@@ -308,17 +314,32 @@ configuration:
 """
 
 
+def shorten_path(path: pathlib.Path) -> pathlib.Path:
+    """Try to shorten path using special characters like ~.
+
+    Returns original path unmodified if it can't be shortened.
+    """
+    tilde_home = pathlib.Path('~')
+    expanduser_len = len(tilde_home.expanduser().parts)
+    if path.parts[:expanduser_len] == tilde_home.expanduser().parts:
+        return tilde_home.joinpath(*path.parts[expanduser_len:])
+    return path
+
+
 @parser_allow_deprecated(name='program')
 def get_argument_parser():
-    config_dir = env.default_config_dir()
-    rc_paths = [pathlib.Path(config_dir).joinpath('gcalclirc')]
+    config_dir = shorten_path(env.default_config_dir())
+    # Shorten path to ~/PATH if possible for easier readability.
+    rc_paths = [config_dir.joinpath('gcalclirc')]
     legacy_rc_path = pathlib.Path.home().joinpath('.gcalclirc')
     if legacy_rc_path.exists():
-        rc_paths.append(legacy_rc_path)
+        rc_paths.append(shorten_path(legacy_rc_path))
 
     parser = argparse.ArgumentParser(
         description=DESCRIPTION.format(
-            config_dir=config_dir, rc_paths=', '.join(str(p) for p in rc_paths)
+            config_dir=config_dir,
+            config_file=config_dir.joinpath('config.toml'),
+            rc_paths=', '.join(str(p) for p in rc_paths),
         ),
         formatter_class=RawDescArgDefaultsHelpFormatter,
         fromfile_prefix_chars='@',
