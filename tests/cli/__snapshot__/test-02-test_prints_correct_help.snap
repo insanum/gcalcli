@@ -1,0 +1,100 @@
+0
+usage: gcalcli [-h] [--version] [--client-id CLIENT_ID]
+               [--client-secret CLIENT_SECRET] [--noauth_local_server]
+               [--config-folder CONFIG_FOLDER] [--noincluderc]
+               [--calendar CALENDAR]
+               [--default-calendar DEFAULTCALENDAR] [--locale LOCALE]
+               [--refresh] [--nocache] [--conky] [--nocolor]
+               [--lineart {fancy,unicode,ascii}]
+               {list,search,edit,delete,agenda,agendaupdate,updates,conflicts,calw,calm,quick,add,import,remind}
+               ...
+
+Google Calendar Command Line Interface
+
+configuration:
+  gcalcli supports a few other configuration mechanisms in addition to
+  the command-line arguments listed below.
+
+  $GCALCLI_CONFIG=/some/gcalcli/config
+    Path to user config directory.
+    Note: this path is also used to determine fallback paths to check
+    for cache/oauth files to be migrated into their proper data dir
+    paths.
+
+  /some/gcalcli/config/config.toml
+    A toml config file where some general-purpose settings can be
+    configured.
+    Schema:
+    https://raw.githubusercontent.com/insanum/gcalcli/HEAD/data/config-schema.json
+
+  gcalclirc @ /some/gcalcli/config/gcalclirc
+    A flag file listing additional command-line args to always pass,
+    one per line.
+    Note: Use this sparingly and prefer other configuration mechanisms
+    where available. This flag file mechanism can be brittle
+    (example: https://github.com/insanum/gcalcli/issues/513).
+
+positional arguments:
+  {list,search,edit,delete,agenda,agendaupdate,updates,conflicts,calw,calm,quick,add,import,remind}
+                        Invoking a subcommand with --help prints
+                        subcommand usage.
+    list                list available calendars
+    search              search for events within an optional time
+                        period
+    edit                edit calendar events
+    delete              delete events from the calendar
+    agenda              get an agenda for a time period
+    agendaupdate        update calendar from agenda TSV file
+    updates             get updates since a datetime for a time period
+                        (defaults to through end of current month)
+    conflicts           find event conflicts
+    calw                get a week-based agenda in calendar format
+    calm                get a month agenda in calendar format
+    quick               quick-add an event to a calendar
+    add                 add a detailed event to the calendar
+    import              import an ics/vcal file to a calendar
+    remind              execute command if event occurs within <mins>
+                        time
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --client-id CLIENT_ID
+                        API client_id (default: None)
+  --client-secret CLIENT_SECRET
+                        API client_secret (default: None)
+  --noauth_local_server
+                        Provide instructions for authenticating from a
+                        remote system using port forwarding. Note:
+                        Previously this option invoked an "Out-Of-
+                        Band" variant of the auth flow, but that
+                        deprecated mechanism is no longer supported.
+                        (default: True)
+  --config-folder CONFIG_FOLDER
+                        Optional directory used to load config files.
+                        Deprecated: prefer $GCALCLI_CONFIG. (default:
+                        /some/gcalcli/config)
+  --noincluderc         Whether to include ~/.gcalclirc when using
+                        configFolder (default: True)
+  --calendar CALENDAR   Which calendars to use, in the format
+                        "CalendarName" or "CalendarName#color", where
+                        the #color suffix is the name of a valid ANSI
+                        color (such as "brightblue"). This option may
+                        be called multiple times to display additional
+                        calendars. (default: [])
+  --default-calendar DEFAULTCALENDAR
+                        Optional default calendar to use if no
+                        --calendar options are given (default: [])
+  --locale LOCALE       System locale (default: )
+  --refresh             Delete and refresh cached data (default:
+                        False)
+  --nocache             Execute command without using cache (default:
+                        True)
+  --conky               Use Conky color codes (default: False)
+  --nocolor             Enable/Disable all color output (default:
+                        True)
+  --lineart {fancy,unicode,ascii}
+                        Choose line art style for calendars: "fancy":
+                        for VTcodes, "unicode" for Unicode box drawing
+                        characters, "ascii" for old-school plusses,
+                        hyphens and pipes. (default: fancy)
