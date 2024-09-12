@@ -33,6 +33,7 @@ dependencies = [
   "parsedatetime",
   "platformdirs",
   "python-dateutil",
+  "toml; python_version < '3.11'",
   "truststore",
 ]
 
@@ -46,6 +47,7 @@ dev = [
   "google-api-python-client-stubs",
   "types-python-dateutil",
   "types-requests",
+  "types-toml; python_version < '3.11'",
   "types-vobject",
 ]
 vobject = ["vobject"]
