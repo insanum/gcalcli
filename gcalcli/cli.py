@@ -24,9 +24,15 @@ from collections import namedtuple
 import os
 import signal
 import sys
+if sys.version_info[:2] < (3, 11):
+    import toml as tomllib
+else:
+    import tomllib
+
+import argparse
 import truststore
 
-from . import utils
+from . import env, utils
 from .argparsers import get_argument_parser, handle_unparsed
 from .exceptions import GcalcliError
 from .gcal import GoogleCalendarInterface
@@ -86,9 +92,10 @@ def run_add_prompt(parsed_args, printer):
 
 
 def main():
-    parser = get_argument_parser()
     # import trusted certificate store to enable SSL, e.g., behind firewalls
     truststore.inject_into_ssl()
+
+    parser = get_argument_parser()
     try:
         argv = sys.argv[1:]
         gcalclirc = os.path.expanduser('~/.gcalclirc')
@@ -106,6 +113,16 @@ def main():
         parser.print_usage()
         sys.exit(1)
 
+    config_dir = env.default_config_dir()
+    config_filepath = config_dir.joinpath('config.toml')
+    opts_from_config = argparse.Namespace()
+    if config_filepath.exists():
+        with config_filepath.open('rb') as config_file:
+            config = tomllib.load(config_file)
+            opts_from_config.defaultCalendar = config.get('calendars', {}).get(
+                'default-calendar', []
+            )
+
     if parsed_args.config_folder:
         parsed_args.config_folder = parsed_args.config_folder.expanduser()
         gcalclirc_path = parsed_args.config_folder.joinpath('gcalclirc')
@@ -116,7 +133,9 @@ def main():
                 tmp_argv if parsed_args.includeRc else argv
             )
 
-        (parsed_args, unparsed) = parser.parse_known_args(tmp_argv)
+        (parsed_args, unparsed) = parser.parse_known_args(
+            tmp_argv, namespace=opts_from_config
+        )
         if parsed_args.config_folder:
             parsed_args.config_folder = parsed_args.config_folder.expanduser()
 

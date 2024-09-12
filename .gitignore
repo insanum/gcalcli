@@ -14,4 +14,5 @@ gcalcli.egg-info
 .pytest_cache?
 .tox
 
+.python-version
 *.pyc

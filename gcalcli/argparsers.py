@@ -4,17 +4,15 @@ import argparse
 import copy as _copy
 import datetime
 import locale
-import os
 import pathlib
 import sys
 from shutil import get_terminal_size
 
 import argcomplete  # type: ignore
-import platformdirs
 
 import gcalcli
 
-from . import utils
+from . import env, utils
 from .deprecations import DeprecatedStoreTrue, parser_allow_deprecated
 from .details import DETAILS
 from .printer import valid_color_name
@@ -35,7 +33,7 @@ PROGRAM_OPTIONS = {
         'is no longer supported.',
     },
     '--config-folder': {
-        'default': os.environ.get('GCALCLI_CONFIG'),
+        'default': env.default_config_dir(),
         'type': pathlib.Path,
         'help': 'Optional directory used to load config files. Deprecated: '
         'prefer $GCALCLI_CONFIG.',
@@ -312,9 +310,7 @@ configuration:
 
 @parser_allow_deprecated(name='program')
 def get_argument_parser():
-    config_dir = (
-        os.environ.get('GCALCLI_CONFIG') or platformdirs.user_config_dir()
-    )
+    config_dir = env.default_config_dir()
     rc_paths = [pathlib.Path(config_dir).joinpath('gcalclirc')]
     legacy_rc_path = pathlib.Path.home().joinpath('.gcalclirc')
     if legacy_rc_path.exists():

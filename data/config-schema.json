@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "gcalcli config",
+  "type": "object",
+  "description": "User configuration for gcalcli command-line tool. See https://pypi.org/project/gcalcli/.",
+  "properties": {
+    "calendars": {
+      "type": "object",
+      "description": "Settings about the set of calendars gcalcli operates on",
+      "properties": {
+        "default-calendar": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Calendar(s) to use as default for certain commands when no explicit target calendar is otherwise specified"
+        }
+      }
+    }
+  }
+}

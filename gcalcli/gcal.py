@@ -22,9 +22,8 @@ from dateutil.relativedelta import relativedelta
 from dateutil.tz import tzlocal
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-import platformdirs
 
-from . import __program__, actions, auth, ics, utils
+from . import actions, auth, env, ics, utils
 from ._types import Cache, CalendarListEntry, Event
 from .actions import ACTIONS
 from .conflicts import ShowConflicts
@@ -134,13 +133,9 @@ class GoogleCalendarInterface:
 
         return None
 
-    @staticmethod
-    def default_data_dir() -> pathlib.Path:
-        return platformdirs.user_data_path(__program__)
-
     @functools.cache
     def data_file_path(self, name: str) -> pathlib.Path:
-        path = self.default_data_dir().joinpath(name)
+        path = env.default_data_dir().joinpath(name)
         explicit_config: pathlib.Path = self.options['config_folder']
         if explicit_config:
             legacy_path = explicit_config.joinpath(name)
