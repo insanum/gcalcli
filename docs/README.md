@@ -111,7 +111,8 @@ See the manual (`man (1) gcalcli`), or run with `--help`/`-h` for detailed usage
 ### Initial setup
 
 OAuth2 is used for authenticating with your Google account. The resulting token
-is placed in the `~/.gcalcli_oauth` file. When you first start gcalcli the
+is placed in an `oauth` file in your platform's data directory (for example
+~/.local/share/gcalcli/oauth on Linux). When you first start gcalcli the
 authentication process will proceed. Simply follow the instructions.
 
 **You currently have to use your own Calendar API token.** Our Calendar API token is restricted to few users only and waits for Google's approval to be unlocked.
@@ -156,20 +157,40 @@ proxy-password or proxy_password
 
 Note that these environment variables must be lowercase.
 
-### Flag File
+### Configuration
 
-`gcalcli` is able to read default configuration information from a flag file.
-This file is located, by default, at '~/.gcalclirc'.  The flag file takes one
-command line parameter per line.
-
-In the current version, the flag file only supports the global options (options
-against the `gcalcli` program itself).  The plan, longer term, is to support a
-configuration formation (probably toml or ini), which will allow for
-configuration of subcommands (such as `add`, `agenda`, `calw`, etc.)
+gcalcli supports some configuration options in a config.toml file under your
+platform's standard config directory path (see `gcalcli --help` for exact path
+on your system).
 
 Example:
 
+```toml
+#:schema https://raw.githubusercontent.com/insanum/gcalcli/HEAD/data/config-schema.json
+[calendars]
+default-calendars = ["Personal", "Work"]
+ignore-calendars = ["Boring stuff", "Holidays"]
 ```
+
+#### Using cli args from a file (and gcalclirc flag file)
+
+You can save commonly-used options in a file and load them into cli options
+using an `@` prefix. For example:
+
+```shell
+gcalcli @~/.gcalcli_global_flags add \
+    @~/.gcalcli_add_flags
+    \ --description=@./default_description.txt
+```
+
+will insert flags listed in a ~/.gcalcli_global_flags file (one per line), then
+load more flags specific to the add command from ~/.gcalcli_add_flags, and also
+populate the --description flag with text from ./default_description.txt.
+
+The flag files should have a set of cli args one per line (with no blank lines
+in between) like:
+
+```shell
 --nocache
 --nocolor
 --default-calendar=CALENDAR_NAME
@@ -179,12 +200,10 @@ Example:
 Note that long options require an equal sign if specifying a parameter.  With
 short options the equal sign is optional.
 
-### Configuration Folders
-
-gcalcli is able to store all its necessary information in a specific folder (use
-the --configFolder option.) Each folder will contain 2 files: oauth and cache.
-An optional 3rd file, gcalclirc, can be present for specific flags that you only
-want to apply when using this configuration folder.
+Currently any file named "gcalclirc" in your config directory (or a ~/.gcalclirc
+file) will be automatically loaded unconditionally like that as global options,
+but that mechanism may change in the future because it's more brittle than
+config.toml.
 
 #### Importing VCS/VCAL/ICS Files from Exchange (or other)
 
