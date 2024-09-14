@@ -180,12 +180,10 @@ using an `@` prefix. For example:
 ```shell
 gcalcli @~/.gcalcli_global_flags add \
     @~/.gcalcli_add_flags
-    \ --description=@./default_description.txt
 ```
 
 will insert flags listed in a ~/.gcalcli_global_flags file (one per line), then
-load more flags specific to the add command from ~/.gcalcli_add_flags, and also
-populate the --description flag with text from ./default_description.txt.
+load more flags specific to the add command from ~/.gcalcli_add_flags.
 
 The flag files should have a set of cli args one per line (with no blank lines
 in between) like:
