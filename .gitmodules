@@ -10,3 +10,6 @@
 [submodule "tests/cli/test_helper/bats-snapshot"]
 	path = tests/cli/test_helper/bats-snapshot
 	url = https://github.com/markkong318/bats-snapshot.git
+[submodule "tests/cli/test_helper/bats-file"]
+	path = tests/cli/test_helper/bats-file
+	url = https://github.com/bats-core/bats-file.git
