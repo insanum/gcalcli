@@ -127,9 +127,15 @@ def main():
                 tmp_argv if parsed_args.includeRc else argv
             )
 
+        namespace_from_config = opts_from_config.to_argparse_namespace()
+        # Pull week_start aside and set it manually after parse_known_args.
+        # TODO: Figure out why week_start from opts_from_config getting through.
+        week_start = namespace_from_config.week_start
+        namespace_from_config.week_start = None
         (parsed_args, unparsed) = parser.parse_known_args(
-            tmp_argv, namespace=opts_from_config.to_argparse_namespace()
-        )
+            tmp_argv, namespace=namespace_from_config)
+        if parsed_args.week_start is None:
+            parsed_args.week_start = week_start
         if parsed_args.config_folder:
             parsed_args.config_folder = parsed_args.config_folder.expanduser()
 

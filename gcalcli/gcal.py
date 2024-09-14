@@ -23,7 +23,7 @@ from dateutil.tz import tzlocal
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-from . import actions, auth, env, ics, utils
+from . import actions, auth, config, env, ics, utils
 from ._types import Cache, CalendarListEntry, Event
 from .actions import ACTIONS
 from .conflicts import ShowConflicts
@@ -326,14 +326,16 @@ class GoogleCalendarInterface:
         else:
             return 'default'
 
-    def _cal_monday(self, day_num):
-        """Shift the day number if we're doing cal monday, or cal_weekend is
-        false, since that also means we're starting on day 1
-        """
-        if self.options['cal_monday'] or not self.options['cal_weekend']:
-            day_num -= 1
-            if day_num < 0:
-                day_num = 6
+    def _cal_weekday_num(self, day: date | datetime) -> int:
+        """Number of day of week for the given date.
+
+        Evaluates a date against week_start and cal_weekend options and returns
+        a day number starting from sunday=0 or monday=0."""
+        day_num = int(day.strftime('%w'))
+        if (self.options['week_start'] == config.WeekStart.MONDAY
+                or not self.options['cal_weekend']):
+            # Shift to count starting from monday (subtract 1, mod 7)
+            day_num = (day_num - 1 + 7) % 7
         return day_num
 
     def _event_time_in_range(self, e_time, r_start, r_end):
@@ -371,7 +373,7 @@ class GoogleCalendarInterface:
             now_in_week = False
 
         for event in event_list:
-            event_daynum = self._cal_monday(int(event['s'].strftime('%w')))
+            event_daynum = self._cal_weekday_num(event['s'])
             event_allday = is_all_day(event)
 
             event_end_date = event['e']
@@ -436,10 +438,7 @@ class GoogleCalendarInterface:
                     if event_end_date > end_dt:
                         end_daynum = 6
                     else:
-                        end_daynum = \
-                            self._cal_monday(
-                                    int(event_end_date.strftime('%w'))
-                            )
+                        end_daynum = self._cal_weekday_num(event_end_date)
                     if event_daynum > end_daynum:
                         event_daynum = 0
                     for day in range(event_daynum, end_daynum + 1):
@@ -520,7 +519,8 @@ class GoogleCalendarInterface:
         days = 7 if self.options['cal_weekend'] else 5
         # Get the localized day names... January 1, 2001 was a Monday
         day_names = [date(2001, 1, i + 1).strftime('%A') for i in range(days)]
-        if not self.options['cal_monday'] or not self.options['cal_weekend']:
+        if (self.options['week_start'] != config.WeekStart.MONDAY
+                or not self.options['cal_weekend']):
             day_names = day_names[6:] + day_names[:6]
 
         def build_divider(left, center, right):
@@ -569,7 +569,7 @@ class GoogleCalendarInterface:
 
         # get date range objects for the first week
         if cmd == 'calm':
-            day_num = self._cal_monday(int(start_datetime.strftime('%w')))
+            day_num = self._cal_weekday_num(start_datetime)
             start_datetime = (start_datetime - timedelta(days=day_num))
         start_week_datetime = start_datetime
         end_week_datetime = (start_week_datetime + timedelta(days=7))
@@ -1281,7 +1281,7 @@ class GoogleCalendarInterface:
 
         # convert start date to the beginning of the week or month
         if cmd == 'calw':
-            day_num = self._cal_monday(int(start.strftime('%w')))
+            day_num = self._cal_weekday_num(start)
             start = (start - timedelta(days=day_num))
             end = (start + timedelta(days=(count * 7)))
         else:  # cmd == 'calm':
@@ -1293,11 +1293,11 @@ class GoogleCalendarInterface:
                 end_year += 1
             end = start.replace(month=end_month, year=end_year)
             days_in_month = (end - start).days
+            # TODO: Is this correct for --noweekend? Still uses % 7 below?
             offset_days = int(start.strftime('%w'))
-            if self.options['cal_monday']:
-                offset_days -= 1
-                if offset_days < 0:
-                    offset_days = 6
+            if self.options['week_start'] == config.WeekStart.MONDAY:
+                # Shift to count starting from monday (subtract 1, mod 7)
+                offset_days = (offset_days - 1 + 7) % 7
             total_days = (days_in_month + offset_days)
             count = int(total_days / 7)
             if total_days % 7:

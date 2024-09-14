@@ -12,7 +12,7 @@ import argcomplete  # type: ignore
 
 import gcalcli
 
-from . import env, utils
+from . import config, env, utils
 from .deprecations import DeprecatedStoreTrue, parser_allow_deprecated
 from .details import DETAILS
 from .printer import valid_color_name
@@ -235,11 +235,16 @@ def get_cal_query_parser():
     cal_query_parser = argparse.ArgumentParser(add_help=False)
     cal_query_parser.add_argument('start', type=str, nargs='?')
     cal_query_parser.add_argument(
-            '--monday', action='store_true', dest='cal_monday', default=False,
-            help='Start the week on Monday')
+        '--monday',
+        action='store_const',
+        const=config.WeekStart.MONDAY,
+        dest='week_start',
+        # Note defaults to SUNDAY via config.OutputSection (not explicitly set
+        # here because that would override value from config).
+        help='Start the week on Monday')
     cal_query_parser.add_argument(
-            '--noweekend', action='store_false', dest='cal_weekend',
-            default=True,  help='Hide Saturday and Sunday')
+        '--noweekend', action='store_false', dest='cal_weekend',
+        default=True,  help='Hide Saturday and Sunday')
     return cal_query_parser
 
 
