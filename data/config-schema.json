@@ -1,24 +1,33 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "gcalcli config",
+  "description": "User configuration for gcalcli command-line tool.\n\nSee https://pypi.org/project/gcalcli/.",
   "type": "object",
-  "description": "User configuration for gcalcli command-line tool. See https://pypi.org/project/gcalcli/.",
-  "properties": {
-    "calendars": {
+  "$defs": {
+    "CalendarsSection": {
+      "title": "Settings about the set of calendars gcalcli operates on",
       "type": "object",
-      "description": "Settings about the set of calendars gcalcli operates on",
       "properties": {
         "default-calendars": {
+          "title": "Calendars to use as default for certain commands when no explicit target calendar is otherwise specified",
           "type": "array",
-          "items": { "type": "string" },
-          "description": "Calendars to use as default for certain commands when no explicit target calendar is otherwise specified"
+          "items": {
+            "type": "string"
+          }
         },
         "ignore-calendars": {
+          "title": "Calendars to ignore by default (unless explicitly included using --calendar) when running commands against all calendars",
           "type": "array",
-          "items": { "type": "string" },
-          "description": "Calendars to ignore by default (unless explicitly included using --calendar) when running commands against all calendars"
+          "items": {
+            "type": "string"
+          }
         }
       }
+    }
+  },
+  "properties": {
+    "calendars": {
+      "$ref": "#/$defs/CalendarsSection"
     }
   }
 }

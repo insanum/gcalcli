@@ -32,6 +32,7 @@ dependencies = [
   "httplib2",
   "parsedatetime",
   "platformdirs",
+  "pydantic",
   "python-dateutil",
   "toml; python_version < '3.11'",
   "truststore",

@@ -21,18 +21,14 @@
 #                                                                           #
 # ######################################################################### #
 from collections import namedtuple
+import json
 import os
 import signal
 import sys
-if sys.version_info[:2] < (3, 11):
-    import toml as tomllib
-else:
-    import tomllib
 
-import argparse
 import truststore
 
-from . import env, utils
+from . import config, env, utils
 from .argparsers import get_argument_parser, handle_unparsed
 from .exceptions import GcalcliError
 from .gcal import GoogleCalendarInterface
@@ -115,18 +111,11 @@ def main():
 
     config_dir = env.default_config_dir()
     config_filepath = config_dir.joinpath('config.toml')
-    opts_from_config = argparse.Namespace(
-        default_calendars=[],
-        ignore_calendars=[],
-    )
     if config_filepath.exists():
         with config_filepath.open('rb') as config_file:
-            config = tomllib.load(config_file)
-            cals_config = config.get('calendars', {})
-            opts_from_config.default_calendars.extend(
-                cals_config.get('default-calendars', []))
-            opts_from_config.ignore_calendars.extend(
-                cals_config.get('ignore-calendars', []))
+            opts_from_config = config.Config.from_toml(config_file)
+    else:
+        opts_from_config = config.Config()
 
     if parsed_args.config_folder:
         parsed_args.config_folder = parsed_args.config_folder.expanduser()
@@ -139,7 +128,7 @@ def main():
             )
 
         (parsed_args, unparsed) = parser.parse_known_args(
-            tmp_argv, namespace=opts_from_config
+            tmp_argv, namespace=opts_from_config.to_argparse_namespace()
         )
         if parsed_args.config_folder:
             parsed_args.config_folder = parsed_args.config_folder.expanduser()
@@ -168,9 +157,11 @@ def main():
 
     cal_names = parse_cal_names(parsed_args.calendar)
     # Only ignore calendars if they're not explicitly in --calendar list.
-    parsed_args.ignore_calendars[:] = [c for c in parsed_args.ignore_calendars
-                                       if c not in [c2.name
-                                                    for c2 in cal_names]]
+    parsed_args.ignore_calendars[:] = [
+        c
+        for c in parsed_args.ignore_calendars
+        if c not in [c2.name for c2 in cal_names]
+    ]
     userless_mode = bool(os.environ.get('GCALCLI_USERLESS_MODE'))
     gcal = GoogleCalendarInterface(
         cal_names=cal_names,
@@ -271,6 +262,16 @@ def main():
                     parsed_args.verbose, parsed_args.dump,
                     parsed_args.reminders, parsed_args.file
             )
+
+        elif parsed_args.command == 'util':
+            if parsed_args.subcommand == 'config-schema':
+                printer.debug_msg(
+                    'Outputting schema for config.toml files. This can be '
+                    'saved to a file and used in a directive like '
+                    '#:schema my-schema.json\n'
+                )
+                schema = config.Config.json_schema()
+                print(json.dumps(schema, indent=2))
 
     except GcalcliError as exc:
         printer.err_msg(str(exc))
