@@ -17,6 +17,19 @@ from .deprecations import DeprecatedStoreTrue, parser_allow_deprecated
 from .details import DETAILS
 from .printer import valid_color_name
 
+
+def shorten_path(path: pathlib.Path) -> pathlib.Path:
+    """Try to shorten path using special characters like ~.
+
+    Returns original path unmodified if it can't be shortened.
+    """
+    tilde_home = pathlib.Path('~')
+    expanduser_len = len(tilde_home.expanduser().parts)
+    if path.parts[:expanduser_len] == tilde_home.expanduser().parts:
+        return tilde_home.joinpath(*path.parts[expanduser_len:])
+    return path
+
+
 PROGRAM_OPTIONS = {
     '--client-id': {'default': None, 'type': str, 'help': 'API client_id'},
     '--client-secret': {
@@ -33,7 +46,7 @@ PROGRAM_OPTIONS = {
         'is no longer supported.',
     },
     '--config-folder': {
-        'default': env.default_config_dir(),
+        'default': shorten_path(env.default_config_dir()),
         'type': pathlib.Path,
         'help': 'Optional directory used to load config files. Deprecated: '
         'prefer $GCALCLI_CONFIG.',
@@ -312,18 +325,6 @@ configuration:
     where available. This flag file mechanism can be brittle
     (example: https://github.com/insanum/gcalcli/issues/513).
 """
-
-
-def shorten_path(path: pathlib.Path) -> pathlib.Path:
-    """Try to shorten path using special characters like ~.
-
-    Returns original path unmodified if it can't be shortened.
-    """
-    tilde_home = pathlib.Path('~')
-    expanduser_len = len(tilde_home.expanduser().parts)
-    if path.parts[:expanduser_len] == tilde_home.expanduser().parts:
-        return tilde_home.joinpath(*path.parts[expanduser_len:])
-    return path
 
 
 @parser_allow_deprecated(name='program')
