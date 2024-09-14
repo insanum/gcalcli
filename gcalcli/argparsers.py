@@ -532,6 +532,19 @@ def get_argument_parser():
             '--use_reminders', action=DeprecatedStoreTrue,
             help=argparse.SUPPRESS)
 
+    util = sub.add_parser(
+        'util',
+        help='Low-level utility commands for introspection, dumping schemas, '
+        'etc',
+    )
+
+    util_sub = util.add_subparsers(dest='subcommand')
+
+    util_sub.add_parser(
+        'config-schema',
+        help='Print the JSON schema for the gcalcli TOML config format',
+    )
+
     # Enrich with argcomplete options.
     argcomplete.autocomplete(parser)
 
