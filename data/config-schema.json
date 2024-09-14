@@ -23,11 +23,33 @@
           }
         }
       }
+    },
+    "OutputSection": {
+      "title": "Settings about gcalcli output (formatting, colors, etc)",
+      "type": "object",
+      "properties": {
+        "week-start": {
+          "title": "Weekday to treat as start of week",
+          "$ref": "#/$defs/WeekStart",
+          "default": "sunday"
+        }
+      }
+    },
+    "WeekStart": {
+      "title": "WeekStart",
+      "type": "string",
+      "enum": [
+        "sunday",
+        "monday"
+      ]
     }
   },
   "properties": {
     "calendars": {
       "$ref": "#/$defs/CalendarsSection"
+    },
+    "output": {
+      "$ref": "#/$defs/OutputSection"
     }
   }
 }

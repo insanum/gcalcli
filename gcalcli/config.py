@@ -2,6 +2,7 @@
 
 import argparse
 from collections import OrderedDict
+from enum import Enum
 import sys
 from typing import Any, List, Mapping
 
@@ -34,6 +35,22 @@ using --calendar) when running commands against all calendars',
     )
 
 
+class WeekStart(str, Enum):
+    SUNDAY = "sunday"
+    MONDAY = "monday"
+
+
+class OutputSection(BaseModel):
+    model_config = ConfigDict(
+        title='Settings about gcalcli output (formatting, colors, etc)'
+    )
+
+    week_start: WeekStart = Field(
+        alias='week-start',
+        title='Weekday to treat as start of week',
+        default=WeekStart.SUNDAY)
+
+
 class Config(BaseModel):
     """User configuration for gcalcli command-line tool.
 
@@ -46,6 +63,7 @@ class Config(BaseModel):
     )
 
     calendars: CalendarsSection = Field(default_factory=CalendarsSection)
+    output: OutputSection = Field(default_factory=OutputSection)
 
     @classmethod
     def from_toml(cls, config_file):
@@ -53,7 +71,12 @@ class Config(BaseModel):
         return cls(**config)
 
     def to_argparse_namespace(self) -> argparse.Namespace:
-        return argparse.Namespace(**vars(self.calendars or {}))
+        kwargs = {}
+        if self.calendars:
+            kwargs.update(vars(self.calendars))
+        if self.output:
+            kwargs.update(vars(self.output))
+        return argparse.Namespace(**kwargs)
 
     @classmethod
     def json_schema(cls) -> Mapping[str, Any]:
