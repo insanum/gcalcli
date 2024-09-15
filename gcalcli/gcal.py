@@ -137,20 +137,21 @@ class GoogleCalendarInterface:
 
     @functools.cache
     def data_file_path(self, name: str) -> pathlib.Path:
-        path = env.default_data_dir().joinpath(name)
-        explicit_config: pathlib.Path = self.options['config_folder']
-        if explicit_config:
-            legacy_path = explicit_config.joinpath(name)
-        else:
-            legacy_path = pathlib.Path(f'~/.gcalcli_{name}').expanduser()
-        if not path.exists() and legacy_path.exists():
-            self.printer.msg(
-                f'Moving {name} file from legacy path {legacy_path} to '
-                f'{path}...\n'
-            )
-            path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(legacy_path, path)
-        return path
+        paths = env.data_file_paths(name)
+        primary_path = paths.pop(0)
+        if not primary_path.exists():
+            for alt_path in paths:
+                if not alt_path.exists():
+                    continue
+                self.printer.msg(
+                    f'Moving {name} file from legacy path {alt_path} to '
+                    f'{primary_path}...\n'
+                )
+                primary_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(alt_path, primary_path)
+                break
+
+        return primary_path
 
     def _google_auth(self):
         if not self.credentials:

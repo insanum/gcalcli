@@ -56,8 +56,8 @@ positional arguments:
     import              import an ics/vcal file to a calendar
     remind              execute command if event occurs within <mins>
                         time
-    config              Utility commands to work with configuration
-    util                Low-level utility commands for introspection,
+    config              utility commands to work with configuration
+    util                low-level utility commands for introspection,
                         dumping schemas, etc
 
 options:

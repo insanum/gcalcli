@@ -11,6 +11,24 @@ def default_data_dir() -> pathlib.Path:
     return platformdirs.user_data_path(__program__)
 
 
+def data_file_paths(
+        name: str,
+        config_dir: Optional[pathlib.Path] = None,
+    ) -> list[pathlib.Path]:
+    """Return all paths actively used for the given data file name.
+
+    The paths are returned with the preferred path first followed by any other
+    detected legacy paths in order of decreasing precedence.
+    """
+    paths = [default_data_dir().joinpath(name)]
+    legacy_path = (config_dir.joinpath(name)
+                   if config_dir
+                   else pathlib.Path(f'~/.gcalcli_{name}').expanduser())
+    if legacy_path.exists():
+        paths.append(legacy_path)
+    return paths
+
+
 def explicit_config_path() -> Optional[pathlib.Path]:
     config_path = os.environ.get('GCALCLI_CONFIG')
     return pathlib.Path(config_path) if config_path else None
