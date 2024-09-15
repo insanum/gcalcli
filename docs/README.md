@@ -160,8 +160,7 @@ Note that these environment variables must be lowercase.
 ### Configuration
 
 gcalcli supports some configuration options in a config.toml file under your
-platform's standard config directory path (see `gcalcli --help` for exact path
-on your system).
+platform's standard config directory path. Edit it with `gcalcli config edit`.
 
 Example:
 
