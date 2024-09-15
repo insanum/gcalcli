@@ -169,6 +169,17 @@ Example:
 [calendars]
 default-calendars = ["Personal", "Work"]
 ignore-calendars = ["Boring stuff", "Holidays"]
+
+[output]
+week-start = "monday"
+```
+
+You can also use the $GCALCLI_CONFIG environment variable to customize which
+config file/directory to use, which is useful if you need to dynamically switch
+between different sets of configuration. For example:
+
+```shell
+GCALCLI_CONFIG=~/.config/gcalcli/config.tuesdays.toml gcalcli add
 ```
 
 #### Using cli args from a file (and gcalclirc flag file)

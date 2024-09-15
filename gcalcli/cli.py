@@ -114,8 +114,7 @@ def main():
         parser.print_usage()
         sys.exit(1)
 
-    config_dir = env.default_config_dir()
-    config_filepath = config_dir.joinpath('config.toml')
+    config_filepath = env.config_file()
     if config_filepath.exists():
         with config_filepath.open('rb') as config_file:
             opts_from_config = config.Config.from_toml(config_file)

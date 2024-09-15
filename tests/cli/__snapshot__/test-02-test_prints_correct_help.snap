@@ -16,7 +16,7 @@ configuration:
   the command-line arguments listed below.
 
   $GCALCLI_CONFIG=/some/gcalcli/config
-    Path to user config directory.
+    Path to user config directory or file.
     Note: this path is also used to determine fallback paths to check
     for cache/oauth files to be migrated into their proper data dir
     paths.
