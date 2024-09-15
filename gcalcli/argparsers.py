@@ -372,6 +372,12 @@ def get_argument_parser():
             required=True)
 
     sub.add_parser(
+        'init',
+        help='initialize authentication, etc',
+        description='Set up (or refresh) authentication with Google Calendar',
+    )
+
+    sub.add_parser(
             'list', parents=[color_parser], help='list available calendars',
             description='List available calendars.')
 

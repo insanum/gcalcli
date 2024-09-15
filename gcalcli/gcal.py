@@ -153,45 +153,84 @@ class GoogleCalendarInterface:
         return path
 
     def _google_auth(self):
-        if self.credentials:
-            return self.credentials
+        if not self.credentials:
+            self._load_credentials()
+
+        if not self.credentials:
+            # Automatically trigger auth flow.
+            # Note: This might change in the future to fail with suggestion to
+            # run init command.
+            self.printer.msg('Not yet authenticated.\n')
+            self.SetupAuth()
+
+        return self.credentials
+
+    def _load_credentials(self):
+        if self.userless_mode:
+            return
 
         # Try loading cached credentials
         oauth_filepath = self.data_file_path('oauth')
-        if oauth_filepath.exists():
-            needs_write = False
-            with oauth_filepath.open('rb') as gcalcli_oauth:
+        if not oauth_filepath.exists():
+            return
+
+        needs_write = False
+        with oauth_filepath.open('rb') as gcalcli_oauth:
+            try:
+                self.credentials = pickle.load(gcalcli_oauth)
+            except (pickle.UnpicklingError, EOFError) as e:
+                # Try reading as legacy json format as fallback.
                 try:
-                    self.credentials = pickle.load(gcalcli_oauth)
-                except (pickle.UnpicklingError, EOFError) as e:
-                    # Try reading as legacy json format as fallback.
-                    try:
-                        gcalcli_oauth.seek(0)
-                        self.credentials = auth.creds_from_legacy_json(
-                            json.load(gcalcli_oauth)
-                        )
-                        needs_write = True
-                    except (OSError, ValueError, EOFError):
-                        pass
-                    if not self.credentials:
-                        self.printer.err_msg(
-                            f"Couldn't parse {oauth_filepath}.\n"
-                            "The file may be corrupt or be incompatible with "
-                            "this version of gcalcli. It probably has to be "
-                            "removed and provisioning done again.\n"
-                        )
-                        raise e
-            if needs_write:
-                # Save back loaded creds to file (for legacy conversion case).
-                oauth_filepath.parent.mkdir(parents=True, exist_ok=True)
-                with oauth_filepath.open('wb') as gcalcli_oauth:
-                    pickle.dump(self.credentials, gcalcli_oauth)
+                    gcalcli_oauth.seek(0)
+                    self.credentials = auth.creds_from_legacy_json(
+                        json.load(gcalcli_oauth)
+                    )
+                    needs_write = True
+                except (OSError, ValueError, EOFError):
+                    pass
+                if not self.credentials:
+                    self.printer.err_msg(
+                        f"Couldn't parse {oauth_filepath}.\n"
+                        "The file may be corrupt or be incompatible with "
+                        "this version of gcalcli. It probably has to be "
+                        "removed and provisioning done again.\n"
+                    )
+                    raise e
+        if needs_write:
+            # Save back loaded creds to file (for legacy conversion case).
+            oauth_filepath.parent.mkdir(parents=True, exist_ok=True)
+            with oauth_filepath.open('wb') as gcalcli_oauth:
+                pickle.dump(self.credentials, gcalcli_oauth)
+
+    def SetupAuth(self):
+        oauth_filepath = self.data_file_path('oauth')
+
+        # Try loading cached credentials
+        self._load_credentials()
+        if self.credentials:
+            self.printer.msg('Credentials already configured. ')
+            self.printer.msg('Ignore and refresh? [N]o [y]es: ', 'magenta')
+            val = input()
+            if val and val.lower() == 'y' and not self.userless_mode:
+                if oauth_filepath.exists():
+                    backup_filepath = oauth_filepath.with_suffix('.bak')
+                    self.printer.debug_msg(
+                        'Moving existing oauth creds aside from '
+                        '{oauth} to {bak}\n'.format(
+                            oauth=utils.shorten_path(oauth_filepath),
+                            bak=utils.shorten_path(backup_filepath),
+                        ))
+                    oauth_filepath.rename(backup_filepath)
+                cache_filepath = self.data_file_path('cache')
+                cache_filepath.unlink(missing_ok=True)
+                self.credentials = None
+            else:  # n, abort without refreshing
+                self.printer.msg('Aborting, keeping existing credentials...')
+                return
 
         if not self.credentials:
             # No cached credentials, start auth flow
-            self.printer.msg(
-                'Not yet authenticated. Starting auth flow...\n', 'yellow'
-            )
+            self.printer.msg('Starting auth flow...\n', 'yellow')
             self.printer.msg(
                 'NOTE: See '
                 'https://github.com/insanum/gcalcli/blob/HEAD/docs/api-auth.md '
@@ -225,6 +264,12 @@ class GoogleCalendarInterface:
                 'You will likely see a security warning page and need to '
                 'click "Advanced" and "Go to gcalcli (unsafe)" to proceed.\n'
             )
+            if self.userless_mode:
+                self.printer.msg(
+                    'Skipping actual authentication (running in userless '
+                    'mode)\n'
+                )
+                return
             self.credentials = auth.authenticate(
                 client_id,
                 client_secret,
@@ -236,7 +281,7 @@ class GoogleCalendarInterface:
                 pickle.dump(self.credentials, gcalcli_oauth)
 
         auth.refresh_if_expired(self.credentials)
-        return self.credentials
+        self.printer.debug_msg('Successfully loaded credentials\n')
 
     def get_cal_service(self):
         if not self.cal_service and not self.userless_mode:

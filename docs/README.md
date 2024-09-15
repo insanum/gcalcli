@@ -95,6 +95,7 @@ pip install .[vobject]
 
 `gcalcli` provides a series of subcommands with the following functionality:
 
+    init                initialize authentication, etc
     list                list available calendars
     edit                edit calendar events
     agenda              get an agenda for a time period
@@ -122,7 +123,7 @@ Set up your Google "project" and auth token as explained in
 then run gcalcli passing a `--client-id` to finish setup:
 
 ```shell
-$ gcalcli --client-id=xxxxxxxxxxxxxxx.apps.googleusercontent.com list
+gcalcli --client-id=xxxxxxxxxxxxxxx.apps.googleusercontent.com init
 ```
 
 Enter the client secret when prompted and follow its directions to complete the permission flow.

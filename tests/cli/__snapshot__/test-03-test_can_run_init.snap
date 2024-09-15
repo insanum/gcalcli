@@ -1,0 +1,9 @@
+0
+Running in GCALCLI_USERLESS_MODE. Most operations will fail!
+[0;33mStarting auth flow...
+[0m[0mNOTE: See https://github.com/insanum/gcalcli/blob/HEAD/docs/api-auth.md for help/troubleshooting.
+[0m[0mYou'll be asked for a client_secret that you should have set up for yourself in Google dev console.
+[0m[0;35mClient Secret: [0m[0;33mNow click the link below and follow directions to authenticate.
+[0m[0mYou will likely see a security warning page and need to click "Advanced" and "Go to gcalcli (unsafe)" to proceed.
+[0m[0mSkipping actual authentication (running in userless mode)
+[0m
