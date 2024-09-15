@@ -4,6 +4,26 @@
   "description": "User configuration for gcalcli command-line tool.\n\nSee https://pypi.org/project/gcalcli/.",
   "type": "object",
   "$defs": {
+    "AuthSection": {
+      "title": "Settings for authentication",
+      "description": "Configuration for settings like client-id used in auth flow.\n\nNote that client-secret can't be configured here and should be passed on\ncommand-line instead for security reasons.",
+      "type": "object",
+      "properties": {
+        "client-id": {
+          "title": "Client ID for Google auth token",
+          "description": "Google client ID for your auth client project.\n\nDetails: https://github.com/insanum/gcalcli/blob/HEAD/docs/api-auth.md",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      }
+    },
     "CalendarsSection": {
       "title": "Settings about the set of calendars gcalcli operates on",
       "type": "object",
@@ -45,6 +65,9 @@
     }
   },
   "properties": {
+    "auth": {
+      "$ref": "#/$defs/AuthSection"
+    },
     "calendars": {
       "$ref": "#/$defs/CalendarsSection"
     },

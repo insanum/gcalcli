@@ -4,7 +4,7 @@ import argparse
 from collections import OrderedDict
 from enum import Enum
 import sys
-from typing import Any, List, Mapping
+from typing import Any, List, Mapping, Optional
 
 if sys.version_info[:2] < (3, 11):
     import toml as tomllib
@@ -13,6 +13,24 @@ else:
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.json_schema import GenerateJsonSchema
+
+
+class AuthSection(BaseModel):
+    """Configuration for settings like client-id used in auth flow.
+
+    Note that client-secret can't be configured here and should be passed on
+    command-line instead for security reasons.
+    """
+
+    model_config = ConfigDict(title='Settings for authentication')
+
+    client_id: Optional[str] = Field(
+        alias='client-id',
+        title='Client ID for Google auth token',
+        description="""Google client ID for your auth client project.\n
+Details: https://github.com/insanum/gcalcli/blob/HEAD/docs/api-auth.md""",
+        default=None,
+    )
 
 
 class CalendarsSection(BaseModel):
@@ -48,7 +66,8 @@ class OutputSection(BaseModel):
     week_start: WeekStart = Field(
         alias='week-start',
         title='Weekday to treat as start of week',
-        default=WeekStart.SUNDAY)
+        default=WeekStart.SUNDAY,
+    )
 
 
 class Config(BaseModel):
@@ -62,6 +81,7 @@ class Config(BaseModel):
         json_schema_extra={'$schema': GenerateJsonSchema.schema_dialect},
     )
 
+    auth: AuthSection = Field(default_factory=AuthSection)
     calendars: CalendarsSection = Field(default_factory=CalendarsSection)
     output: OutputSection = Field(default_factory=OutputSection)
 
@@ -72,6 +92,8 @@ class Config(BaseModel):
 
     def to_argparse_namespace(self) -> argparse.Namespace:
         kwargs = {}
+        if self.auth:
+            kwargs.update(vars(self.auth))
         if self.calendars:
             kwargs.update(vars(self.calendars))
         if self.output:
