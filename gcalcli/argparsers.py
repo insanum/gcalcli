@@ -34,7 +34,7 @@ PROGRAM_OPTIONS = {
         'is no longer supported.',
     },
     '--config-folder': {
-        'default': utils.shorten_path(env.default_config_dir()),
+        'default': utils.shorten_path(env.config_dir()),
         'type': pathlib.Path,
         'help': 'Optional directory used to load config files. Deprecated: '
         'prefer $GCALCLI_CONFIG.',
@@ -300,7 +300,7 @@ configuration:
   the command-line arguments listed below.
 
   $GCALCLI_CONFIG={config_dir}
-    Path to user config directory.
+    Path to user config directory or file.
     Note: this path is also used to determine fallback paths to check
     for cache/oauth files to be migrated into their proper data dir
     paths.
@@ -322,8 +322,9 @@ configuration:
 
 @parser_allow_deprecated(name='program')
 def get_argument_parser():
-    config_dir = utils.shorten_path(env.default_config_dir())
     # Shorten path to ~/PATH if possible for easier readability.
+    config_dir = utils.shorten_path(env.config_dir())
+    config_path = utils.shorten_path(env.explicit_config_path() or config_dir)
     rc_paths = [config_dir.joinpath('gcalclirc')]
     legacy_rc_path = pathlib.Path.home().joinpath('.gcalclirc')
     if legacy_rc_path.exists():
@@ -331,8 +332,8 @@ def get_argument_parser():
 
     parser = argparse.ArgumentParser(
         description=DESCRIPTION.format(
-            config_dir=config_dir,
-            config_file=config_dir.joinpath('config.toml'),
+            config_dir=config_path,
+            config_file=utils.shorten_path(env.config_file()),
             rc_paths=', '.join(str(p) for p in rc_paths),
         ),
         formatter_class=RawDescArgDefaultsHelpFormatter,
