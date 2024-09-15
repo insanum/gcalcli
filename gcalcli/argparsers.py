@@ -18,18 +18,6 @@ from .details import DETAILS
 from .printer import valid_color_name
 
 
-def shorten_path(path: pathlib.Path) -> pathlib.Path:
-    """Try to shorten path using special characters like ~.
-
-    Returns original path unmodified if it can't be shortened.
-    """
-    tilde_home = pathlib.Path('~')
-    expanduser_len = len(tilde_home.expanduser().parts)
-    if path.parts[:expanduser_len] == tilde_home.expanduser().parts:
-        return tilde_home.joinpath(*path.parts[expanduser_len:])
-    return path
-
-
 PROGRAM_OPTIONS = {
     '--client-id': {'default': None, 'type': str, 'help': 'API client_id'},
     '--client-secret': {
@@ -46,7 +34,7 @@ PROGRAM_OPTIONS = {
         'is no longer supported.',
     },
     '--config-folder': {
-        'default': shorten_path(env.default_config_dir()),
+        'default': utils.shorten_path(env.default_config_dir()),
         'type': pathlib.Path,
         'help': 'Optional directory used to load config files. Deprecated: '
         'prefer $GCALCLI_CONFIG.',
@@ -334,12 +322,12 @@ configuration:
 
 @parser_allow_deprecated(name='program')
 def get_argument_parser():
-    config_dir = shorten_path(env.default_config_dir())
+    config_dir = utils.shorten_path(env.default_config_dir())
     # Shorten path to ~/PATH if possible for easier readability.
     rc_paths = [config_dir.joinpath('gcalclirc')]
     legacy_rc_path = pathlib.Path.home().joinpath('.gcalclirc')
     if legacy_rc_path.exists():
-        rc_paths.append(shorten_path(legacy_rc_path))
+        rc_paths.append(utils.shorten_path(legacy_rc_path))
 
     parser = argparse.ArgumentParser(
         description=DESCRIPTION.format(
@@ -379,8 +367,8 @@ def get_argument_parser():
 
     sub = parser.add_subparsers(
             help='Invoking a subcommand with --help prints subcommand usage.',
-            dest='command')
-    sub.required = True
+            dest='command',
+            required=True)
 
     sub.add_parser(
             'list', parents=[color_parser], help='list available calendars',
@@ -537,13 +525,29 @@ def get_argument_parser():
             '--use_reminders', action=DeprecatedStoreTrue,
             help=argparse.SUPPRESS)
 
+    config = sub.add_parser(
+        'config',
+        help='Utility commands to work with configuration',
+    )
+    config_sub = config.add_subparsers(
+        dest='subcommand',
+        required=True,
+    )
+
+    config_sub.add_parser(
+        'edit',
+        help='Launches config.toml in a text editor',
+    )
+
     util = sub.add_parser(
         'util',
         help='Low-level utility commands for introspection, dumping schemas, '
         'etc',
     )
-
-    util_sub = util.add_subparsers(dest='subcommand')
+    util_sub = util.add_subparsers(
+        dest='subcommand',
+        required=True,
+    )
 
     util_sub.add_parser(
         'config-schema',

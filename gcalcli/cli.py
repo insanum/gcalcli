@@ -20,11 +20,11 @@
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
 #                                                                           #
 # ######################################################################### #
-from collections import namedtuple
 import json
 import os
 import signal
 import sys
+from collections import namedtuple
 
 import truststore
 
@@ -37,6 +37,11 @@ from .validators import (get_input, PARSABLE_DATE, PARSABLE_DURATION, REMINDER,
                          STR_ALLOW_EMPTY, STR_NOT_EMPTY)
 
 CalName = namedtuple('CalName', ['name', 'color'])
+
+EMPTY_CONFIG_TOML = """\
+#:schema https://raw.githubusercontent.com/insanum/gcalcli/HEAD/data/config-schema.json
+
+"""
 
 
 def parse_cal_names(cal_names):
@@ -268,6 +273,17 @@ def main():
                     parsed_args.verbose, parsed_args.dump,
                     parsed_args.reminders, parsed_args.file
             )
+
+        elif parsed_args.command == 'config':
+            if parsed_args.subcommand == 'edit':
+                printer.msg(
+                    f'Launching {utils.shorten_path(config_filepath)} in a '
+                    'text editor...'
+                )
+                if not config_filepath.exists():
+                    with open(config_filepath, 'w') as f:
+                        f.write(EMPTY_CONFIG_TOML)
+                utils.launch_editor(config_filepath)
 
         elif parsed_args.command == 'util':
             if parsed_args.subcommand == 'config-schema':
