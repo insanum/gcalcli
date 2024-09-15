@@ -173,15 +173,21 @@ def main():
         if c not in [c2.name for c2 in cal_names]
     ]
     userless_mode = bool(os.environ.get('GCALCLI_USERLESS_MODE'))
-    gcal = GoogleCalendarInterface(
-        cal_names=cal_names,
-        printer=printer,
-        userless_mode=userless_mode,
-        **vars(parsed_args),
-    )
+    if parsed_args.command in ('config', 'util'):
+        gcal = None
+    else:
+        gcal = GoogleCalendarInterface(
+            cal_names=cal_names,
+            printer=printer,
+            userless_mode=userless_mode,
+            **vars(parsed_args),
+        )
 
     try:
-        if parsed_args.command == 'list':
+        if parsed_args.command == 'init':
+            gcal.SetupAuth()
+
+        elif parsed_args.command == 'list':
             gcal.ListAllCalendars()
 
         elif parsed_args.command == 'agenda':

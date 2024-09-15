@@ -13,20 +13,31 @@ function teardown() {
   temp_del "$TEST_HOME_DIR"
 }
 
+function run_gcalcli() {
+  # Kill any commands that hang for longer than 3s timeout.
+  run timeout 3 gcalcli "$@"
+}
+
 @test "can run" {
-  run gcalcli
-  assert_equal $status 2
+  run_gcalcli
+  assert_failure 2
   assert_output --regexp 'usage: .*error:.*required: .*command'
 }
 
 @test "prints correct help" {
-  GCALCLI_CONFIG=/some/gcalcli/config COLUMNS=72 run gcalcli -h
+  GCALCLI_CONFIG=/some/gcalcli/config COLUMNS=72 run_gcalcli -h
   assert_success
   assert_snapshot
 }
 
+@test "can run init" {
+  run_gcalcli init --client-id=SOME_CLIENT <<< "SOME_SECRET
+"
+  assert_snapshot
+}
+
 @test "can run add" {
-  run gcalcli add <<< "sometitle
+  run_gcalcli add <<< "sometitle
 
 tomorrow
 

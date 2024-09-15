@@ -6,7 +6,7 @@ usage: gcalcli [-h] [--version] [--client-id CLIENT_ID]
                [--default-calendar DEFAULT_CALENDARS]
                [--locale LOCALE] [--refresh] [--nocache] [--conky]
                [--nocolor] [--lineart {fancy,unicode,ascii}]
-               {list,search,edit,delete,agenda,agendaupdate,updates,conflicts,calw,calm,quick,add,import,remind,config,util}
+               {init,list,search,edit,delete,agenda,agendaupdate,updates,conflicts,calw,calm,quick,add,import,remind,config,util}
                ...
 
 Google Calendar Command Line Interface
@@ -35,9 +35,10 @@ configuration:
     (example: https://github.com/insanum/gcalcli/issues/513).
 
 positional arguments:
-  {list,search,edit,delete,agenda,agendaupdate,updates,conflicts,calw,calm,quick,add,import,remind,config,util}
+  {init,list,search,edit,delete,agenda,agendaupdate,updates,conflicts,calw,calm,quick,add,import,remind,config,util}
                         Invoking a subcommand with --help prints
                         subcommand usage.
+    init                initialize authentication, etc
     list                list available calendars
     search              search for events within an optional time
                         period
