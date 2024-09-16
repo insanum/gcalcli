@@ -65,11 +65,26 @@ def parse_cal_names(cal_names):
 
 
 def run_add_prompt(parsed_args, printer):
+    if not any(
+        a is None
+        for a in (
+            parsed_args.title,
+            parsed_args.where,
+            parsed_args.when,
+            parsed_args.duration or parsed_args.end,
+            parsed_args.description,
+            parsed_args.reminders or parsed_args.default_reminders,
+        )
+    ):
+        return
+    printer.msg(
+        'Prompting for unfilled values.\n'
+        'Run with --noprompt to leave them unfilled without prompting.\n'
+    )
     if parsed_args.title is None:
         parsed_args.title = get_input(printer, 'Title: ', STR_NOT_EMPTY)
     if parsed_args.where is None:
-        parsed_args.where = get_input(
-            printer, 'Location: ', STR_ALLOW_EMPTY)
+        parsed_args.where = get_input(printer, 'Location: ', STR_ALLOW_EMPTY)
     if parsed_args.when is None:
         parsed_args.when = get_input(printer, 'When: ', PARSABLE_DATE)
     if parsed_args.duration is None and parsed_args.end is None:
@@ -80,12 +95,13 @@ def run_add_prompt(parsed_args, printer):
         parsed_args.duration = get_input(printer, prompt, PARSABLE_DURATION)
     if parsed_args.description is None:
         parsed_args.description = get_input(
-            printer, 'Description: ', STR_ALLOW_EMPTY)
-    if not parsed_args.reminders:
+            printer, 'Description: ', STR_ALLOW_EMPTY
+        )
+    if not parsed_args.reminders and not parsed_args.default_reminders:
         while True:
             r = get_input(
-                    printer, 'Enter a valid reminder or ' '"." to end: ',
-                    REMINDER)
+                printer, 'Enter a valid reminder or ' '"." to end: ', REMINDER
+            )
 
             if r == '.':
                 break
