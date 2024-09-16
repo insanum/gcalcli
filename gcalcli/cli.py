@@ -170,16 +170,8 @@ def main():
         except ValueError as exc:
             printer.err_msg(str(exc))
 
-    if len(parsed_args.calendar) == 0:
-        parsed_args.calendar = parsed_args.default_calendars
+    cal_names = set_resolved_calendars(parsed_args, printer=printer)
 
-    cal_names = parse_cal_names(parsed_args.calendar)
-    # Only ignore calendars if they're not explicitly in --calendar list.
-    parsed_args.ignore_calendars[:] = [
-        c
-        for c in parsed_args.ignore_calendars
-        if c not in [c2.name for c2 in cal_names]
-    ]
     userless_mode = bool(os.environ.get('GCALCLI_USERLESS_MODE'))
     if parsed_args.command in ('config', 'util'):
         gcal = None
@@ -325,6 +317,58 @@ def main():
     except GcalcliError as exc:
         printer.err_msg(str(exc))
         sys.exit(1)
+
+
+def set_resolved_calendars(parsed_args, printer: Printer) -> list[str]:
+    multiple_allowed = not hasattr(parsed_args, 'calendar')
+
+    # Reflect .calendar into .calendars (as list).
+    if hasattr(parsed_args, 'calendar') and not hasattr(
+        parsed_args, 'calendars'
+    ):
+        parsed_args.calendars = (
+            [parsed_args.calendar] if parsed_args.calendar else []
+        )
+    # If command didn't request calendar or calendars, bail out with empty list.
+    # Note: this means if you forget parents=[calendar_parser] on a subparser,
+    # you'll hit this case and any global/default cals will be ignored.
+    if not hasattr(parsed_args, 'calendars'):
+        return []
+
+    if not parsed_args.calendars:
+        for cals_type, cals in [
+            ('global calendars', parsed_args.global_calendars),
+            ('default-calendars', parsed_args.default_calendars),
+        ]:
+            if len(cals) > 1 and not multiple_allowed:
+                printer.debug_msg(
+                    f"Can't use multiple {cals_type} for command "
+                    f"`{parsed_args.command}`. Must select --calendar "
+                    "explicitly.\n"
+                )
+                continue
+            if cals:
+                parsed_args.calendars = cals
+                break
+    elif len(parsed_args.calendars) > 1 and not multiple_allowed:
+        printer.err_msg(
+            'Multiple target calendars specified! Please only pass a '
+            'single --calendar if you want it to be used.\n'
+        )
+        printer.msg(
+            'Note: consider using --noincluderc if additional '
+            'calendars may be coming from gcalclirc.\n'
+        )
+
+    cal_names = parse_cal_names(parsed_args.calendars)
+    # Only ignore calendars if they're not explicitly in --calendar list.
+    parsed_args.ignore_calendars[:] = [
+        c
+        for c in parsed_args.ignore_calendars
+        if c not in [c2.name for c2 in cal_names]
+    ]
+
+    return cal_names
 
 
 def SIGINT_handler(signum, frame):

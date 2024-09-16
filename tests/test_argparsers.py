@@ -100,4 +100,4 @@ def test_handle_unparsed():
     argv = shlex.split('delete --calendar=test "search text"')
     parsed, unparsed = parser.parse_known_args(argv)
     parsed = argparsers.handle_unparsed(unparsed, parsed)
-    assert parsed.calendar == ['test']
+    assert parsed.calendars == ['test']

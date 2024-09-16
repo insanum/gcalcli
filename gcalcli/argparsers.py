@@ -48,10 +48,11 @@ PROGRAM_OPTIONS = {
         'default': [],
         'type': str,
         'action': 'append',
+        'dest': 'global_calendars',
         'help': 'Which calendars to use, in the format "CalendarName" or '
-        '"CalendarName#color", where the #color suffix is the name of a valid '
-        'ANSI color (such as "brightblue"). This option may be called multiple '
-        'times to display additional calendars.',
+        '"CalendarName#color".\nSupported here globally for compatibility '
+        'purposes, but prefer passing to individual commands after the command '
+        'name since this global version is brittle.',
     },
     '--default-calendar': {
         'default': [],
@@ -146,6 +147,36 @@ def get_auto_width():
     console_width = get_terminal_size().columns
     day_width = int((console_width - 8) / 7)
     return day_width if day_width > 9 else 10
+
+
+def get_calendars_parser(nargs_multiple: bool) -> argparse.ArgumentParser:
+    calendar_parser = argparse.ArgumentParser(add_help=False)
+    plural = 's' if nargs_multiple else ''
+    calendar_help = (
+        f'Which calendar{plural} to use, in the format "CalendarName" '
+        'or "CalendarName#color", where the #color suffix is the name of a '
+        'valid ANSI color (such as "brightblue").'
+    )
+    if nargs_multiple:
+        calendar_parser.add_argument(
+            '--calendar',
+            action='append',
+            dest='calendars',
+            type=str,
+            default=[],
+            help=f'{calendar_help} This option may be called multiple times to '
+            'display additional calendars.',
+        )
+    else:
+        calendar_parser.add_argument(
+            '--calendar',
+            action='store',
+            dest='calendar',
+            type=str,
+            default=None,
+            help=calendar_help,
+        )
+    return calendar_parser
 
 
 def get_output_parser(parents=[]):
@@ -330,6 +361,10 @@ def get_argument_parser():
     if legacy_rc_path.exists():
         rc_paths.append(utils.shorten_path(legacy_rc_path))
 
+    calendars_parser = get_calendars_parser(nargs_multiple=True)
+    # Variant for commands that only accept a single --calendar.
+    calendar_parser = get_calendars_parser(nargs_multiple=False)
+
     parser = argparse.ArgumentParser(
         description=DESCRIPTION.format(
             config_dir=config_path,
@@ -378,38 +413,64 @@ def get_argument_parser():
     )
 
     sub.add_parser(
-            'list', parents=[color_parser], help='list available calendars',
-            description='List available calendars.')
+        'list',
+        parents=[calendars_parser, color_parser],
+        help='list available calendars',
+        description='List available calendars.',
+    )
 
     sub.add_parser(
-            'search', parents=[details_parser, output_parser, search_parser],
-            help='search for events within an optional time period',
-            description='Provides case insensitive search for calendar '
-            'events.')
+        'search',
+        parents=[
+            calendars_parser,
+            details_parser,
+            output_parser,
+            search_parser,
+        ],
+        help='search for events within an optional time period',
+        description='Provides case insensitive search for calendar ' 'events.',
+    )
     sub.add_parser(
-            'edit', parents=[details_parser, output_parser, search_parser],
-            help='edit calendar events',
-            description='Case insensitive search for items to find and edit '
-            'interactively.')
+        'edit',
+        parents=[
+            calendars_parser,
+            details_parser,
+            output_parser,
+            search_parser,
+        ],
+        help='edit calendar events',
+        description='Case insensitive search for items to find and edit '
+        'interactively.',
+    )
 
     delete = sub.add_parser(
-            'delete', parents=[output_parser, search_parser],
-            help='delete events from the calendar',
-            description='Case insensitive search for items to delete '
-            'interactively.')
+        'delete',
+        parents=[calendars_parser, output_parser, search_parser],
+        help='delete events from the calendar',
+        description='Case insensitive search for items to delete '
+        'interactively.',
+    )
     delete.add_argument(
             '--iamaexpert', action='store_true', help='Probably not')
 
     sub.add_parser(
-            'agenda',
-            parents=[details_parser, output_parser, start_end_parser],
-            help='get an agenda for a time period',
-            description='Get an agenda for a time period.')
+        'agenda',
+        parents=[
+            calendars_parser,
+            details_parser,
+            output_parser,
+            start_end_parser,
+        ],
+        help='get an agenda for a time period',
+        description='Get an agenda for a time period.',
+    )
 
     agendaupdate = sub.add_parser(
-            'agendaupdate',
-            help='update calendar from agenda TSV file',
-            description='Update calendar from agenda TSV file.')
+        'agendaupdate',
+        parents=[calendar_parser],
+        help='update calendar from agenda TSV file',
+        description='Update calendar from agenda TSV file.',
+    )
     agendaupdate.add_argument(
         'file',
         type=argparse.FileType('r', errors='replace'),
@@ -417,45 +478,75 @@ def get_argument_parser():
         default=sys.stdin)
 
     sub.add_parser(
-            'updates',
-            parents=[details_parser, output_parser, updates_parser],
-            help='get updates since a datetime for a time period '
-            '(defaults to through end of current month)',
-            description='Get updates since a datetime for a time period '
-            '(default to through end of current month).')
+        'updates',
+        parents=[
+            calendars_parser,
+            details_parser,
+            output_parser,
+            updates_parser,
+        ],
+        help='get updates since a datetime for a time period '
+        '(defaults to through end of current month)',
+        description='Get updates since a datetime for a time period '
+        '(default to through end of current month).',
+    )
 
     sub.add_parser(
-            'conflicts',
-            parents=[details_parser, output_parser, conflicts_parser],
-            help='find event conflicts',
-            description='Find conflicts between events matching search term '
-            '(default from now through 30 days into futures)')
+        'conflicts',
+        parents=[
+            calendars_parser,
+            details_parser,
+            output_parser,
+            conflicts_parser,
+        ],
+        help='find event conflicts',
+        description='Find conflicts between events matching search term '
+        '(default from now through 30 days into futures)',
+    )
 
     calw = sub.add_parser(
-            'calw', parents=[details_parser, output_parser, cal_query_parser],
-            help='get a week-based agenda in calendar format',
-            description='Get a week-based agenda in calendar format.')
+        'calw',
+        parents=[
+            calendars_parser,
+            details_parser,
+            output_parser,
+            cal_query_parser,
+        ],
+        help='get a week-based agenda in calendar format',
+        description='Get a week-based agenda in calendar format.',
+    )
     calw.add_argument('weeks', type=int, default=1, nargs='?')
 
     sub.add_parser(
-            'calm', parents=[details_parser, output_parser, cal_query_parser],
-            help='get a month agenda in calendar format',
-            description='Get a month agenda in calendar format.')
+        'calm',
+        parents=[
+            calendars_parser,
+            details_parser,
+            output_parser,
+            cal_query_parser,
+        ],
+        help='get a month agenda in calendar format',
+        description='Get a month agenda in calendar format.',
+    )
 
     quick = sub.add_parser(
-            'quick', parents=[details_parser, remind_parser],
-            help='quick-add an event to a calendar',
-            description='`quick-add\' an event to a calendar. A single '
-            '--calendar must be specified.')
+        'quick',
+        parents=[calendar_parser, details_parser, remind_parser],
+        help='quick-add an event to a calendar',
+        description='`quick-add\' an event to a calendar. A single '
+        '--calendar must be specified.',
+    )
     quick.add_argument('text')
 
     add = sub.add_parser(
-            'add', parents=[details_parser, remind_parser],
-            help='add a detailed event to the calendar',
-            description='Add an event to the calendar. Some or all metadata '
-            'can be passed as options (see optional arguments).  If '
-            'incomplete, will drop to an interactive prompt requesting '
-            'remaining data.')
+        'add',
+        parents=[calendar_parser, details_parser, remind_parser],
+        help='add a detailed event to the calendar',
+        description='Add an event to the calendar. Some or all metadata '
+        'can be passed as options (see optional arguments).  If '
+        'incomplete, will drop to an interactive prompt requesting '
+        'remaining data.',
+    )
     add.add_argument(
             '--color',
             dest='event_color',
@@ -491,11 +582,13 @@ def get_argument_parser():
         help='Don\'t prompt for missing data when adding events')
 
     _import = sub.add_parser(
-            'import', parents=[remind_parser],
-            help='import an ics/vcal file to a calendar',
-            description='Import from an ics/vcal file; a single --calendar '
-            'must be specified.  Reads from stdin when no file argument is '
-            'provided.')
+        'import',
+        parents=[calendar_parser, remind_parser],
+        help='import an ics/vcal file to a calendar',
+        description='Import from an ics/vcal file; a single --calendar '
+        'must be specified.  Reads from stdin when no file argument is '
+        'provided.',
+    )
     _import.add_argument(
             'file',
             type=argparse.FileType('r', errors='replace'),
@@ -516,11 +609,13 @@ def get_argument_parser():
 
     default_cmd = 'notify-send -u critical -i appointment-soon -a gcalcli %s'
     remind = sub.add_parser(
-            'remind',
-            help='execute command if event occurs within <mins> time',
-            description='Execute <cmd> if event occurs within <mins>; the %s '
-            'in <command> is replaced with event start time and title text.'
-            'default command: "' + default_cmd + '"')
+        'remind',
+        parents=[calendars_parser],
+        help='execute command if event occurs within <mins> time',
+        description='Execute <cmd> if event occurs within <mins>; the %s '
+        'in <command> is replaced with event start time and title text.'
+        'default command: "' + default_cmd + '"',
+    )
     remind.add_argument('minutes', nargs='?', type=int, default=10)
     remind.add_argument('cmd', nargs='?', type=str, default=default_cmd)
 
