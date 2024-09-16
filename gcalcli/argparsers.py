@@ -42,7 +42,7 @@ PROGRAM_OPTIONS = {
     '--noincluderc': {
         'action': 'store_false',
         'dest': 'includeRc',
-        'help': 'Whether to include ~/.gcalclirc when using configFolder',
+        'help': 'Whether to include ~/.gcalclirc.',
     },
     '--calendar': {
         'default': [],

@@ -22,6 +22,7 @@
 # ######################################################################### #
 import json
 import os
+import pathlib
 import signal
 import sys
 from collections import namedtuple
@@ -97,22 +98,36 @@ def main():
     truststore.inject_into_ssl()
 
     parser = get_argument_parser()
-    try:
-        argv = sys.argv[1:]
-        gcalclirc = os.path.expanduser('~/.gcalclirc')
-        if os.path.exists(gcalclirc):
-            # We want .gcalclirc to be sourced before any other --flagfile
-            # params since we may be told to use a specific config folder, we
-            # need to store generated argv in temp variable
-            tmp_argv = [f'@{gcalclirc}'] + argv
-        else:
-            tmp_argv = argv
+    argv = sys.argv[1:]
 
-        (parsed_args, unparsed) = parser.parse_known_args(tmp_argv)
+    rc_paths = [
+        pathlib.Path('~/.gcalclirc').expanduser(),
+        env.config_dir().joinpath('gcalclirc'),
+    ]
+    # Note: Order is significant here, so precedence is
+    # ~/.gcalclirc < CONFIGDIR/gcalclirc < explicit args
+    fromfile_args = [f'@{rc}' for rc in rc_paths if rc.exists()]
+
+    try:
+        (parsed_args, unparsed) = parser.parse_known_args(fromfile_args + argv)
     except Exception as e:
         sys.stderr.write(str(e))
         parser.print_usage()
         sys.exit(1)
+
+    if parsed_args.config_folder:
+        parsed_args.config_folder = parsed_args.config_folder.expanduser()
+    # Re-evaluate rc_paths in case --config-folder or something was updated.
+    # Note this could resolve strangely if you e.g. have a gcalclirc file that
+    # contains --noincluderc or overrides --config-folder from inside config
+    # folder. If that causes problems... don't do that.
+    rc_paths = [
+        pathlib.Path('~/.gcalclirc').expanduser(),
+        parsed_args.config_folder.joinpath('gcalclirc')
+        if parsed_args.config_folder
+        else None,
+    ]
+    fromfile_args = [f'@{rc}' for rc in rc_paths if rc and rc.exists()]
 
     config_filepath = env.config_file()
     if config_filepath.exists():
@@ -121,27 +136,20 @@ def main():
     else:
         opts_from_config = config.Config()
 
+    namespace_from_config = opts_from_config.to_argparse_namespace()
+    # Pull week_start aside and set it manually after parse_known_args.
+    # TODO: Figure out why week_start from opts_from_config getting through.
+    week_start = namespace_from_config.week_start
+    namespace_from_config.week_start = None
+    if parsed_args.includeRc:
+        argv = fromfile_args + argv
+    (parsed_args, unparsed) = parser.parse_known_args(
+        argv, namespace=namespace_from_config
+    )
+    if parsed_args.week_start is None:
+        parsed_args.week_start = week_start
     if parsed_args.config_folder:
         parsed_args.config_folder = parsed_args.config_folder.expanduser()
-        gcalclirc_path = parsed_args.config_folder.joinpath('gcalclirc')
-        if gcalclirc_path.exists():
-            # TODO: Should this precedence be flipped to:
-            # ['@~/.gcalclirc', '@CONFIG_FOLDER/gcalclirc', ...]?
-            tmp_argv = [f'@{gcalclirc_path}'] + (
-                tmp_argv if parsed_args.includeRc else argv
-            )
-
-        namespace_from_config = opts_from_config.to_argparse_namespace()
-        # Pull week_start aside and set it manually after parse_known_args.
-        # TODO: Figure out why week_start from opts_from_config getting through.
-        week_start = namespace_from_config.week_start
-        namespace_from_config.week_start = None
-        (parsed_args, unparsed) = parser.parse_known_args(
-            tmp_argv, namespace=namespace_from_config)
-        if parsed_args.week_start is None:
-            parsed_args.week_start = week_start
-        if parsed_args.config_folder:
-            parsed_args.config_folder = parsed_args.config_folder.expanduser()
 
     printer = Printer(
             conky=parsed_args.conky, use_color=parsed_args.color,

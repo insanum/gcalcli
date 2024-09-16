@@ -78,8 +78,8 @@ options:
                         Optional directory used to load config files.
                         Deprecated: prefer $GCALCLI_CONFIG. (default:
                         /some/gcalcli/config)
-  --noincluderc         Whether to include ~/.gcalclirc when using
-                        configFolder (default: True)
+  --noincluderc         Whether to include ~/.gcalclirc. (default:
+                        True)
   --calendar CALENDAR   Which calendars to use, in the format
                         "CalendarName" or "CalendarName#color", where
                         the #color suffix is the name of a valid ANSI
