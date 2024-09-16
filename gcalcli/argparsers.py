@@ -534,7 +534,7 @@ def get_argument_parser():
 
     config = sub.add_parser(
         'config',
-        help='Utility commands to work with configuration',
+        help='utility commands to work with configuration',
     )
     config_sub = config.add_subparsers(
         dest='subcommand',
@@ -543,12 +543,12 @@ def get_argument_parser():
 
     config_sub.add_parser(
         'edit',
-        help='Launches config.toml in a text editor',
+        help='launch config.toml in a text editor',
     )
 
     util = sub.add_parser(
         'util',
-        help='Low-level utility commands for introspection, dumping schemas, '
+        help='low-level utility commands for introspection, dumping schemas, '
         'etc',
     )
     util_sub = util.add_subparsers(
@@ -558,7 +558,13 @@ def get_argument_parser():
 
     util_sub.add_parser(
         'config-schema',
-        help='Print the JSON schema for the gcalcli TOML config format',
+        help='print the JSON schema for the gcalcli TOML config format',
+    )
+    util_sub.add_parser(
+        'reset-cache',
+        help='manually erase the cache',
+        description="Delete gcalcli's internal cache file as a workaround for "
+        "caching bugs like insanum/gcalcli#622",
     )
 
     # Enrich with argcomplete options.

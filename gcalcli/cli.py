@@ -299,6 +299,20 @@ def main():
                 )
                 schema = config.Config.json_schema()
                 print(json.dumps(schema, indent=2))
+            elif parsed_args.subcommand == 'reset-cache':
+                deleted_something = False
+                for cache_filepath in env.data_file_paths('cache'):
+                    if cache_filepath.exists():
+                        printer.msg(
+                            f'Deleting cache file from {cache_filepath}...\n'
+                        )
+                        cache_filepath.unlink(missing_ok=True)
+                        deleted_something = True
+                if not deleted_something:
+                    printer.msg(
+                        'No cache file found. Exiting without deleting '
+                        'anything...\n'
+                    )
 
     except GcalcliError as exc:
         printer.err_msg(str(exc))

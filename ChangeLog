@@ -2,6 +2,7 @@ v4.5.0
   * Drop support for python <3.10
   * Add `init` command to explicitly request auth setup/refresh
   * Add support for config.toml file and `gcalcli config edit` command
+  * Add support for `gcalcli util config-schema|reset-cache` commands
   * Respect locally-installed certificates (ajkessel)
   * Re-add a `--noauth_local_server` to provide instructions for authenticating
     from a remote system using port forwarding
