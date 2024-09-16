@@ -2,7 +2,7 @@
 usage: gcalcli [-h] [--version] [--client-id CLIENT_ID]
                [--client-secret CLIENT_SECRET] [--noauth_local_server]
                [--config-folder CONFIG_FOLDER] [--noincluderc]
-               [--calendar CALENDAR]
+               [--calendar GLOBAL_CALENDARS]
                [--default-calendar DEFAULT_CALENDARS]
                [--locale LOCALE] [--refresh] [--nocache] [--conky]
                [--nocolor] [--lineart {fancy,unicode,ascii}]
@@ -78,14 +78,15 @@ options:
                         Optional directory used to load config files.
                         Deprecated: prefer $GCALCLI_CONFIG. (default:
                         /some/gcalcli/config)
-  --noincluderc         Whether to include ~/.gcalclirc when using
-                        configFolder (default: True)
-  --calendar CALENDAR   Which calendars to use, in the format
-                        "CalendarName" or "CalendarName#color", where
-                        the #color suffix is the name of a valid ANSI
-                        color (such as "brightblue"). This option may
-                        be called multiple times to display additional
-                        calendars. (default: [])
+  --noincluderc         Whether to include ~/.gcalclirc. (default:
+                        True)
+  --calendar GLOBAL_CALENDARS
+                        Which calendars to use, in the format
+                        "CalendarName" or "CalendarName#color".
+                        Supported here globally for compatibility
+                        purposes, but prefer passing to individual
+                        commands after the command name since this
+                        global version is brittle. (default: [])
   --default-calendar DEFAULT_CALENDARS
                         Optional default calendar to use if no
                         --calendar options are given (default: [])
