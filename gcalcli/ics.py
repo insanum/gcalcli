@@ -22,11 +22,14 @@ def get_events(
 
     events: list[Optional[EventBody]] = []
     for v in vobject.readComponents(ics):
+        # Strangely, in empty calendar cases vobject sometimes returns
+        # Components with no vevent_list attribute at all.
+        vevents = getattr(v, 'vevent_list', [])
         events.extend(
             CreateEventFromVOBJ(
                 ve, verbose=verbose, default_tz=default_tz, printer=printer
             )
-            for ve in v.vevent_list
+            for ve in vevents
         )
     return events
 
