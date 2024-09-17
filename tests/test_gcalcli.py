@@ -95,7 +95,7 @@ def test_cal_query(capsys, PatchedGCalI):
 
 
 def test_add_event(PatchedGCalI):
-    cal_names = parse_cal_names(['jcrowgey@uw.edu'])
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'], printer=None)
     gcal = PatchedGCalI(
             cal_names=cal_names, allday=False, default_reminders=True)
     assert gcal.AddEvent(title='test event',
@@ -109,7 +109,8 @@ def test_add_event(PatchedGCalI):
 
 
 def test_add_event_with_cal_prompt(PatchedGCalI, capsys, monkeypatch):
-    cal_names = parse_cal_names(['jcrowgey@uw.edu', 'joshuacrowgey@gmail.com'])
+    cal_names = parse_cal_names(
+        ['jcrowgey@uw.edu', 'joshuacrowgey@gmail.com'], None)
     gcal = PatchedGCalI(
             cal_names=cal_names, allday=False, default_reminders=True)
     # Fake selecting calendar 0 at the prompt
@@ -131,7 +132,7 @@ def test_add_event_with_cal_prompt(PatchedGCalI, capsys, monkeypatch):
 def test_add_event_override_color(capsys, default_options,
                                   PatchedGCalIForEvents):
     default_options.update({'override_color': True})
-    cal_names = parse_cal_names(['jcrowgey@uw.edu'])
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'], None)
     gcal = PatchedGCalIForEvents(cal_names=cal_names, **default_options)
     gcal.AgendaQuery()
     captured = capsys.readouterr()
@@ -141,7 +142,7 @@ def test_add_event_override_color(capsys, default_options,
 
 
 def test_quick_add(PatchedGCalI):
-    cal_names = parse_cal_names(['jcrowgey@uw.edu'])
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'], None)
     gcal = PatchedGCalI(cal_names=cal_names)
     assert gcal.QuickAddEvent(
         event_text='quick test event',
@@ -149,7 +150,8 @@ def test_quick_add(PatchedGCalI):
 
 
 def test_quick_add_with_cal_prompt(PatchedGCalI, capsys, monkeypatch):
-    cal_names = parse_cal_names(['jcrowgey@uw.edu', 'joshuacrowgey@gmail.com'])
+    cal_names = parse_cal_names(
+        ['jcrowgey@uw.edu', 'joshuacrowgey@gmail.com'], None)
     gcal = PatchedGCalI(cal_names=cal_names)
     # Fake selecting calendar 0 at the prompt
     monkeypatch.setattr('sys.stdin', io.StringIO('0\n'))
@@ -271,14 +273,14 @@ def test_modify_event(PatchedGCalI):
 
 
 def test_import(PatchedGCalI):
-    cal_names = parse_cal_names(['jcrowgey@uw.edu'])
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'], None)
     gcal = PatchedGCalI(cal_names=cal_names, default_reminders=True)
     vcal_path = TEST_DATA_DIR + '/vv.txt'
     assert gcal.ImportICS(icsFile=open(vcal_path, errors='replace'))
 
 
 def test_legacy_import(PatchedGCalI):
-    cal_names = parse_cal_names(['jcrowgey@uw.edu'])
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'], None)
     gcal = PatchedGCalI(
         cal_names=cal_names, default_reminders=True, use_legacy_import=True)
     vcal_path = TEST_DATA_DIR + '/vv.txt'
@@ -323,15 +325,15 @@ def test_parse_cal_names(PatchedGCalI):
     # and then assert the right number of events
     # for the moment, we assert 0 (which indicates successful completion of
     # the code path, but no events printed)
-    cal_names = parse_cal_names(['j*#green'])
+    cal_names = parse_cal_names(['j*#green'], None)
     gcal = PatchedGCalI(cal_names=cal_names)
     assert gcal.AgendaQuery() == 0
 
-    cal_names = parse_cal_names(['j*'])
+    cal_names = parse_cal_names(['j*'], None)
     gcal = PatchedGCalI(cal_names=cal_names)
     assert gcal.AgendaQuery() == 0
 
-    cal_names = parse_cal_names(['jcrowgey@uw.edu'])
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'], None)
     gcal = PatchedGCalI(cal_names=cal_names)
     assert gcal.AgendaQuery() == 0
 
