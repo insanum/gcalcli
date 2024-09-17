@@ -36,8 +36,15 @@ from .argparsers import get_argument_parser, handle_unparsed
 from .exceptions import GcalcliError
 from .gcal import GoogleCalendarInterface
 from .printer import Printer, valid_color_name
-from .validators import (get_input, PARSABLE_DATE, PARSABLE_DURATION, REMINDER,
-                         STR_ALLOW_EMPTY, STR_NOT_EMPTY)
+from .validators import (
+    DATETIME_INPUT_DESCRIPTION,
+    get_input,
+    PARSABLE_DATE,
+    PARSABLE_DURATION,
+    REMINDER,
+    STR_ALLOW_EMPTY,
+    STR_NOT_EMPTY,
+)
 
 CalName = namedtuple('CalName', ['name', 'color'])
 
@@ -108,7 +115,12 @@ def run_add_prompt(parsed_args, printer):
     if parsed_args.where is None:
         parsed_args.where = get_input(printer, 'Location: ', STR_ALLOW_EMPTY)
     if parsed_args.when is None:
-        parsed_args.when = get_input(printer, 'When: ', PARSABLE_DATE)
+        parsed_args.when = get_input(
+            printer,
+            'When (? for help): ',
+            PARSABLE_DATE,
+            help=f'Expected format: {DATETIME_INPUT_DESCRIPTION}',
+        )
     if parsed_args.duration is None and parsed_args.end is None:
         if parsed_args.allday:
             prompt = 'Duration (days): '

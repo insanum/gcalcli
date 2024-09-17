@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 
 from .exceptions import ValidationError
 from .utils import get_time_from_str, get_timedelta_from_str, REMINDER_REGEX
@@ -9,16 +10,24 @@ VALID_OVERRIDE_COLORS = ['lavender', 'sage', 'grape', 'flamingo',
                          'banana', 'tangerine', 'peacock', 'graphite',
                          'blueberry', 'basil', 'tomato']
 
+DATETIME_INPUT_DESCRIPTION = 'a date (e.g. 2019-12-31, tomorrow 10am, 2nd Jan, \
+Jan 4th, etc) or valid time if today'
+
 
 def get_override_color_id(color):
     return str(VALID_OVERRIDE_COLORS.index(color) + 1)
 
 
-def get_input(printer, prompt, validator_func):
+def get_input(printer, prompt, validator_func, help: Optional[str] = None):
     printer.msg(prompt, 'magenta')
     while True:
         try:
-            output = validate_input(validator_func)
+            answer = input()
+            if answer.strip() == '?' and help:
+                printer.msg(f'{help}\n')
+                printer.msg(prompt, 'magenta')
+                continue
+            output = validator_func(answer)
             return output
         except ValidationError as e:
             printer.msg(e.message, 'red')
@@ -68,8 +77,7 @@ def parsable_date_validator(input_str):
         return input_str
     except ValueError:
         raise ValidationError(
-            'Expected format: a date (e.g. 2019-01-01, tomorrow 10am, '
-            '2nd Jan, Jan 4th, etc) or valid time if today. '
+            f'Expected format: {DATETIME_INPUT_DESCRIPTION}. '
             '(Ctrl-C to exit)\n'
         )
 
@@ -122,14 +130,6 @@ def reminder_validator(input_str):
     else:
         raise ValidationError('Expected format: <number><w|d|h|m> '
                               '<popup|email|sms>. (Ctrl-C to exit)\n')
-
-
-def validate_input(validator_func):
-    """
-    Wrapper around Validator funcs.
-    """
-    inp_str = input()
-    return validator_func(inp_str)
 
 
 STR_NOT_EMPTY = non_blank_str_validator
