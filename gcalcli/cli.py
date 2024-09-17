@@ -20,9 +20,11 @@
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
 #                                                                           #
 # ######################################################################### #
+from argparse import ArgumentTypeError
 import json
 import os
 import pathlib
+import re
 import signal
 import sys
 from collections import namedtuple
@@ -45,23 +47,43 @@ EMPTY_CONFIG_TOML = """\
 """
 
 
-def parse_cal_names(cal_names):
+def rsplit_unescaped_hash(string):
+    # Use regex to find parts before/after last unescaped hash separator.
+    # Sadly, all the "proper solutions" are even more questionable:
+    # https://stackoverflow.com/questions/4020539/process-escape-sequences
+    match = re.match(
+        r"""(?x)
+            ^((?:\\.|[^\\])*)
+            [#]
+            ((?:\\.|[^#\\])*)$
+        """,
+        string
+    )
+    if not match:
+        return (string, None)
+    # Unescape and return (part1, part2)
+    return tuple(re.sub(r'\\(.)', r'\1', p)
+                 for p in match.group(1, 2))
+
+
+def parse_cal_names(cal_names: list[str], printer: Printer):
     cal_colors = {}
     for name in cal_names:
         cal_color = 'default'
-        parts = name.split('#')
-        parts_count = len(parts)
-        if parts_count >= 1:
-            cal_name = parts[0]
+        p1, p2 = rsplit_unescaped_hash(name)
+        if p2 is not None:
+            try:
+                name, cal_color = p1, valid_color_name(p2)
+            except ArgumentTypeError:
+                printer.debug_msg(
+                    f'Using entire name {name!r} as cal name.\n'
+                    f'Change {p1!r} to a valid color name if intended to be a '
+                    'color (or otherwise consider escaping "#" chars to "\\#").'
+                    '\n'
+                )
 
-        if len(parts) == 2:
-            cal_color = valid_color_name(parts[1])
-
-        if len(parts) > 2:
-            raise ValueError('Cannot parse calendar name: "%s"' % name)
-
-        cal_colors[cal_name] = cal_color
-    return [CalName(name=k, color=cal_colors[k]) for k in cal_colors.keys()]
+        cal_colors[name] = cal_color
+    return [CalName(name=k, color=v) for k, v in cal_colors.items()]
 
 
 def run_add_prompt(parsed_args, printer):
@@ -376,7 +398,7 @@ def set_resolved_calendars(parsed_args, printer: Printer) -> list[str]:
             'calendars may be coming from gcalclirc.\n'
         )
 
-    cal_names = parse_cal_names(parsed_args.calendars)
+    cal_names = parse_cal_names(parsed_args.calendars, printer=printer)
     # Only ignore calendars if they're not explicitly in --calendar list.
     parsed_args.ignore_calendars[:] = [
         c
