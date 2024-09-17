@@ -2,16 +2,18 @@ import re
 from typing import Optional
 
 from .exceptions import ValidationError
-from .utils import get_time_from_str, get_timedelta_from_str, REMINDER_REGEX
+from .utils import (
+    get_time_from_str,
+    get_timedelta_from_str,
+    REMINDER_REGEX,
+    is_dayfirst_locale,
+)
 
 # TODO: in the future, pull these from the API
 # https://developers.google.com/calendar/v3/reference/colors
 VALID_OVERRIDE_COLORS = ['lavender', 'sage', 'grape', 'flamingo',
                          'banana', 'tangerine', 'peacock', 'graphite',
                          'blueberry', 'basil', 'tomato']
-
-DATETIME_INPUT_DESCRIPTION = 'a date (e.g. 2019-12-31, tomorrow 10am, 2nd Jan, \
-Jan 4th, etc) or valid time if today'
 
 
 def get_override_color_id(color):
@@ -66,6 +68,13 @@ def str_to_int_validator(input_str):
         )
 
 
+def get_date_input_description():
+    dayfirst = is_dayfirst_locale()
+    sample_date = '2019-31-12' if dayfirst else '2019-12-31'
+    return f'a date (e.g. {sample_date}, tomorrow 10am, 2nd Jan, Jan 4th, etc) \
+or valid time if today'
+
+
 def parsable_date_validator(input_str):
     """
     A filter allowing any string which can be parsed
@@ -76,8 +85,9 @@ def parsable_date_validator(input_str):
         get_time_from_str(input_str)
         return input_str
     except ValueError:
+        format_desc = get_date_input_description()
         raise ValidationError(
-            f'Expected format: {DATETIME_INPUT_DESCRIPTION}. '
+            f'Expected format: {format_desc}. '
             '(Ctrl-C to exit)\n'
         )
 

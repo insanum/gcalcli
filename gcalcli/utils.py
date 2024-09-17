@@ -8,6 +8,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Tuple
 
+import babel
 from dateutil.parser import parse as dateutil_parse
 from dateutil.tz import tzlocal
 from parsedatetime.parsedatetime import Calendar
@@ -85,6 +86,26 @@ def get_times_from_duration(
     return start.isoformat(), stop.isoformat()
 
 
+def is_dayfirst_locale():
+    """Detect whether system locale date format has day first.
+
+    Examples:
+     - M/d/yy -> False
+     - dd/MM/yy -> True
+     - (UnknownLocaleError) -> False
+
+    Pattern syntax is documented at
+    https://babel.pocoo.org/en/latest/dates.html#pattern-syntax.
+    """
+    try:
+        locale = babel.Locale(babel.default_locale('LC_TIME'))
+    except babel.UnknownLocaleError:
+        # Couldn't detect locale, assume non-dayfirst.
+        return False
+    m = re.search(r'M|d|$', locale.date_formats['short'].pattern)
+    return m and m.group(0) == 'd'
+
+
 def get_time_from_str(when):
     """Convert a string to a time: first uses the dateutil parser, falls back
     on fuzzy matching with parsedatetime
@@ -93,7 +114,9 @@ def get_time_from_str(when):
             hour=0, minute=0, second=0, microsecond=0)
 
     try:
-        event_time = dateutil_parse(when, default=zero_oclock_today)
+        event_time = dateutil_parse(
+            when, default=zero_oclock_today, dayfirst=is_dayfirst_locale()
+        )
     except ValueError:
         struct, result = fuzzy_date_parse(when)
         if not result:
