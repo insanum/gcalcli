@@ -1,7 +1,13 @@
 import re
+from typing import Optional
 
 from .exceptions import ValidationError
-from .utils import get_time_from_str, get_timedelta_from_str, REMINDER_REGEX
+from .utils import (
+    get_time_from_str,
+    get_timedelta_from_str,
+    REMINDER_REGEX,
+    is_dayfirst_locale,
+)
 
 # TODO: in the future, pull these from the API
 # https://developers.google.com/calendar/v3/reference/colors
@@ -14,11 +20,16 @@ def get_override_color_id(color):
     return str(VALID_OVERRIDE_COLORS.index(color) + 1)
 
 
-def get_input(printer, prompt, validator_func):
+def get_input(printer, prompt, validator_func, help: Optional[str] = None):
     printer.msg(prompt, 'magenta')
     while True:
         try:
-            output = validate_input(validator_func)
+            answer = input()
+            if answer.strip() == '?' and help:
+                printer.msg(f'{help}\n')
+                printer.msg(prompt, 'magenta')
+                continue
+            output = validator_func(answer)
             return output
         except ValidationError as e:
             printer.msg(e.message, 'red')
@@ -57,6 +68,13 @@ def str_to_int_validator(input_str):
         )
 
 
+def get_date_input_description():
+    dayfirst = is_dayfirst_locale()
+    sample_date = '2019-31-12' if dayfirst else '2019-12-31'
+    return f'a date (e.g. {sample_date}, tomorrow 10am, 2nd Jan, Jan 4th, etc) \
+or valid time if today'
+
+
 def parsable_date_validator(input_str):
     """
     A filter allowing any string which can be parsed
@@ -67,9 +85,9 @@ def parsable_date_validator(input_str):
         get_time_from_str(input_str)
         return input_str
     except ValueError:
+        format_desc = get_date_input_description()
         raise ValidationError(
-            'Expected format: a date (e.g. 2019-01-01, tomorrow 10am, '
-            '2nd Jan, Jan 4th, etc) or valid time if today. '
+            f'Expected format: {format_desc}. '
             '(Ctrl-C to exit)\n'
         )
 
@@ -122,14 +140,6 @@ def reminder_validator(input_str):
     else:
         raise ValidationError('Expected format: <number><w|d|h|m> '
                               '<popup|email|sms>. (Ctrl-C to exit)\n')
-
-
-def validate_input(validator_func):
-    """
-    Wrapper around Validator funcs.
-    """
-    inp_str = input()
-    return validator_func(inp_str)
 
 
 STR_NOT_EMPTY = non_blank_str_validator

@@ -2,4 +2,4 @@
 Running in GCALCLI_USERLESS_MODE. Most operations will fail!
 [0mPrompting for unfilled values.
 Run with --noprompt to leave them unfilled without prompting.
-[0m[0;35mTitle: [0m[0;35mLocation: [0m[0;35mWhen: [0m[0;35mDuration (human readable): [0m[0;35mDescription: [0m[0;35mEnter a valid reminder or "." to end: [0m[31;1mNo available calendar to use[0m
+[0m[0;35mTitle: [0m[0;35mLocation: [0m[0;35mWhen (? for help): [0m[0;35mDuration (human readable): [0m[0;35mDescription: [0m[0;35mEnter a valid reminder or "." to end: [0m[31;1mNo available calendar to use[0m

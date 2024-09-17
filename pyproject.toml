@@ -27,6 +27,7 @@ classifiers = [
 ]
 dependencies = [
   "argcomplete",
+  "babel",
   "google-api-python-client>=1.4",
   "google_auth_oauthlib",
   "httplib2",
