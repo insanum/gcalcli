@@ -1579,6 +1579,8 @@ class GoogleCalendarInterface:
                 '--use-legacy-import to restore the old behavior.\n\n')
             time.sleep(1)
 
+        cal = self.cals[0]
+        imported_cnt = 0
         for event in events_to_import:
             if not event:
                 continue
@@ -1609,11 +1611,11 @@ class GoogleCalendarInterface:
             # Import event
             import_method = (
                 self.get_events().import_ if (
-                    self._event_should_use_new_import_api(event, self.cals[0]))
+                    self._event_should_use_new_import_api(event, cal))
                 else self.get_events().insert)
             try:
                 new_event = self._retry_with_backoff(
-                    import_method(calendarId=self.cals[0]['id'], body=event))
+                    import_method(calendarId=cal['id'], body=event))
             except HttpError as e:
                 try:
                     is_skipped_dupe = any(detail.get('reason') == 'duplicate'
@@ -1635,8 +1637,12 @@ class GoogleCalendarInterface:
                     self.printer.msg(f'Event details: {event}\n')
                     self.printer.debug_msg(f'Error details: {e}\n')
             else:
+                imported_cnt += 1
                 hlink = new_event.get('htmlLink')
                 self.printer.msg(f'New event added: {hlink}\n', 'green')
 
-        # TODO: return the number of events added
+        self.printer.msg(
+            f"Added {imported_cnt} events to calendar {cal['id']}\n"
+        )
+
         return True
