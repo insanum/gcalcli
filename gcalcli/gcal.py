@@ -13,7 +13,7 @@ import shutil
 import sys
 import textwrap
 import time
-from typing import Iterable
+from typing import Any, Iterable
 from unicodedata import east_asian_width
 
 import googleapiclient.http
@@ -54,8 +54,8 @@ class GoogleCalendarInterface:
     agenda_length = 5
     conflicts_lookahead_days = 30
     max_retries = 5
-    credentials = None
-    cal_service = None
+    credentials: Any = None
+    cal_service: Any = None
     # Special override to bypass all auth and defer the auth-related failures
     # as late as possible, for testing.
     userless_mode: bool = False
