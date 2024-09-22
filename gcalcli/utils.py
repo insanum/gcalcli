@@ -1,9 +1,7 @@
 import calendar
 import locale
-import os
 import pathlib
 import re
-import subprocess
 import time
 from datetime import datetime, timedelta
 from typing import Tuple
@@ -185,26 +183,6 @@ def localize_datetime(dt):
         return dt.replace(tzinfo=tzlocal())
     else:
         return dt.astimezone(tzlocal())
-
-
-def launch_editor(path: str | os.PathLike):
-    if hasattr(os, 'startfile'):
-        os.startfile(path, 'edit')
-        return
-    for editor in (
-        'editor',
-        os.environ.get('EDITOR', None),
-        'xdg-open',
-        'open',
-    ):
-        if not editor:
-            continue
-        try:
-            subprocess.call((editor, path))
-            return
-        except OSError:
-            pass
-    raise OSError(f'No editor/launcher detected on your system to edit {path}')
 
 
 def shorten_path(path: pathlib.Path) -> pathlib.Path:

@@ -20,15 +20,16 @@
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
 #                                                                           #
 # ######################################################################### #
-from argparse import ArgumentTypeError
 import json
 import os
 import pathlib
 import re
 import signal
 import sys
+from argparse import ArgumentTypeError
 from collections import namedtuple
 
+import shopen
 import truststore
 
 from . import config, env, utils
@@ -37,13 +38,13 @@ from .exceptions import GcalcliError
 from .gcal import GoogleCalendarInterface
 from .printer import Printer, valid_color_name
 from .validators import (
-    get_date_input_description,
-    get_input,
     PARSABLE_DATE,
     PARSABLE_DURATION,
     REMINDER,
     STR_ALLOW_EMPTY,
     STR_NOT_EMPTY,
+    get_date_input_description,
+    get_input,
 )
 
 CalName = namedtuple('CalName', ['name', 'color'])
@@ -339,7 +340,7 @@ def main():
                 if not config_filepath.exists():
                     with open(config_filepath, 'w') as f:
                         f.write(EMPTY_CONFIG_TOML)
-                utils.launch_editor(config_filepath)
+                shopen.open(config_filepath, 'edit')
 
         elif parsed_args.command == 'util':
             if parsed_args.subcommand == 'config-schema':
