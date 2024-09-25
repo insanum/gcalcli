@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 import importlib.util
 import io
-from datetime import datetime
+from datetime import datetime, timedelta
 import pathlib
 import tempfile
 from typing import Any, NamedTuple, Optional
@@ -79,7 +79,7 @@ def CreateEventFromVOBJ(
             print('Location.....%s' % ve.location.value)
         event['location'] = ve.location.value
 
-    if not hasattr(ve, 'dtstart'):
+    if not hasattr(ve, 'dtstart') or not ve.dtstart.value:
         printer.err_msg('Error: event does not have a dtstart!\n')
         return EventData(body=None, source=ve)
 
@@ -89,65 +89,54 @@ def CreateEventFromVOBJ(
 
         event['recurrence'] = ['RRULE:' + ve.rrule.value]
 
-    if hasattr(ve, 'dtstart') and ve.dtstart.value:
+    if verbose:
+        print('Start........%s' % ve.dtstart.value.isoformat())
+        print('Local Start..%s' % localize_datetime(ve.dtstart.value))
+
+    # XXX
+    # Timezone madness! Note that we're using the timezone for the calendar
+    # being added to. This is OK if the event is in the same timezone. This
+    # needs to be changed to use the timezone from the DTSTART and DTEND values.
+    # Problem is, for example, the TZID might be "Pacific Standard Time" and
+    # Google expects a timezone string like "America/Los_Angeles". Need to find
+    # a way in python to convert to the more specific timezone string.
+    # XXX
+    # print ve.dtstart.params['X-VOBJ-ORIGINAL-TZID'][0]
+    # print default_tz
+    # print dir(ve.dtstart.value.tzinfo)
+    # print vars(ve.dtstart.value.tzinfo)
+
+    start = ve.dtstart.value.isoformat()
+    if isinstance(ve.dtstart.value, datetime):
+        event['start'] = {'dateTime': start, 'timeZone': default_tz}
+    else:
+        event['start'] = {'date': start}
+
+    # All events must have a start, but explicit end is optional.
+    # If there is no end, use the duration if available, or the start otherwise.
+    if hasattr(ve, 'dtend') and ve.dtend.value:
+        end = ve.dtend.value
         if verbose:
-            print('Start........%s' % ve.dtstart.value.isoformat())
-            print('Local Start..%s' % localize_datetime(ve.dtstart.value))
-
-        # XXX
-        # Timezone madness! Note that we're using the timezone for the
-        # calendar being added to. This is OK if the event is in the
-        # same timezone. This needs to be changed to use the timezone
-        # from the DTSTART and DTEND values. Problem is, for example,
-        # the TZID might be "Pacific Standard Time" and Google expects
-        # a timezone string like "America/Los_Angeles". Need to find a
-        # way in python to convert to the more specific timezone
-        # string.
-        # XXX
-        # print ve.dtstart.params['X-VOBJ-ORIGINAL-TZID'][0]
-        # print default_tz
-        # print dir(ve.dtstart.value.tzinfo)
-        # print vars(ve.dtstart.value.tzinfo)
-
-        start = ve.dtstart.value.isoformat()
-        if isinstance(ve.dtstart.value, datetime):
-            event['start'] = {'dateTime': start, 'timeZone': default_tz}
+            print('End..........%s' % end.isoformat())
+            print('Local End....%s' % localize_datetime(end))
+    else:  # using duration instead of end
+        if hasattr(ve, 'duration') and ve.duration.value:
+            duration = ve.duration.value
         else:
-            event['start'] = {'date': start}
+            duration = timedelta(minutes=0)
+        if verbose:
+            print('Duration.....%s' % duration)
+        end = ve.dtstart.value + duration
+        if verbose:
+            print('Calculated End........%s' % end.isoformat())
+            print('Calculated Local End..%s' % localize_datetime(end))
 
-        # NOTE: Reminders added by GoogleCalendarInterface caller.
+    if isinstance(end, datetime):
+        event['end'] = {'dateTime': end.isoformat(), 'timeZone': default_tz}
+    else:
+        event['end'] = {'date': end.isoformat()}
 
-        # Can only have an end if we have a start, but not the other way around
-        # apparently...  If there is no end, use the duration if available, or
-        # the start otherwise.
-        if hasattr(ve, 'dtend') and ve.dtend.value:
-            if verbose:
-                print('End..........%s' % ve.dtend.value.isoformat())
-                print('Local End....%s' % localize_datetime(ve.dtend.value))
-
-            end = ve.dtend.value.isoformat()
-            if isinstance(ve.dtend.value, datetime):
-                event['end'] = {'dateTime': end, 'timeZone': default_tz}
-            else:
-                event['end'] = {'date': end}
-
-        elif hasattr(ve, 'duration') and ve.duration.value:
-            if verbose:
-                print('Duration.....%s' % ve.duration.value)
-            end = ve.dtstart.value + ve.duration.value
-            if verbose:
-                print('Calculated End........%s' % end.isoformat())
-                print('Calculated Local End..%s' % localize_datetime(end))
-            # Decide based on dtstart; that's what we base our calculation on.
-            # TODO: correct?
-            if isinstance(ve.dtstart.value, datetime):
-                event['end'] = {'dateTime': end.isoformat(),
-                                'timeZone': default_tz}
-            else:
-                event['end'] = {'date': end.isoformat()}
-
-        else:
-            event['end'] = event['start']
+    # NOTE: Reminders added by GoogleCalendarInterface caller.
 
     if hasattr(ve, 'description') and ve.description.value.strip():
         descr = ve.description.value.strip()
