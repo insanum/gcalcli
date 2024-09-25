@@ -1,27 +1,52 @@
 """Helpers for working with iCal/ics format."""
 
+from dataclasses import dataclass
 import importlib.util
 import io
 from datetime import datetime
-from typing import Any, Optional
+import pathlib
+import tempfile
+from typing import Any, NamedTuple, Optional
 
 from gcalcli.printer import Printer
 from gcalcli.utils import localize_datetime
 
-EventBody = dict[str, Any]
+
+@dataclass
+class EventData:
+    body: Optional[dict[str, Any]]
+    source: Any
+
+    def label_str(self):
+        if self.source.get('summary'):
+            return f'"{self.source.summary}"'
+        elif self.source.get('dtstart') and self.source.dtstart.get('value'):
+            return f"with start {self.source.dtstart.value}"
+        else:
+            return None
+
+
+class IcalData(NamedTuple):
+    events: list[EventData]
+    raw_components: list[Any]
 
 
 def has_vobject_support() -> bool:
     return importlib.util.find_spec('vobject') is not None
 
 
-def get_events(
+def get_ics_data(
     ics: io.TextIOBase, verbose: bool, default_tz: str, printer: Printer
-) -> list[Optional[EventBody]]:
+) -> IcalData:
     import vobject
 
-    events: list[Optional[EventBody]] = []
+    events: list[EventData] = []
+    raw_components: list[Any] = []
     for v in vobject.readComponents(ics):
+        if v.name == 'VCALENDAR' and hasattr(v, 'components'):
+            raw_components.extend(
+                c for c in v.components() if c.name != 'VEVENT'
+            )
         # Strangely, in empty calendar cases vobject sometimes returns
         # Components with no vevent_list attribute at all.
         vevents = getattr(v, 'vevent_list', [])
@@ -31,12 +56,12 @@ def get_events(
             )
             for ve in vevents
         )
-    return events
+    return IcalData(events, raw_components)
 
 
 def CreateEventFromVOBJ(
     ve, verbose: bool, default_tz: str, printer: Printer
-) -> Optional[EventBody]:
+) -> EventData:
     event = {}
 
     if verbose:
@@ -56,7 +81,7 @@ def CreateEventFromVOBJ(
 
     if not hasattr(ve, 'dtstart') or not hasattr(ve, 'dtend'):
         printer.err_msg('Error: event does not have a dtstart and dtend!\n')
-        return None
+        return EventData(body=None, source=ve)
 
     if verbose:
         if ve.dtstart.value:
@@ -152,4 +177,21 @@ def CreateEventFromVOBJ(
             print(f'Sequence.....{sequence}')
         event['sequence'] = sequence
 
-    return event
+    return EventData(body=event, source=ve)
+
+
+def dump_partial_ical(
+    events: list[EventData], raw_components: list[Any]
+) -> pathlib.Path:
+    import vobject
+
+    tmp_dir = pathlib.Path(tempfile.mkdtemp(prefix="gcalcli."))
+    f_path = tmp_dir.joinpath("rej.ics")
+    cal = vobject.iCalendar()
+    for c in raw_components:
+        cal.add(c)
+    for event in events:
+        cal.add(event.source)
+    with open(f_path, 'w') as f:
+        f.write(cal.serialize())
+    return f_path
