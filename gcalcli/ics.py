@@ -123,7 +123,11 @@ def CreateEventFromVOBJ(
         if hasattr(ve, 'duration') and ve.duration.value:
             duration = ve.duration.value
         else:
-            duration = timedelta(minutes=0)
+            printer.msg(
+                "Falling back to 30m duration for imported event w/o "
+                "explicit duration or end.\n"
+            )
+            duration = timedelta(minutes=30)
         if verbose:
             print('Duration.....%s' % duration)
         end = ve.dtstart.value + duration
