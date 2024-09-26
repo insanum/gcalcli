@@ -1,17 +1,22 @@
 import calendar
+from collections import OrderedDict
+import json
 import locale
 import os
 import pathlib
+import pickle
 import re
 import subprocess
 import time
 from datetime import datetime, timedelta
-from typing import Tuple
+from typing import Any, Tuple
 
 import babel
 from dateutil.parser import parse as dateutil_parse
 from dateutil.tz import tzlocal
 from parsedatetime.parsedatetime import Calendar
+
+from . import auth, env
 
 locale.setlocale(locale.LC_ALL, '')
 fuzzy_date_parse = Calendar().parse
@@ -21,11 +26,11 @@ fuzzy_datetime_parse = Calendar().parseDT
 REMINDER_REGEX = r'^(\d+)([wdhm]?)(?:\s+(popup|email|sms))?$'
 
 DURATION_REGEX = re.compile(
-                r'^((?P<days>[\.\d]+?)(?:d|day|days))?[ :]*'
-                r'((?P<hours>[\.\d]+?)(?:h|hour|hours))?[ :]*'
-                r'((?P<minutes>[\.\d]+?)(?:m|min|mins|minute|minutes))?[ :]*'
-                r'((?P<seconds>[\.\d]+?)(?:s|sec|secs|second|seconds))?$'
-                )
+    r'^((?P<days>[\.\d]+?)(?:d|day|days))?[ :]*'
+    r'((?P<hours>[\.\d]+?)(?:h|hour|hours))?[ :]*'
+    r'((?P<minutes>[\.\d]+?)(?:m|min|mins|minute|minutes))?[ :]*'
+    r'((?P<seconds>[\.\d]+?)(?:s|sec|secs|second|seconds))?$'
+)
 
 
 def parse_reminder(rem):
@@ -54,8 +59,10 @@ def set_locale(new_locale):
         locale.setlocale(locale.LC_ALL, new_locale)
     except locale.Error as exc:
         raise ValueError(
-                'Error: ' + str(exc) +
-                '!\n Check supported locales of your system.\n')
+            'Error: '
+            + str(exc)
+            + '!\n Check supported locales of your system.\n'
+        )
 
 
 def get_times_from_duration(
@@ -111,7 +118,8 @@ def get_time_from_str(when):
     on fuzzy matching with parsedatetime
     """
     zero_oclock_today = datetime.now(tzlocal()).replace(
-            hour=0, minute=0, second=0, microsecond=0)
+        hour=0, minute=0, second=0, microsecond=0
+    )
 
     try:
         event_time = dateutil_parse(
@@ -144,9 +152,11 @@ def get_timedelta_from_str(delta):
         parts = DURATION_REGEX.match(delta)
         if parts is not None:
             try:
-                time_params = {name: float(param)
-                               for name, param
-                               in parts.groupdict().items() if param}
+                time_params = {
+                    name: float(param)
+                    for name, param in parts.groupdict().items()
+                    if param
+                }
                 parsed_delta = timedelta(**time_params)
             except ValueError:
                 pass
@@ -175,8 +185,13 @@ def is_all_day(event):
     # and end at midnight. This is ambiguous with Google Calendar events that
     # are not all-day but happen to begin and end at midnight.
 
-    return (event['s'].hour == 0 and event['s'].minute == 0
-            and event['e'].hour == 0 and event['e'].minute == 0)
+    return (
+        event['s'].hour == 0
+        and event['s'].minute == 0
+        and event['e'].hour == 0
+        and event['e'].minute == 0
+    )
+
 
 def localize_datetime(dt):
     if not hasattr(dt, 'tzinfo'):  # Why are we skipping these?
@@ -217,3 +232,42 @@ def shorten_path(path: pathlib.Path) -> pathlib.Path:
     if path.parts[:expanduser_len] == tilde_home.expanduser().parts:
         return tilde_home.joinpath(*path.parts[expanduser_len:])
     return path
+
+
+def inspect_auth() -> dict[str, Any]:
+    auth_data: dict[str, Any] = OrderedDict()
+    auth_path = None
+    for path in env.data_file_paths('oauth'):
+        if path.exists():
+            auth_path = path
+            auth_data['path'] = shorten_path(path)
+            break
+    if auth_path:
+        with auth_path.open('rb') as gcalcli_oauth:
+            try:
+                creds = pickle.load(gcalcli_oauth)
+                auth_data['format'] = 'pickle'
+            except (pickle.UnpicklingError, EOFError):
+                # Try reading as legacy json format as fallback.
+                try:
+                    gcalcli_oauth.seek(0)
+                    creds = auth.creds_from_legacy_json(
+                        json.load(gcalcli_oauth)
+                    )
+                    auth_data['format'] = 'json'
+                except (OSError, ValueError, EOFError):
+                    pass
+    if 'format' in auth_data:
+        for k in [
+            'client_id',
+            'scopes',
+            'valid',
+            'token_state',
+            'expiry',
+            'expired',
+        ]:
+            if hasattr(creds, k):
+                auth_data[k] = getattr(creds, k)
+    else:
+        auth_data['format'] = 'unknown'
+    return auth_data

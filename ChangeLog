@@ -2,7 +2,8 @@ v4.5.0
   * Drop support for python <3.10
   * Add `init` command to explicitly request auth setup/refresh
   * Add support for config.toml file and `gcalcli config edit` command
-  * Add support for `gcalcli util config-schema|reset-cache` commands
+  * Add support for `gcalcli util config-schema|reset-cache|inspect-auth`
+    commands
   * Behavior change: `--noincluderc` now skips gcalclirc files unconditionally,
     w/ or w/o --config-folder
     - POSSIBLE ACTION REQUIRED: Use `@path/to/gcalclirc` explicitly if it stops

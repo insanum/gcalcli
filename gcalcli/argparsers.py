@@ -735,6 +735,12 @@ def get_argument_parser():
         description="Delete gcalcli's internal cache file as a workaround for "
         "caching bugs like insanum/gcalcli#622",
     )
+    util_sub.add_parser(
+        'inspect-auth',
+        help='show metadata about auth token',
+        description="Dump metadata about the saved auth token gcalcli is set "
+        "up to use for you",
+    )
 
     # Enrich with argcomplete options.
     argcomplete.autocomplete(parser)
