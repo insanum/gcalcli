@@ -1562,14 +1562,14 @@ class GoogleCalendarInterface:
                 self.printer.err_msg('Error: ' + str(e) + '!\n')
                 sys.exit(1)
 
-        events_to_import = ics.get_events(
+        ical_data = ics.get_ics_data(
             f,
             verbose=verbose,
             default_tz=self.cals[0]['timeZone'],
             printer=self.printer)
         if not dump and any(
-                self._event_should_use_new_import_api(event, self.cals[0])
-                for event in events_to_import):
+                self._event_should_use_new_import_api(event.body, self.cals[0])
+                for event in ical_data.events):
             self.printer.msg(
                 '\n'
                 'NOTE: This import will use a new graceful import feature in '
@@ -1581,14 +1581,15 @@ class GoogleCalendarInterface:
 
         cal = self.cals[0]
         imported_cnt = 0
-        for event in events_to_import:
-            if not event:
+        failed_events = []
+        for event in ical_data.events:
+            if not event.body:
                 continue
 
             if dump:
                 continue
 
-            self._add_reminders(event, reminders)
+            self._add_reminders(event.body, reminders)
 
             if not verbose:
                 # Don't prompt, just assume user wants to import.
@@ -1611,22 +1612,20 @@ class GoogleCalendarInterface:
             # Import event
             import_method = (
                 self.get_events().import_ if (
-                    self._event_should_use_new_import_api(event, cal))
+                    self._event_should_use_new_import_api(event.body, cal))
                 else self.get_events().insert)
             try:
                 new_event = self._retry_with_backoff(
-                    import_method(calendarId=cal['id'], body=event))
+                    import_method(calendarId=cal['id'], body=event.body))
             except HttpError as e:
+                failed_events.append(event)
                 try:
                     is_skipped_dupe = any(detail.get('reason') == 'duplicate'
                                           for detail in e.error_details)
                 except Exception:
                     # Fail gracefully so weird error responses don't blow up.
                     is_skipped_dupe = False
-                event_label = (
-                    f'"{event["summary"]}"' if event.get('summary')
-                    else f"with start {event['start']}"
-                )
+                event_label = event.label_str()
                 if is_skipped_dupe:
                     # TODO: #492 - Offer to force import dupe anyway?
                     self.printer.msg(
@@ -1634,7 +1633,7 @@ class GoogleCalendarInterface:
                 else:
                     self.printer.err_msg(
                         f'Failed to import event {event_label}.\n')
-                    self.printer.msg(f'Event details: {event}\n')
+                    self.printer.msg(f'Event details: {event.body}\n')
                     self.printer.debug_msg(f'Error details: {e}\n')
             else:
                 imported_cnt += 1
@@ -1644,5 +1643,14 @@ class GoogleCalendarInterface:
         self.printer.msg(
             f"Added {imported_cnt} events to calendar {cal['id']}\n"
         )
+
+        if failed_events:
+            ics_dump_path = ics.dump_partial_ical(
+                failed_events, ical_data.raw_components
+            )
+            self.printer.msg(
+                f"Dumped {len(failed_events)} failed events to "
+                f"{ics_dump_path!s}.\n"
+            )
 
         return True
