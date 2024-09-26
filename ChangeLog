@@ -10,6 +10,7 @@ v4.5.0
       reading an rc file you needed
   * The `import` command now dumps events it couldn't import into a tmp rej.ics
     file in a tmp directory for convenient retries
+  * `import` can also handle events w/o a dtend, using duration if available
   * Determine date format to use based on system locale's in "When" inputs
   * Respect locally-installed certificates (ajkessel)
   * Re-add a `--noauth_local_server` to provide instructions for authenticating
