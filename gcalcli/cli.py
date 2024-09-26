@@ -368,7 +368,7 @@ def main():
                 auth_data = utils.inspect_auth()
                 for k, v in auth_data.items():
                     printer.msg(f"{k}: {v}\n")
-                if 'format' in auth_data:
+                if auth_data.get('format', 'unknown') != 'unknown':
                     printer.msg(
                         "\n"
                         "The grant's entry under "
