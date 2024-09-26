@@ -257,6 +257,7 @@ def inspect_auth() -> dict[str, Any]:
                     auth_data['format'] = 'json'
                 except (OSError, ValueError, EOFError):
                     pass
+        auth_data.setdefault('format', 'unknown')
     if 'format' in auth_data:
         for k in [
             'client_id',
@@ -268,6 +269,4 @@ def inspect_auth() -> dict[str, Any]:
         ]:
             if hasattr(creds, k):
                 auth_data[k] = getattr(creds, k)
-    else:
-        auth_data['format'] = 'unknown'
     return auth_data
