@@ -364,6 +364,21 @@ def main():
                         'No cache file found. Exiting without deleting '
                         'anything...\n'
                     )
+            elif parsed_args.subcommand == 'inspect-auth':
+                auth_data = utils.inspect_auth()
+                for k, v in auth_data.items():
+                    printer.msg(f"{k}: {v}\n")
+                if 'format' in auth_data:
+                    printer.msg(
+                        "\n"
+                        "The grant's entry under "
+                        "https://myaccount.google.com/connections should also "
+                        "list creation time and other info Google provides on "
+                        "the access grant.\n"
+                        'Hint: filter by "Access to: Calendar" if you have '
+                        "trouble finding the right one.\n")
+                else:
+                    printer.err_msg("No existing auth token found\n")
 
     except GcalcliError as exc:
         printer.err_msg(str(exc))
