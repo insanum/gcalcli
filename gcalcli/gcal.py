@@ -1652,5 +1652,12 @@ class GoogleCalendarInterface:
                 f"Dumped {len(failed_events)} failed events to "
                 f"{ics_dump_path!s}.\n"
             )
+            self.printer.msg(
+                "\n"
+                "Note: you can try reprocessing this file with `gcalcli "
+                "import --use-legacy-import` to work around some failure "
+                "causes (but with potentially noisier update notifications)."
+                "\n",
+            )
 
         return True
