@@ -18,9 +18,9 @@ class EventData:
     source: Any
 
     def label_str(self):
-        if self.source.get('summary'):
+        if getattr(self.source, 'summary'):
             return f'"{self.source.summary}"'
-        elif self.source.get('dtstart') and self.source.dtstart.get('value'):
+        elif hasattr(self.source, 'dtstart') and self.source.dtstart.value:
             return f"with start {self.source.dtstart.value}"
         else:
             return None
