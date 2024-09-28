@@ -35,6 +35,7 @@ dependencies = [
   "platformdirs",
   "pydantic",
   "python-dateutil",
+  "shopen >= 0.2.2",
   "toml; python_version < '3.11'",
   "truststore",
 ]
