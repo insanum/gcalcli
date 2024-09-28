@@ -420,7 +420,7 @@ def get_argument_parser():
     parser.add_argument(
         '--version',
         action='version',
-        version='%%(prog)s %s (%s)' % (gcalcli.__version__, gcalcli.__author__),
+        version=f'%(prog)s {gcalcli.__version__}',
     )
 
     # Program level options

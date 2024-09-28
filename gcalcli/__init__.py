@@ -6,4 +6,3 @@ except ImportError:
     __version__ = '__unknown__'
 
 __program__ = 'gcalcli'
-__author__ = 'Eric Davis, Brian Hartvigsen, Joshua Crowgey'
