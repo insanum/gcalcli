@@ -12,9 +12,10 @@
 #                | (_ | | (__  / _ \  | |__ | (__ | |__  | |                #
 #                 \___|  \___|/_/ \_\ |____| \___||____||___|               #
 #                                                                           #
-# Authors: Eric Davis <http://www.insanum.com>                              #
-#          Brian Hartvigsen <http://github.com/tresni>                      #
-#          Joshua Crowgey <http://github.com/jcrowgey>                      #
+# Authors: Eric Davis <https://www.insanum.com>                             #
+#          Brian Hartvigsen <https://github.com/tresni>                     #
+#          Joshua Crowgey <https://github.com/jcrowgey>                     #
+# Maintainers: David Barnett <https://github.com/dbarnett>                  #
 # Home: https://github.com/insanum/gcalcli                                  #
 #                                                                           #
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
