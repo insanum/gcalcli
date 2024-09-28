@@ -1,23 +1,29 @@
 v4.5.0
   * Drop support for python <3.10
   * Add `init` command to explicitly request auth setup/refresh
+  * Improve auth issue handling and error messaging or invalid OAuth token
+    issues (adrien-n)
+  * Respect locally-installed certificates (ajkessel)
+  * Re-add a `--noauth_local_server` to provide instructions for authenticating
+    from a remote system using port forwarding
   * Add support for config.toml file and `gcalcli config edit` command
-  * Add support for `gcalcli util config-schema|reset-cache|inspect-auth`
-    commands
   * Behavior change: `--noincluderc` now skips gcalclirc files unconditionally,
     w/ or w/o --config-folder
     - POSSIBLE ACTION REQUIRED: Use `@path/to/gcalclirc` explicitly if it stops
       reading an rc file you needed
-  * The `import` command now dumps events it couldn't import into a tmp rej.ics
-    file in a tmp directory for convenient retries
-  * `import` can also handle events w/o a dtend, using duration if available
-  * Determine date format to use based on system locale's in "When" inputs
-  * Respect locally-installed certificates (ajkessel)
-  * Re-add a `--noauth_local_server` to provide instructions for authenticating
-    from a remote system using port forwarding
   * Migrate data files like ~/.gcalcli_oauth into standard data file paths
     (with fallback to migrate detected files into the new paths)
   * Add support for $GCALCLI_CONFIG env var and deprecate --config-folder
+  * Add support for `gcalcli util config-schema|reset-cache|inspect-auth`
+    commands
+  * Fix parsing for calendar names containing '#'
+  * `add` and similar commands determine date format to use based on system
+    locale's in "When" inputs
+  * `add` with `--default-reminders` won't prompt for additional reminders
+  * Fix `import` crashing on empty ICS files
+  * `import` can also handle events w/o a dtend, using duration if available
+  * The `import` command now dumps events it couldn't import into a tmp rej.ics
+    file in a tmp directory for convenient retries
 
 v4.4.0
   * Fix lots of bugs by switching from deprecated oauth2client to
