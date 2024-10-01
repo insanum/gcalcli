@@ -1,3 +1,6 @@
+v4.5.1
+  * Adjust "when" value parsing to handle YYYY-MM-DD consistently
+
 v4.5.0
   * Drop support for python <3.10
   * Add `init` command to explicitly request auth setup/refresh

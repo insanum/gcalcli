@@ -38,8 +38,8 @@ from .exceptions import GcalcliError
 from .gcal import GoogleCalendarInterface
 from .printer import Printer, valid_color_name
 from .validators import (
-    get_date_input_description,
     get_input,
+    DATE_INPUT_DESCRIPTION,
     PARSABLE_DATE,
     PARSABLE_DURATION,
     REMINDER,
@@ -116,12 +116,11 @@ def run_add_prompt(parsed_args, printer):
     if parsed_args.where is None:
         parsed_args.where = get_input(printer, 'Location: ', STR_ALLOW_EMPTY)
     if parsed_args.when is None:
-        date_format_desc = get_date_input_description()
         parsed_args.when = get_input(
             printer,
             'When (? for help): ',
             PARSABLE_DATE,
-            help=f'Expected format: {date_format_desc}',
+            help=f'Expected format: {DATE_INPUT_DESCRIPTION}',
         )
     if parsed_args.duration is None and parsed_args.end is None:
         if parsed_args.allday:

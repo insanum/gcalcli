@@ -93,7 +93,7 @@ def get_times_from_duration(
     return start.isoformat(), stop.isoformat()
 
 
-def is_dayfirst_locale():
+def _is_dayfirst_locale():
     """Detect whether system locale date format has day first.
 
     Examples:
@@ -121,9 +121,14 @@ def get_time_from_str(when):
         hour=0, minute=0, second=0, microsecond=0
     )
 
+    # Only apply dayfirst=True if date actually starts with "XX-XX-".
+    # Other forms like YYYY-MM-DD shouldn't rely on locale by default (#792).
+    dayfirst = (
+        _is_dayfirst_locale() if re.match(r'^\d{1,2}-\d{1,2}-', when) else None
+    )
     try:
         event_time = dateutil_parse(
-            when, default=zero_oclock_today, dayfirst=is_dayfirst_locale()
+            when, default=zero_oclock_today, dayfirst=dayfirst
         )
     except ValueError:
         struct, result = fuzzy_date_parse(when)
