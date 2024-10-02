@@ -1230,7 +1230,7 @@ class GoogleCalendarInterface:
                 name = f'{name} (ignored)'
             self.printer.msg(
                 _format % (cal['accessRole'], name),
-                self._calendar_color(cal) if not ignored else 'brightblack'
+                self._calendar_color(cal),
             )
 
     def _display_queried_events(self, start, end, search=None,
