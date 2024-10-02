@@ -68,7 +68,12 @@ class GoogleCalendarInterface:
     UNIWIDTH = {'W': 2, 'F': 2, 'N': 1, 'Na': 1, 'H': 1, 'A': 1}
 
     def __init__(
-        self, cal_names=(), printer=PRINTER, userless_mode=False, **options
+        self,
+        cal_names=(),
+        printer=PRINTER,
+        userless_mode=False,
+        do_eager_init=True,
+        **options,
     ):
         self.cals = []
         self.printer = printer
@@ -83,7 +88,7 @@ class GoogleCalendarInterface:
                 "Running in GCALCLI_USERLESS_MODE. Most operations will fail!",
                 file=sys.stderr,
             )
-        else:
+        elif do_eager_init:
             self._get_cached()
 
         self._select_cals(cal_names)

@@ -236,6 +236,8 @@ def main():
             cal_names=cal_names,
             printer=printer,
             userless_mode=userless_mode,
+            # TODO: Avoid heavy unnecessary setup in general, remove override.
+            do_eager_init=parsed_args.command != 'init',
             **vars(parsed_args),
         )
 
