@@ -21,16 +21,24 @@
 # Everything you need to know (Google API Calendar v3): http://goo.gl/HfTGQ #
 #                                                                           #
 # ######################################################################### #
-from argparse import ArgumentTypeError
+
+
+# Import trusted certificate store to enable SSL, e.g., behind firewalls.
+# Must be called as early as possible to avoid bugs.
+# fmt: off
+import truststore; truststore.inject_into_ssl()  # noqa: I001,E702
+# fmt: on
+# ruff: noqa: E402
+
+
 import json
 import os
 import pathlib
 import re
 import signal
 import sys
+from argparse import ArgumentTypeError
 from collections import namedtuple
-
-import truststore
 
 from . import config, env, utils
 from .argparsers import get_argument_parser, handle_unparsed
@@ -38,13 +46,13 @@ from .exceptions import GcalcliError
 from .gcal import GoogleCalendarInterface
 from .printer import Printer, valid_color_name
 from .validators import (
-    get_input,
     DATE_INPUT_DESCRIPTION,
     PARSABLE_DATE,
     PARSABLE_DURATION,
     REMINDER,
     STR_ALLOW_EMPTY,
     STR_NOT_EMPTY,
+    get_input,
 )
 
 CalName = namedtuple('CalName', ['name', 'color'])
@@ -145,9 +153,6 @@ def run_add_prompt(parsed_args, printer):
 
 
 def main():
-    # import trusted certificate store to enable SSL, e.g., behind firewalls
-    truststore.inject_into_ssl()
-
     parser = get_argument_parser()
     argv = sys.argv[1:]
 
