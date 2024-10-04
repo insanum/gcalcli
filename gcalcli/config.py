@@ -7,7 +7,7 @@ import sys
 from typing import Any, List, Mapping, Optional
 
 if sys.version_info[:2] < (3, 11):
-    import toml as tomllib
+    import tomli as tomllib
 else:
     import tomllib
 

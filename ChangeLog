@@ -1,4 +1,5 @@
 v4.5.1
+  * Fix gcalcli failing to run on python 3.10 if config file is present
   * Fix bizarre SSL recursion errors by moving truststore init earlier
   * Fix redundant "Ignore and refresh" prompt from `init`
   * Adjust "when" value parsing to handle YYYY-MM-DD consistently
