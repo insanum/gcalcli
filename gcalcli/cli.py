@@ -341,9 +341,10 @@ def main():
             if parsed_args.subcommand == 'edit':
                 printer.msg(
                     f'Launching {utils.shorten_path(config_filepath)} in a '
-                    'text editor...'
+                    'text editor...\n'
                 )
                 if not config_filepath.exists():
+                    config_filepath.parent.mkdir(parents=True, exist_ok=True)
                     with open(config_filepath, 'w') as f:
                         f.write(EMPTY_CONFIG_TOML)
                 utils.launch_editor(config_filepath)
