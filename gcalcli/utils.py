@@ -242,7 +242,7 @@ def shorten_path(path: pathlib.Path) -> pathlib.Path:
 def inspect_auth() -> dict[str, Any]:
     auth_data: dict[str, Any] = OrderedDict()
     auth_path = None
-    for path in env.data_file_paths('oauth'):
+    for (path, _) in env.data_file_paths('oauth', env.config_dir()):
         if path.exists():
             auth_path = path
             auth_data['path'] = shorten_path(path)

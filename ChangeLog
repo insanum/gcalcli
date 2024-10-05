@@ -1,3 +1,6 @@
+v4.5.2
+  * Support oauth (and cache) files in $GCALCLI_CONFIG dir
+
 v4.5.1
   * Fix gcalcli failing to run on python 3.10 if config file is present
   * Fix `config edit` when missing config dir blowing up with FileNotFoundError

@@ -1,6 +1,6 @@
 import os
 import pathlib
-from typing import Optional
+from typing import Optional, Tuple
 
 import platformdirs
 
@@ -14,18 +14,26 @@ def default_data_dir() -> pathlib.Path:
 def data_file_paths(
         name: str,
         config_dir: Optional[pathlib.Path] = None,
-    ) -> list[pathlib.Path]:
+    ) -> list[Tuple[pathlib.Path, int]]:
     """Return all paths actively used for the given data file name.
 
-    The paths are returned with the preferred path first followed by any other
-    detected legacy paths in order of decreasing precedence.
+    The paths are returned as tuples in order of decreasing precedence like:
+    [(CONFIG/name, 1), (DATA_DIR/name, 0), (~/.gcalcli_{name}, -1)]
+    with the DATA_DIR path always present and others only present if the file
+    exists.
     """
-    paths = [default_data_dir().joinpath(name)]
-    legacy_path = (config_dir.joinpath(name)
-                   if config_dir
-                   else pathlib.Path(f'~/.gcalcli_{name}').expanduser())
+    paths = []
+    # Path in config dir takes precedence, if any.
+    if config_dir:
+        path_in_config = config_dir.joinpath(name)
+        if path_in_config.exists():
+            paths.append((path_in_config, 1))
+    # Standard data path comes next.
+    paths.append((default_data_dir().joinpath(name), 0))
+    # Lastly, fall back to legacy path if it exists and there's no config dir.
+    legacy_path = pathlib.Path(f'~/.gcalcli_{name}').expanduser()
     if legacy_path.exists():
-        paths.append(legacy_path)
+        paths.append((legacy_path, -1))
     return paths
 
 
