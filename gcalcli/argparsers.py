@@ -372,11 +372,10 @@ configuration:
   %(prog)s supports a few other configuration mechanisms in addition to
   the command-line arguments listed below.
 
-  $GCALCLI_CONFIG={config_dir}
+  $GCALCLI_CONFIG={config_path}
     Path to user config directory or file.
-    Note: this path is also used to determine fallback paths to check
-    for cache/oauth files to be migrated into their proper data dir
-    paths.
+    Note: you can place an 'oauth' file in this config directory to
+    support using different accounts per config.
 
   {config_file}
     A toml config file where some general-purpose settings can be
@@ -409,7 +408,7 @@ def get_argument_parser():
 
     parser = argparse.ArgumentParser(
         description=DESCRIPTION.format(
-            config_dir=config_path,
+            config_path=config_path,
             config_file=utils.shorten_path(env.config_file()),
             rc_paths=', '.join(str(p) for p in rc_paths),
         ),

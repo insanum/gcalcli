@@ -142,19 +142,28 @@ class GoogleCalendarInterface:
 
     @functools.cache
     def data_file_path(self, name: str) -> pathlib.Path:
-        paths = env.data_file_paths(name)
-        primary_path = paths.pop(0)
-        if not primary_path.exists():
-            for alt_path in paths:
-                if not alt_path.exists():
-                    continue
-                self.printer.msg(
-                    f'Moving {name} file from legacy path {alt_path} to '
-                    f'{primary_path}...\n'
-                )
-                primary_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.move(alt_path, primary_path)
-                break
+        paths = env.data_file_paths(name, self.options.get('config_folder'))
+        primary_path = None
+        legacy_path = None
+        for (path, category) in paths:
+            if path.exists():
+                if category >= 0:
+                    return path
+                else:
+                    legacy_path = path
+            elif category == 0:
+                primary_path = path
+        assert primary_path is not None
+
+        # No non-legacy config file found. Return primary_path, and move legacy
+        # file to that path if any.
+        if legacy_path:
+            self.printer.msg(
+                f'Moving {name} file from legacy path {legacy_path} to '
+                f'{primary_path}...\n'
+            )
+            primary_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(legacy_path, primary_path)
 
         return primary_path
 
