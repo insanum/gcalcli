@@ -1257,10 +1257,6 @@ class GoogleCalendarInterface:
             return self._iterate_events(start, event_list, year_date=year_date)
 
     def TextQuery(self, search_text='', start=None, end=None):
-        if not search_text:
-            # the empty string would get *ALL* events...
-            raise GcalcliError('Search text is required.')
-
         return self._display_queried_events(start, end, search_text, True)
 
     def UpdatesQuery(self, last_updated_datetime, start=None, end=None):
