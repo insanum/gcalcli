@@ -333,11 +333,11 @@ class GoogleCalendarInterface:
                 pass
                 # fall through
 
-        pageToken = None
+        page_token = None
         while True:
             cal_list = self._retry_with_backoff(
                 self.get_cal_service().calendarList().list(
-                    pageToken=pageToken)
+                    pageToken=page_token)
             )
 
             self.all_cals.extend(cal_list['items'])
