@@ -7,7 +7,7 @@ from itertools import chain
 from dateutil.parser import isoparse, parse
 
 from .exceptions import ReadonlyCheckError, ReadonlyError
-from .utils import is_all_day
+from .utils import get_timedelta_from_str, is_all_day
 
 FMT_DATE = '%Y-%m-%d'
 FMT_TIME = '%H:%M'
@@ -124,7 +124,7 @@ class Time(Handler):
             instant['timeZone'] = cal['timeZone']
 
 
-class Length(Handler):
+class Length(Time):
     """Handler for event duration."""
 
     fieldnames = ['length']
@@ -135,7 +135,20 @@ class Length(Handler):
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
-        raise NotImplementedError
+        # start_date and start_time must be an earlier TSV field than length
+        start = event['start']
+        end = event['end'] = {}
+
+        if start['date']:
+            # XXX: handle all-day events
+            raise NotImplementedError
+
+        start_datetime = isoparse(start['dateTime'])
+        end_datetime = start_datetime + get_timedelta_from_str(value)
+
+        end['date'] = None  # clear all-day date, for good measure
+        end['dateTime'] = end_datetime.isoformat()
+        end['timeZone'] = cal['timeZone']
 
 
 class Url(Handler):
