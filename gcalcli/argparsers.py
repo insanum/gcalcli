@@ -108,9 +108,10 @@ class DetailsAction(argparse._AppendAction):
 
 
 def validwidth(value):
+    minwidth=30
     ival = int(value)
-    if ival < 10:
-        raise argparse.ArgumentTypeError('Width must be a number >= 10')
+    if ival < minwidth:
+        raise argparse.ArgumentTypeError(f'Width must be a number >= {minwidth}')
     return ival
 
 
@@ -146,9 +147,7 @@ def locale_has_24_hours():
 
 
 def get_auto_width():
-    console_width = get_terminal_size().columns
-    day_width = int((console_width - 8) / 7)
-    return day_width if day_width > 9 else 10
+    return get_terminal_size().columns
 
 
 def get_calendars_parser(nargs_multiple: bool) -> argparse.ArgumentParser:
@@ -204,12 +203,11 @@ def get_output_parser(parents=[]):
         default=False,
         help='Hide events that have been declined',
     )
-    auto_width = get_auto_width()
     output_parser.add_argument(
         '--width',
         '-w',
-        default=auto_width,
-        dest='cal_width',
+        default=get_auto_width(),
+        dest='width',
         type=validwidth,
         help='Set output width',
     )

@@ -79,10 +79,16 @@ class GoogleCalendarInterface:
         self.printer = printer
         self.options = options
         self.userless_mode = userless_mode
+        self.width = {}
 
         self.details = options.get('details', {})
-        # stored as detail, but provided as option: TODO: fix that
-        self.details['width'] = options.get('width', 80)
+
+        # Store overall calendar width and width for day table cells
+        self.width['cal'] = int(options.get('width', 80))
+        day_width = int(( self.width['cal'] - 8) / 7)
+        # Mimimal day table cell is 10
+        self.width['day'] = day_width if day_width > 9 else 10
+
         if self.userless_mode:
             print(
                 "Running in GCALCLI_USERLESS_MODE. Most operations will fail!",
@@ -463,7 +469,7 @@ class GoogleCalendarInterface:
                             days_since_epoch(event['s'])):
                         week_events[event_daynum].append(
                                 EventTitle(
-                                    '\n' + self.options['cal_width'] * '-',
+                                    '\n' + self.width['day'] * '-',
                                     self.options['color_now_marker']
                                 )
                         )
@@ -526,7 +532,7 @@ class GoogleCalendarInterface:
         stop = 0
         for i, char in enumerate(word):
             stop += self._printed_len(char)
-            if stop >= self.options['cal_width']:
+            if stop >= self.width['day']:
                 return stop, i + 1
 
     def _next_cut(self, string):
@@ -537,7 +543,7 @@ class GoogleCalendarInterface:
         for i, word in enumerate(words):
             word_lens.append(self._printed_len(word))
 
-            if (word_lens[-1] + print_len) >= self.options['cal_width']:
+            if (word_lens[-1] + print_len) >= self.width['day']:
                 # this many words is too many, try to cut at the prev word
                 cut_idx = len(' '.join(words[:i]))
 
@@ -555,11 +561,11 @@ class GoogleCalendarInterface:
 
         # newline in string is a special case
         idx = event_string.find('\n')
-        if idx > -1 and idx <= self.options['cal_width']:
+        if idx > -1 and idx <= self.width['day']:
             return (self._printed_len(event_string[:idx]),
                     len(event_string[:idx]))
 
-        if print_len <= self.options['cal_width']:
+        if print_len <= self.width['day']:
             return (print_len, len(event_string))
 
         else:
@@ -575,7 +581,7 @@ class GoogleCalendarInterface:
         while (len(event_list) and event_list[0]['s'] < start_datetime):
             event_list = event_list[1:]
 
-        day_width_line = self.options['cal_width'] * self.printer.art['hrz']
+        day_width_line = self.width['day'] * self.printer.art['hrz']
         days = 7 if self.options['cal_weekend'] else 5
         # Get the localized day names... January 1, 2001 was a Monday
         day_names = [date(2001, 1, i + 1).strftime('%A') for i in range(days)]
@@ -593,7 +599,7 @@ class GoogleCalendarInterface:
         week_top = build_divider('ulc', 'ute', 'urc')
         week_divider = build_divider('lte', 'crs', 'rte')
         week_bottom = build_divider('llc', 'bte', 'lrc')
-        empty_day = self.options['cal_width'] * ' '
+        empty_day = self.width['day'] * ' '
 
         if cmd == 'calm':
             # month titlebar
@@ -601,7 +607,7 @@ class GoogleCalendarInterface:
             self.printer.msg(month_title_top + '\n', color_border)
 
             month_title = start_datetime.strftime('%B %Y')
-            month_width = (self.options['cal_width'] * days) + (days - 1)
+            month_width = (self.width['day'] * days) + (days - 1)
             month_title += ' ' * (month_width - self._printed_len(month_title))
 
             self.printer.art_msg('vrt', color_border)
@@ -619,7 +625,7 @@ class GoogleCalendarInterface:
         self.printer.art_msg('vrt', color_border)
         for day_name in day_names:
             day_name += ' ' * (
-                    self.options['cal_width'] - self._printed_len(day_name)
+                    self.width['day'] - self._printed_len(day_name)
             )
             self.printer.msg(day_name, self.options['color_date'])
             self.printer.art_msg('vrt', color_border)
@@ -654,7 +660,7 @@ class GoogleCalendarInterface:
                     tmp_date_color = self.options['color_now_marker']
                     d += ' **'
 
-                d += ' ' * (self.options['cal_width'] - self._printed_len(d))
+                d += ' ' * (self.width['day'] - self._printed_len(d))
 
                 # print dates
                 self.printer.art_msg('vrt', color_border)
@@ -687,7 +693,7 @@ class GoogleCalendarInterface:
 
                     curr_event = week_events[j][0]
                     print_len, cut_idx = self._get_cut_index(curr_event.title)
-                    padding = ' ' * (self.options['cal_width'] - print_len)
+                    padding = ' ' * (self.width['day'] - print_len)
 
                     self.printer.msg(
                             curr_event.title[:cut_idx] + padding,
@@ -747,23 +753,23 @@ class GoogleCalendarInterface:
             if box:
                 wrapper.initial_indent = (indent + '  ')
                 wrapper.subsequent_indent = (indent + '  ')
-                wrapper.width = (self.details.get('width') - 2)
+                wrapper.width = (self.width['cal'] - 2)
             else:
                 wrapper.initial_indent = indent
                 wrapper.subsequent_indent = indent
-                wrapper.width = self.details.get('width')
+                wrapper.width = self.width['cal']
             new_descr = ''
             for line in descr.split('\n'):
                 if box:
                     tmp_line = wrapper.fill(line)
                     for single_line in tmp_line.split('\n'):
                         single_line = single_line.ljust(
-                                self.details.get('width'), ' '
+                                self.width['cal'], ' '
                         )
                         new_descr += single_line[:len(indent)] + \
                             self.printer.art['vrt'] + \
                             single_line[(len(indent) + 1):
-                                        (self.details.get('width') - 1)] + \
+                                        (self.width['cal'] - 1)] + \
                             self.printer.art['vrt'] + '\n'
                 else:
                     new_descr += wrapper.fill(line) + '\n'
@@ -915,7 +921,7 @@ class GoogleCalendarInterface:
                         descr_indent +
                         self.printer.art['ulc'] +
                         (self.printer.art['hrz'] *
-                            ((self.details.get('width') - len(descr_indent))
+                            ((self.width['cal'] - len(descr_indent))
                              - 2
                              )
                          ) +
@@ -925,7 +931,7 @@ class GoogleCalendarInterface:
                         descr_indent +
                         self.printer.art['llc'] +
                         (self.printer.art['hrz'] *
-                            ((self.details.get('width') - len(descr_indent))
+                            ((self.width['cal'] - len(descr_indent))
                              - 2
                              )
                          ) +
@@ -940,7 +946,7 @@ class GoogleCalendarInterface:
                 )
             else:
                 marker = descr_indent + '-' * \
-                    (self.details.get('width') - len(descr_indent))
+                    (self.width['cal'] - len(descr_indent))
                 xstr = '%s  Description:\n%s\n%s\n%s\n' % (
                     details_indent,
                     marker,

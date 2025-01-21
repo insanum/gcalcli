@@ -86,7 +86,7 @@ def test_cal_query(capsys, PatchedGCalI):
     art = gcal.printer.art
     expect_top = (
             gcal.printer.colors[gcal.options['color_border']] + art['ulc'] +
-            art['hrz'] * gcal.options['cal_width'])
+            art['hrz'] * gcal.width['day'])
     assert captured.out.startswith(expect_top)
 
     gcal.CalQuery('calm')
@@ -348,13 +348,13 @@ def test_iterate_events(capsys, PatchedGCalI):
 def test_next_cut(PatchedGCalI):
     gcal = PatchedGCalI()
     # default width is 10
-    test_cal_width = 10
-    gcal.options['cal_width'] = test_cal_width
+    test_day_width = 10
+    gcal.width['day'] = test_day_width
     event_title = "first looooong"
     assert gcal._next_cut(event_title) == (5, 5)
 
-    event_title = "tooooooloooong"
-    assert gcal._next_cut(event_title) == (test_cal_width, test_cal_width)
+    event_title = "tooooooooooooooooooooooooloooooooooong"
+    assert gcal._next_cut(event_title) == (test_day_width, test_day_width)
 
     event_title = "one two three four"
     assert gcal._next_cut(event_title) == (7, 7)
