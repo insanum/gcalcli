@@ -111,7 +111,9 @@ def validwidth(value):
     minwidth=30
     ival = int(value)
     if ival < minwidth:
-        raise argparse.ArgumentTypeError(f'Width must be a number >= {minwidth}')
+        raise argparse.ArgumentTypeError(
+            'Width must be a number >= %d' % minwidth
+        )
     return ival
 
 

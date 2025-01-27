@@ -86,7 +86,7 @@ class GoogleCalendarInterface:
         # Store overall calendar width and width for day table cells
         self.width['cal'] = int(options.get('width', 80))
         day_width = int(( self.width['cal'] - 8) / 7)
-        # Mimimal day table cell is 10
+        # Minimal day table cell is 10
         self.width['day'] = day_width if day_width > 9 else 10
 
         if self.userless_mode:
