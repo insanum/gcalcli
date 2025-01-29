@@ -83,9 +83,11 @@ class GoogleCalendarInterface:
 
         self.details = options.get('details', {})
 
+        # Number of days to print in calw/calm
+        self.days = 7 if self.options.get('cal_weekend', True) else 5
         # Store overall calendar width and width for day table cells
         self.width['cal'] = int(options.get('width', 80))
-        day_width = int(( self.width['cal'] - 8) / 7)
+        day_width = int(( self.width['cal'] - self.days - 1) / self.days)
         # Minimal day table cell is 10
         self.width['day'] = day_width if day_width > 9 else 10
 
@@ -582,9 +584,9 @@ class GoogleCalendarInterface:
             event_list = event_list[1:]
 
         day_width_line = self.width['day'] * self.printer.art['hrz']
-        days = 7 if self.options['cal_weekend'] else 5
         # Get the localized day names... January 1, 2001 was a Monday
-        day_names = [date(2001, 1, i + 1).strftime('%A') for i in range(days)]
+        day_names = [date(2001, 1, i + 1).strftime('%A')
+                    for i in range(self.days)]
         if (self.options['week_start'] != config.WeekStart.MONDAY
                 or not self.options['cal_weekend']):
             day_names = day_names[6:] + day_names[:6]
@@ -592,7 +594,8 @@ class GoogleCalendarInterface:
         def build_divider(left, center, right):
             return (
                 self.printer.art[left] + day_width_line +
-                ((days - 1) * (self.printer.art[center] + day_width_line)) +
+                ( (self.days - 1) * (self.printer.art[center] +
+                    day_width_line) ) +
                 self.printer.art[right]
             )
 
@@ -607,7 +610,7 @@ class GoogleCalendarInterface:
             self.printer.msg(month_title_top + '\n', color_border)
 
             month_title = start_datetime.strftime('%B %Y')
-            month_width = (self.width['day'] * days) + (days - 1)
+            month_width = (self.width['day'] * self.days) + (self.days - 1)
             month_title += ' ' * (month_width - self._printed_len(month_title))
 
             self.printer.art_msg('vrt', color_border)
@@ -642,7 +645,7 @@ class GoogleCalendarInterface:
 
         for i in range(count):
             # create and print the date line for a week
-            for j in range(days):
+            for j in range(self.days):
                 if cmd == 'calw':
                     d = (start_week_datetime +
                          timedelta(days=j)).strftime('%d %b')
@@ -682,7 +685,7 @@ class GoogleCalendarInterface:
                 # stop when everything has been printed
                 done = True
                 self.printer.art_msg('vrt', color_border)
-                for j in range(days):
+                for j in range(self.days):
                     if not week_events[j]:
                         # no events today
                         self.printer.msg(
