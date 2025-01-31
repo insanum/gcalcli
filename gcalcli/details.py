@@ -7,7 +7,7 @@ from itertools import chain
 from dateutil.parser import isoparse, parse
 
 from .exceptions import ReadonlyCheckError, ReadonlyError
-from .utils import is_all_day
+from .utils import get_timedelta_from_str, is_all_day
 
 FMT_DATE = '%Y-%m-%d'
 FMT_TIME = '%H:%M'
@@ -122,6 +122,33 @@ class Time(Handler):
             instant['date'] = None  # clear all-day date
             instant['dateTime'] = instant_datetime.isoformat()
             instant['timeZone'] = cal['timeZone']
+
+
+class Length(Time):
+    """Handler for event duration."""
+
+    fieldnames = ['length']
+
+    @classmethod
+    def get(cls, event):
+        return [str(event['e'] - event['s'])]
+
+    @classmethod
+    def patch(cls, cal, event, fieldname, value):
+        # start_date and start_time must be an earlier TSV field than length
+        start = event['start']
+        end = event['end'] = {}
+
+        if start['date']:
+            # XXX: handle all-day events
+            raise NotImplementedError
+
+        start_datetime = isoparse(start['dateTime'])
+        end_datetime = start_datetime + get_timedelta_from_str(value)
+
+        end['date'] = None  # clear all-day date, for good measure
+        end['dateTime'] = end_datetime.isoformat()
+        end['timeZone'] = cal['timeZone']
 
 
 class Url(Handler):
@@ -259,6 +286,7 @@ class Action(SimpleSingleFieldHandler):
 
 HANDLERS = OrderedDict([('id', ID),
                         ('time', Time),
+                        ('length', Length),
                         ('url', Url),
                         ('conference', Conference),
                         ('title', Title),
@@ -279,8 +307,7 @@ FIELDNAMES_READONLY = frozenset(fieldname
                                 in FIELD_HANDLERS.items()
                                 if handler in HANDLERS_READONLY)
 
-_DETAILS_WITHOUT_HANDLERS = ['length', 'reminders', 'attendees',
-                             'attachments', 'end']
+_DETAILS_WITHOUT_HANDLERS = ['reminders', 'attendees', 'attachments', 'end']
 
 DETAILS = list(HANDLERS.keys()) + _DETAILS_WITHOUT_HANDLERS
 DETAILS_DEFAULT = {'time', 'title'}

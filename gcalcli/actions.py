@@ -12,6 +12,21 @@ def _iter_field_handlers(row):
         yield fieldname, handler, value
 
 
+def _check_writable_fields(row):
+    """Check no potentially conflicting fields for a writing action."""
+    keys = row.keys()
+
+    # XXX: instead of preventing use of end_date/end_time and length in the
+    # same input, use successively complex conflict resolution plans:
+    #
+    # 1. allow it as long as they don't conflict by row
+    # 2. conflict resolution by option
+    # 3. conflict resolution interactively
+
+    if 'length' in keys and ('end_date' in keys or 'end_time' in keys):
+        raise NotImplementedError
+
+
 def patch(row, cal, interface):
     """Patch event with new data."""
     event_id = row['id']
@@ -21,6 +36,8 @@ def patch(row, cal, interface):
     curr_event = None
     mod_event = {}
     cal_id = cal['id']
+
+    _check_writable_fields(row)
 
     for fieldname, handler, value in _iter_field_handlers(row):
         if fieldname in FIELDNAMES_READONLY:
@@ -55,6 +72,8 @@ def insert(row, cal, interface):
     """Insert new event."""
     event = {}
     cal_id = cal['id']
+
+    _check_writable_fields(row)
 
     for fieldname, handler, value in _iter_field_handlers(row):
         if fieldname in FIELDNAMES_READONLY:
