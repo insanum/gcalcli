@@ -1,18 +1,22 @@
 from __future__ import absolute_import
 
-from datetime import datetime
-from json import load
 import os
+from json import load
 
 from dateutil.tz import tzutc
+from datetime import datetime
 
-from gcalcli.argparsers import (get_cal_query_parser, get_color_parser,
-                                get_conflicts_parser, get_output_parser,
-                                get_search_parser, get_start_end_parser,
-                                get_updates_parser)
-from gcalcli.cli import parse_cal_names
-from gcalcli.gcal import GoogleCalendarInterface
 from gcalcli.utils import parse_reminder
+from gcalcli.argparsers import (get_start_end_parser,
+                                get_color_parser,
+                                get_cal_query_parser,
+                                get_output_parser,
+                                get_updates_parser,
+                                get_conflicts_parser,
+                                get_search_parser)
+from gcalcli.gcal import GoogleCalendarInterface
+from gcalcli.cli import parse_cal_names
+
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
 

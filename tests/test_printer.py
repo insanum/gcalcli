@@ -1,9 +1,8 @@
+import sys
 from argparse import ArgumentTypeError
 from io import StringIO
-import sys
 
 import pytest
-
 from gcalcli.printer import COLOR_NAMES, Printer, valid_color_name
 
 

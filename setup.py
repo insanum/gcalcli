@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from setuptools import setup
-
 from gcalcli import __version__
 
 try:
@@ -32,7 +31,7 @@ setup(name='gcalcli',
       license='MIT',
       packages=['gcalcli'],
       data_files=[('share/man/man1', ['docs/man1/gcalcli.1'])],
-      python_requires='>=3.8',
+      python_requires='>=3',
       install_requires=[
           'python-dateutil',
           'google-api-python-client>=1.4',

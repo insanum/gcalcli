@@ -1,56 +1,54 @@
-from collections import namedtuple
 from csv import DictReader, excel_tab
-from datetime import date, datetime, timedelta
-from itertools import chain
-import json
 import os
-import random
 import re
 import shlex
-import sys
-import textwrap
-import time
-from typing import List
-from unicodedata import east_asian_width
-
-from apiclient.discovery import build
-from apiclient.errors import HttpError
-from dateutil.parser import parse
-from dateutil.relativedelta import relativedelta
-from dateutil.tz import tzlocal
 import httplib2
-from oauth2client import tools
-from oauth2client.client import OAuth2WebServerFlow
-from oauth2client.file import Storage
-
-from . import __program__, __version__, actions, utils
-from ._types import Cache, CalendarListEntry
-from .actions import ACTIONS
-from .conflicts import ShowConflicts
-from .details import _valid_title, ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS
-from .exceptions import GcalcliError
-from .printer import Printer
-from .utils import days_since_epoch, is_all_day
-from .validators import (get_input, get_override_color_id, PARSABLE_DATE,
-                         PARSABLE_DURATION, REMINDER, STR_ALLOW_EMPTY,
-                         STR_NOT_EMPTY, STR_TO_INT, VALID_COLORS)
-
+from itertools import chain
+import time
+import textwrap
+import json
+import random
+import sys
+from unicodedata import east_asian_width
 try:
     import cPickle as pickle
 except Exception:
     import pickle
 
+from gcalcli import __program__, __version__
+from gcalcli import actions, utils
+from gcalcli.actions import ACTIONS
+from gcalcli.details import (
+    _valid_title, ACTION_DEFAULT, DETAILS_DEFAULT, HANDLERS)
+from gcalcli.utils import days_since_epoch, is_all_day
+from gcalcli.validators import (
+    get_input, get_override_color_id, STR_NOT_EMPTY, PARSABLE_DATE, STR_TO_INT,
+    VALID_COLORS, STR_ALLOW_EMPTY, REMINDER, PARSABLE_DURATION
+)
+from gcalcli.exceptions import GcalcliError
+from gcalcli.printer import Printer
+from gcalcli.conflicts import ShowConflicts
+
+from dateutil.relativedelta import relativedelta
+from datetime import datetime, timedelta, date
+from dateutil.tz import tzlocal
+from dateutil.parser import parse
+from apiclient.discovery import build
+from apiclient.errors import HttpError
+from oauth2client.file import Storage
+from oauth2client.client import OAuth2WebServerFlow
+from oauth2client import tools
+from collections import namedtuple
 
 EventTitle = namedtuple('EventTitle', ['title', 'color'])
 
 CONFERENCE_DATA_VERSION = 1
-PRINTER = Printer()
 
 
 class GoogleCalendarInterface:
 
-    cache: Cache = {}
-    all_cals: List[CalendarListEntry] = []
+    cache = {}
+    all_cals = []
     now = datetime.now(tzlocal())
     agenda_length = 5
     conflicts_lookahead_days = 30
@@ -65,7 +63,7 @@ class GoogleCalendarInterface:
 
     UNIWIDTH = {'W': 2, 'F': 2, 'N': 1, 'Na': 1, 'H': 1, 'A': 1}
 
-    def __init__(self, cal_names=(), printer=PRINTER, **options):
+    def __init__(self, cal_names=[], printer=Printer(), **options):
         self.cals = []
         self.printer = printer
         self.options = options
@@ -610,7 +608,7 @@ class GoogleCalendarInterface:
             for handler in handlers:
                 row.extend(handler.get(event))
 
-            output = ('\t'.join(row)).replace('\n', r'\n')
+            output = ('\t'.join(row)).replace('\n', '''\\n''')
             print(output)
 
     def _PrintEvent(self, event, prefix):
@@ -966,7 +964,7 @@ class GoogleCalendarInterface:
                 while True:
                     r = get_input(
                             self.printer, "Enter a valid reminder or '.' to"
-                                          'end: ', REMINDER
+                                          "end: ", REMINDER
                     )
                     if r == '.':
                         break
@@ -1171,11 +1169,11 @@ class GoogleCalendarInterface:
         event_list = [e for e in event_list
                       if (utils.get_time_from_str(e['updated']) >=
                           last_updated_datetime)]
-        print('Updates since:',
+        print("Updates since:",
               last_updated_datetime,
-              'events starting',
+              "events starting",
               start,
-              'until',
+              "until",
               end)
         return self._iterate_events(start, event_list, year_date=False)
 
@@ -1188,7 +1186,7 @@ class GoogleCalendarInterface:
 
         event_list = self._search_for_events(start, end, search_text)
         show_conflicts = ShowConflicts(
-                            lambda e: self._PrintEvent(e, '\t !!! Conflict: '))
+                            lambda e: self._PrintEvent(e, "\t !!! Conflict: "))
 
         return self._iterate_events(start,
                                     event_list,
@@ -1213,7 +1211,7 @@ class GoogleCalendarInterface:
         cal = self.cals[0]
 
         for row in reader:
-            action = row.get('action', ACTION_DEFAULT)
+            action = row.get("action", ACTION_DEFAULT)
             if action not in ACTIONS:
                 raise GcalcliError('Action "{}" not supported.'.format(action))
 
@@ -1324,7 +1322,7 @@ class GoogleCalendarInterface:
             try:
                 self.cals = [cals_with_write_perms[int(val)]]
             except IndexError:
-                raise GcalcliError("The entered number doesn't appear on the "
+                raise GcalcliError('The entered number doesn\'t appear on the '
                                    'list above\n')
 
         event = {}

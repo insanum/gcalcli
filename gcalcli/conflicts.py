@@ -1,10 +1,6 @@
-from typing import List  # python3.9: can just use `list`
-
-from ._types import Event
-
 
 class ShowConflicts:
-    active_events: List[Event] = []
+    active_events = []
 
     def __init__(self, show):
         if show:
