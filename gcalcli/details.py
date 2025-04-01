@@ -137,7 +137,7 @@ class Time(Handler):
             instant['timeZone'] = cal['timeZone']
 
 
-class Length(Time):
+class Length(Handler):
     """Handler for event duration."""
 
     fieldnames = ['length']
@@ -300,7 +300,7 @@ class ID(SimpleSingleFieldHandler):
     fieldnames = ['id']
 
 
-class Action(SimpleSingleFieldHandler):
+class Action(SingleFieldHandler):
     """Handler specifying event processing during an update."""
 
     fieldnames = ['action']
