@@ -207,6 +207,10 @@ class Conference(Handler):
 
     fieldnames = list(ENTRY_POINT_PROPS.keys())
 
+    CONFERENCE_PROPS = OrderedDict([('meeting_code', 'meetingCode'),
+                                    ('passcode', 'passcode'),
+                                    ('region_code', 'regionCode')])
+
     @classmethod
     def get(cls, event):
         if 'conferenceData' not in event:
@@ -220,6 +224,19 @@ class Conference(Handler):
 
         return [entry_point.get(prop, '')
                 for prop in ENTRY_POINT_PROPS.values()]
+
+    @classmethod
+    def data(cls, event):
+        if 'conferenceData' not in event:
+            return []
+
+        PROPS = {**ENTRY_POINT_PROPS, **cls.CONFERENCE_PROPS}
+
+        value = []
+        for entryPoint in event['conferenceData'].get('entryPoints', []):
+            value.append({key: entryPoint.get(prop, '').strip()
+                          for key, prop in PROPS.items()})
+        return value
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
