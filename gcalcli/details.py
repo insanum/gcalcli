@@ -40,6 +40,11 @@ class Handler:
         raise NotImplementedError
 
     @classmethod
+    def data(cls, event):
+        """Return plain data for formatted output."""
+        return NotImplementedError
+
+    @classmethod
     def patch(cls, cal, event, fieldname, value):
         """Patch event from value."""
         raise NotImplementedError
@@ -51,6 +56,10 @@ class SingleFieldHandler(Handler):
     @classmethod
     def get(cls, event):
         return [cls._get(event).strip()]
+
+    @classmethod
+    def data(cls, event):
+        return cls._get(event).strip()
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
@@ -95,6 +104,10 @@ class Time(Handler):
         return start_fields + end_fields
 
     @classmethod
+    def data(cls, event):
+        return dict(zip(cls.fieldnames, cls.get(event)))
+
+    @classmethod
     def patch(cls, cal, event, fieldname, value):
         instant_name, _, unit = fieldname.partition('_')
 
@@ -134,6 +147,10 @@ class Length(Time):
         return [str(event['e'] - event['s'])]
 
     @classmethod
+    def data(cls, event):
+        return str(event['e'] - event['s'])
+
+    @classmethod
     def patch(cls, cal, event, fieldname, value):
         # start_date and start_time must be an earlier TSV field than length
         start = event['start']
@@ -158,7 +175,12 @@ class Url(Handler):
 
     @classmethod
     def get(cls, event):
-        return [event.get(prop, '') for prop in URL_PROPS.values()]
+        return [event.get(prop, '').strip() for prop in URL_PROPS.values()]
+
+    @classmethod
+    def data(cls, event):
+        return {key: event.get(prop, '').strip()
+                for key, prop in URL_PROPS.items()}
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
@@ -265,7 +287,11 @@ class Email(SingleFieldHandler):
 
     @classmethod
     def _get(cls, event):
-        return event['creator'].get('email', '')
+        if 'organizer' in event:
+            return event['organizer'].get('email', '')
+        if 'creator' in event:
+            return event['creator'].get('email', '')
+        return event['gcalcli_cal']['id']
 
 
 class ID(SimpleSingleFieldHandler):
