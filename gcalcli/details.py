@@ -254,6 +254,45 @@ class Conference(Handler):
         entry_point[prop] = value
 
 
+class Attendees(Handler):
+    """Handler for event attendees."""
+
+    fieldnames = ['attendees']
+
+    ATTENDEE_PROPS = \
+        OrderedDict([('attendee_email', 'email'),
+                     ('attendee_response_status', 'responseStatus')])
+
+    @classmethod
+    def get(cls, event):
+        if 'attendees' not in event:
+            return ['']
+
+        # only display the attendee emails for TSV
+        return [';'.join([attendee.get('email', '').strip()
+                for attendee in event['attendees']])]
+
+    @classmethod
+    def data(cls, event):
+        value = []
+        for attendee in event.get('attendees', []):
+            value.append({key: attendee.get(prop, '').strip()
+                          for key, prop in cls.ATTENDEE_PROPS.items()})
+        return value
+
+    @classmethod
+    def patch(cls, cal, event, fieldname, value):
+        if not value:
+            return
+
+        attendees = event.setdefault('attendees', [])
+        if not attendees:
+            attendees.append({})
+
+        attendee = attendees[0]
+        attendee[fieldname] = value
+
+
 class Title(SingleFieldHandler):
     """Handler for title."""
 
@@ -337,6 +376,7 @@ HANDLERS = OrderedDict([('id', ID),
                         ('description', Description),
                         ('calendar', Calendar),
                         ('email', Email),
+                        ('attendees', Attendees),
                         ('action', Action)])
 HANDLERS_READONLY = {Url, Calendar}
 
@@ -350,7 +390,7 @@ FIELDNAMES_READONLY = frozenset(fieldname
                                 in FIELD_HANDLERS.items()
                                 if handler in HANDLERS_READONLY)
 
-_DETAILS_WITHOUT_HANDLERS = ['reminders', 'attendees', 'attachments', 'end']
+_DETAILS_WITHOUT_HANDLERS = ['reminders', 'attachments', 'end']
 
 DETAILS = list(HANDLERS.keys()) + _DETAILS_WITHOUT_HANDLERS
 DETAILS_DEFAULT = {'time', 'title'}
