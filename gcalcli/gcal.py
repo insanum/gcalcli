@@ -749,6 +749,33 @@ class GoogleCalendarInterface:
             output = ('\t'.join(row)).replace('\n', r'\n')
             print(output)
 
+    def _json(self, start_datetime, event_list):
+        keys = set(self.details.keys())
+        keys.update(DETAILS_DEFAULT)
+
+        print("[")
+
+        first = True
+        for event in event_list:
+            if self.options['ignore_started'] and (event['s'] < self.now):
+                continue
+            if self.options['ignore_declined'] and self._DeclinedEvent(event):
+                continue
+
+            row = {}
+            #row['raw'] = event
+
+            for key in keys:
+                if key in HANDLERS:
+                    row[key] = HANDLERS[key].data(event)
+
+            if not first:
+                print(",")
+            first = False
+            print(json.dumps(row, default=str))
+
+        print("]")
+
     def _PrintEvent(self, event, prefix):
 
         def _format_descr(descr, indent, box):
@@ -1262,6 +1289,8 @@ class GoogleCalendarInterface:
 
         if self.options.get('tsv'):
             return self._tsv(start, event_list)
+        elif self.options.get('json'):
+            return self._json(start, event_list)
         else:
             return self._iterate_events(start, event_list, year_date=year_date)
 

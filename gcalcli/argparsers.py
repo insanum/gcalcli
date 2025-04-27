@@ -192,6 +192,13 @@ def get_output_parser(parents=[]):
         help='Use Tab Separated Value output',
     )
     output_parser.add_argument(
+        '--json',
+        action='store_true',
+        dest='json',
+        default=False,
+        help='Use JSON output',
+    )
+    output_parser.add_argument(
         '--nostarted',
         action='store_true',
         dest='ignore_started',

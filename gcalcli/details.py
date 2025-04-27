@@ -40,6 +40,11 @@ class Handler:
         raise NotImplementedError
 
     @classmethod
+    def data(cls, event):
+        """Return plain data for formatted output."""
+        return NotImplementedError
+
+    @classmethod
     def patch(cls, cal, event, fieldname, value):
         """Patch event from value."""
         raise NotImplementedError
@@ -51,6 +56,10 @@ class SingleFieldHandler(Handler):
     @classmethod
     def get(cls, event):
         return [cls._get(event).strip()]
+
+    @classmethod
+    def data(cls, event):
+        return cls._get(event).strip()
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
@@ -95,6 +104,10 @@ class Time(Handler):
         return start_fields + end_fields
 
     @classmethod
+    def data(cls, event):
+        return dict(zip(cls.fieldnames, cls.get(event)))
+
+    @classmethod
     def patch(cls, cal, event, fieldname, value):
         instant_name, _, unit = fieldname.partition('_')
 
@@ -124,7 +137,7 @@ class Time(Handler):
             instant['timeZone'] = cal['timeZone']
 
 
-class Length(Time):
+class Length(Handler):
     """Handler for event duration."""
 
     fieldnames = ['length']
@@ -132,6 +145,10 @@ class Length(Time):
     @classmethod
     def get(cls, event):
         return [str(event['e'] - event['s'])]
+
+    @classmethod
+    def data(cls, event):
+        return str(event['e'] - event['s'])
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
@@ -158,7 +175,12 @@ class Url(Handler):
 
     @classmethod
     def get(cls, event):
-        return [event.get(prop, '') for prop in URL_PROPS.values()]
+        return [event.get(prop, '').strip() for prop in URL_PROPS.values()]
+
+    @classmethod
+    def data(cls, event):
+        return {key: event.get(prop, '').strip()
+                for key, prop in URL_PROPS.items()}
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
@@ -185,6 +207,10 @@ class Conference(Handler):
 
     fieldnames = list(ENTRY_POINT_PROPS.keys())
 
+    CONFERENCE_PROPS = OrderedDict([('meeting_code', 'meetingCode'),
+                                    ('passcode', 'passcode'),
+                                    ('region_code', 'regionCode')])
+
     @classmethod
     def get(cls, event):
         if 'conferenceData' not in event:
@@ -200,6 +226,19 @@ class Conference(Handler):
                 for prop in ENTRY_POINT_PROPS.values()]
 
     @classmethod
+    def data(cls, event):
+        if 'conferenceData' not in event:
+            return []
+
+        PROPS = {**ENTRY_POINT_PROPS, **cls.CONFERENCE_PROPS}
+
+        value = []
+        for entryPoint in event['conferenceData'].get('entryPoints', []):
+            value.append({key: entryPoint.get(prop, '').strip()
+                          for key, prop in PROPS.items()})
+        return value
+
+    @classmethod
     def patch(cls, cal, event, fieldname, value):
         if not value:
             return
@@ -213,6 +252,45 @@ class Conference(Handler):
 
         entry_point = entry_points[0]
         entry_point[prop] = value
+
+
+class Attendees(Handler):
+    """Handler for event attendees."""
+
+    fieldnames = ['attendees']
+
+    ATTENDEE_PROPS = \
+        OrderedDict([('attendee_email', 'email'),
+                     ('attendee_response_status', 'responseStatus')])
+
+    @classmethod
+    def get(cls, event):
+        if 'attendees' not in event:
+            return ['']
+
+        # only display the attendee emails for TSV
+        return [';'.join([attendee.get('email', '').strip()
+                for attendee in event['attendees']])]
+
+    @classmethod
+    def data(cls, event):
+        value = []
+        for attendee in event.get('attendees', []):
+            value.append({key: attendee.get(prop, '').strip()
+                          for key, prop in cls.ATTENDEE_PROPS.items()})
+        return value
+
+    @classmethod
+    def patch(cls, cal, event, fieldname, value):
+        if not value:
+            return
+
+        attendees = event.setdefault('attendees', [])
+        if not attendees:
+            attendees.append({})
+
+        attendee = attendees[0]
+        attendee[fieldname] = value
 
 
 class Title(SingleFieldHandler):
@@ -265,7 +343,11 @@ class Email(SingleFieldHandler):
 
     @classmethod
     def _get(cls, event):
-        return event['creator'].get('email', '')
+        if 'organizer' in event:
+            return event['organizer'].get('email', '')
+        if 'creator' in event:
+            return event['creator'].get('email', '')
+        return event['gcalcli_cal']['id']
 
 
 class ID(SimpleSingleFieldHandler):
@@ -274,7 +356,7 @@ class ID(SimpleSingleFieldHandler):
     fieldnames = ['id']
 
 
-class Action(SimpleSingleFieldHandler):
+class Action(SingleFieldHandler):
     """Handler specifying event processing during an update."""
 
     fieldnames = ['action']
@@ -294,6 +376,7 @@ HANDLERS = OrderedDict([('id', ID),
                         ('description', Description),
                         ('calendar', Calendar),
                         ('email', Email),
+                        ('attendees', Attendees),
                         ('action', Action)])
 HANDLERS_READONLY = {Url, Calendar}
 
@@ -307,7 +390,7 @@ FIELDNAMES_READONLY = frozenset(fieldname
                                 in FIELD_HANDLERS.items()
                                 if handler in HANDLERS_READONLY)
 
-_DETAILS_WITHOUT_HANDLERS = ['reminders', 'attendees', 'attachments', 'end']
+_DETAILS_WITHOUT_HANDLERS = ['reminders', 'attachments', 'end']
 
 DETAILS = list(HANDLERS.keys()) + _DETAILS_WITHOUT_HANDLERS
 DETAILS_DEFAULT = {'time', 'title'}
