@@ -1101,7 +1101,7 @@ class GoogleCalendarInterface:
                     all_day = self.options.get('allday')
                     try:
                         new_start, new_end = utils.get_times_from_duration(
-                            val, duration=length, all_day=all_day)
+                            val, duration=length, allday=all_day)
                     except ValueError as exc:
                         self.printer.err_msg(str(exc))
                         sys.exit(1)
@@ -1118,7 +1118,7 @@ class GoogleCalendarInterface:
                     new_start, new_end = utils.get_times_from_duration(
                         event['start']['dateTime'],
                         duration=val,
-                        all_day=all_day)
+                        allday=all_day)
                     event = self._SetEventStartEnd(new_start, new_end, event)
                 except ValueError as exc:
                     self.printer.err_msg(str(exc))
