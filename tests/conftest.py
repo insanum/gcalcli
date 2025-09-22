@@ -12,6 +12,7 @@ from gcalcli.argparsers import (get_cal_query_parser, get_color_parser,
                                 get_output_parser)
 from gcalcli.gcal import GoogleCalendarInterface
 from gcalcli.printer import Printer
+from tests._utils import APICallTracker
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
 
@@ -73,10 +74,36 @@ def PatchedGCalIForEvents(PatchedGCalI, monkeypatch):
     return PatchedGCalI
 
 
+
 @pytest.fixture
-def PatchedGCalI(gcali_patches):
+def PatchedGCalI(gcali_patches, monkeypatch):
     gcali_patches.stub_out_cal_service()
-    return gcali_patches.GCalI
+
+    def PatchedGCalIFactory(*args, **kwargs):
+        """Return a GoogleCalendarInterface with API call tracking."""
+        api_tracker = APICallTracker()
+        gc = gcali_patches.GCalI(*args, **kwargs)
+        gc.api_tracker = api_tracker
+
+        def mock_events_resource():
+            class MockEventsResource:
+                def import_(self, **kwargs):
+                    # Special case: import_ method maps to 'import' API call
+                    return api_tracker.track_call('import', **kwargs)
+
+                def __getattr__(self, method_name):
+                    def method_call(**kwargs):
+                        return api_tracker.track_call(method_name, **kwargs)
+                    return method_call
+
+            return MockEventsResource()
+
+        # Mock the events resource with API tracking
+        gc.get_events = lambda: mock_events_resource()
+
+        return gc
+
+    return PatchedGCalIFactory
 
 
 @pytest.fixture
