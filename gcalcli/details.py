@@ -366,6 +366,52 @@ class Action(SingleFieldHandler):
         return ACTION_DEFAULT
 
 
+class Attachments(Handler):
+    """Handler for event attachments."""
+
+    fieldnames = ['attachments']
+
+    ATTACHMENT_PROPS = OrderedDict([('attachment_title', 'title'),
+                                     ('attachment_url', 'fileUrl')])
+
+    @classmethod
+    def fieldnames_data(cls):
+        return list(cls.ATTACHMENT_PROPS.keys())
+
+    @classmethod
+    def get(cls, event):
+        if 'attachments' not in event:
+            return ['']
+
+        # For TSV output, use form feed (\f) to separate multiple attachments
+        # and pipe (|) to separate title from URL within each attachment.
+        # This follows the pattern suggested in issue #829 for handling
+        # list fields in TSV format.
+        # Format: "title1|url1\ftitle2|url2"
+        attachment_strs = []
+        for attachment in event['attachments']:
+            title = attachment.get('title', '').strip()
+            url = attachment.get('fileUrl', '').strip()
+            # Escape any existing form feeds in the data
+            title = title.replace('\f', r'\f')
+            url = url.replace('\f', r'\f')
+            attachment_strs.append(f"{title}|{url}")
+
+        return ['\f'.join(attachment_strs)]
+
+    @classmethod
+    def data(cls, event):
+        attachments = event.get('attachments', [])
+        return [dict(zip(cls.ATTACHMENT_PROPS.keys(),
+                        [attachment.get(prop, '') for prop in cls.ATTACHMENT_PROPS.values()]))
+                for attachment in attachments]
+
+    @classmethod
+    def patch(cls, cal, event, fieldname, value):
+        # Attachments are read-only for now
+        raise ReadonlyCheckError(fieldname, cls.get(event), value)
+
+
 HANDLERS = OrderedDict([('id', ID),
                         ('time', Time),
                         ('length', Length),
@@ -377,8 +423,9 @@ HANDLERS = OrderedDict([('id', ID),
                         ('calendar', Calendar),
                         ('email', Email),
                         ('attendees', Attendees),
+                        ('attachments', Attachments),
                         ('action', Action)])
-HANDLERS_READONLY = {Url, Calendar}
+HANDLERS_READONLY = {Url, Calendar, Attachments}
 
 FIELD_HANDLERS = dict(chain.from_iterable(
     (((fieldname, handler)
@@ -390,7 +437,7 @@ FIELDNAMES_READONLY = frozenset(fieldname
                                 in FIELD_HANDLERS.items()
                                 if handler in HANDLERS_READONLY)
 
-_DETAILS_WITHOUT_HANDLERS = ['reminders', 'attachments', 'end']
+_DETAILS_WITHOUT_HANDLERS = ['reminders', 'end']
 
 DETAILS = list(HANDLERS.keys()) + _DETAILS_WITHOUT_HANDLERS
 DETAILS_DEFAULT = {'time', 'title'}
