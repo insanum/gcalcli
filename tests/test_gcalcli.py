@@ -291,7 +291,7 @@ def test_import(PatchedGCalI):
 
     # Event data for this test: has iCalUID and includes self as attendee
     # This should trigger the new import API
-    ics_content = create_ics_content([
+    ics_file = create_ics_content([
         {
             'summary': 'Meeting with self as attendee',
             'has_self_attendee': True,
@@ -299,7 +299,7 @@ def test_import(PatchedGCalI):
         }
     ])
 
-    assert gcal.ImportICS(icsFile=ics_content)
+    assert gcal.ImportICS(icsFile=ics_file)
 
     gcal.api_tracker.verify_all_mutating_calls([
         CallMatcher('import',
@@ -315,7 +315,7 @@ def test_legacy_import(PatchedGCalI):
 
     # Event data for this test: regular event, but use_legacy_import=True
     # This should force the insert API regardless of event properties
-    ics_content = create_ics_content([
+    ics_file = create_ics_content([
         {
             'summary': 'Meeting forced to use legacy import',
             'has_self_attendee': True,
@@ -323,7 +323,7 @@ def test_legacy_import(PatchedGCalI):
         }
     ])
 
-    assert gcal.ImportICS(icsFile=ics_content)
+    assert gcal.ImportICS(icsFile=ics_file)
 
     gcal.api_tracker.verify_all_mutating_calls([
         CallMatcher(

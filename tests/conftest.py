@@ -86,19 +86,33 @@ def PatchedGCalI(gcali_patches, monkeypatch):
         gc.api_tracker = api_tracker
 
         def mock_events_resource():
+            """Mock Google Calendar events resource with API call tracking.
+
+            Mimics the Google API client's two-step pattern:
+            1. Method calls (list, insert, import_, etc.) return request objects
+            2. Calling .execute() on those requests performs the actual call
+
+            Example flow:
+                gc.get_events().insert(body={...}).execute()
+                    -> insert() tracked and returns MockRequest
+                    -> execute() returns mock event data
+            """
             class MockEventsResource:
                 def import_(self, **kwargs):
-                    # Special case: import_ method maps to 'import' API call
+                    # import_() returns a request object (via track_call)
+                    # that has an execute() method
                     return api_tracker.track_call('import', **kwargs)
 
                 def __getattr__(self, method_name):
+                    # Handle other methods like list(), insert(), etc.
                     def method_call(**kwargs):
+                        # Each method returns a request object (via track_call)
                         return api_tracker.track_call(method_name, **kwargs)
                     return method_call
 
             return MockEventsResource()
 
-        # Mock the events resource with API tracking
+        # Replace the real events resource with our mock
         gc.get_events = lambda: mock_events_resource()
 
         return gc

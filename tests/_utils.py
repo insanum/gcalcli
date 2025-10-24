@@ -1,7 +1,18 @@
 """Testing utilities for gcalcli tests."""
 
 import io
-from typing import Dict, Any, Set, Optional, List, Tuple
+from typing import Dict, Any, Set, Optional, List, Tuple, Protocol
+
+
+class MockGoogleApiRequest(Protocol):
+    """Protocol for mock Google API request objects.
+
+    Google API client methods return request objects that must be executed
+    to get results (e.g., `service.events().list().execute()`).
+    """
+    def execute(self, http=None) -> Dict[str, Any]:
+        """Execute the request and return the result."""
+        ...
 
 
 def create_ics_content(events: List[Dict[str, Any]]) -> io.StringIO:
@@ -103,8 +114,19 @@ class APICallTracker:
     def __init__(self):
         self.calls: List[Tuple[str, Dict[str, Any]]] = []
 
-    def track_call(self, method_name: str, **kwargs: Any):
-        """Record an API call and return a mock request object."""
+    def track_call(
+        self, method_name: str, **kwargs: Any
+    ) -> MockGoogleApiRequest:
+        """Record an API call and return a mock request object.
+
+        This mimics the Google API client's two-step pattern where methods
+        like list() or insert() return a request object that must be
+        executed to perform the actual API call.
+
+        Example:
+            service.events().list(calendarId='primary').execute()
+            # list() returns a request, execute() performs the call
+        """
         self.calls.append((method_name, kwargs))
 
         class MockRequest:
