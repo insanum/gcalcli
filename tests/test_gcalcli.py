@@ -6,6 +6,8 @@ import re
 from datetime import datetime
 from json import load
 
+import pytest
+
 from gcalcli.argparsers import (
     get_cal_query_parser,
     get_color_parser,
@@ -17,12 +19,11 @@ from gcalcli.argparsers import (
 )
 from gcalcli.cli import parse_cal_names
 from gcalcli.utils import parse_reminder
+from tests._utils import CallMatcher, create_ics_content
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
 
 
-# TODO: These are more like placeholders for proper unit tests
-#       We just try the commands and make sure no errors occur.
 def test_list(capsys, PatchedGCalI):
     gcal = PatchedGCalI(**vars(get_color_parser().parse_args([])))
     with open(TEST_DATA_DIR + '/cal_list.json') as cl:
@@ -107,6 +108,10 @@ def test_add_event(PatchedGCalI):
                          reminders=None,
                          color='banana')
 
+    gcal.api_tracker.verify_all_mutating_calls([
+        CallMatcher('insert', body_has_fields={'summary', 'start', 'end'})
+    ])
+
 
 def test_add_event_with_cal_prompt(PatchedGCalI, capsys, monkeypatch):
     cal_names = parse_cal_names(
@@ -148,6 +153,11 @@ def test_quick_add(PatchedGCalI):
         event_text='quick test event',
         reminders=['5m sms'])
 
+    gcal.api_tracker.verify_all_mutating_calls([
+        CallMatcher('quickAdd'),
+        CallMatcher('patch')
+    ])
+
 
 def test_quick_add_with_cal_prompt(PatchedGCalI, capsys, monkeypatch):
     cal_names = parse_cal_names(
@@ -179,6 +189,8 @@ def test_text_query(PatchedGCalI):
 
     opts = search_parser.parse_args(['test'])
     assert gcal.TextQuery(opts.text, opts.start, opts.end) == 0
+
+    gcal.api_tracker.verify_no_mutating_calls()
 
 
 def test_declined_event_no_attendees(PatchedGCalI):
@@ -274,50 +286,67 @@ def test_modify_event(PatchedGCalI):
 
 def test_import(PatchedGCalI):
     cal_names = parse_cal_names(['jcrowgey@uw.edu'], None)
-    gcal = PatchedGCalI(cal_names=cal_names, default_reminders=True)
-    vcal_path = TEST_DATA_DIR + '/vv.txt'
-    assert gcal.ImportICS(icsFile=open(vcal_path, errors='replace'))
+    gcal = PatchedGCalI(cal_names=cal_names,
+                                       default_reminders=True)
+
+    # Event data for this test: has iCalUID and includes self as attendee
+    # This should trigger the new import API
+    ics_file = create_ics_content([
+        {
+            'summary': 'Meeting with self as attendee',
+            'has_self_attendee': True,
+            'attendee_email': 'jcrowgey@uw.edu'
+        }
+    ])
+
+    assert gcal.ImportICS(icsFile=ics_file)
+
+    gcal.api_tracker.verify_all_mutating_calls([
+        CallMatcher('import',
+                   body_has_fields={'start', 'end'},
+                   body_fields={'summary': 'Meeting with self as attendee'})
+    ])
 
 
 def test_legacy_import(PatchedGCalI):
     cal_names = parse_cal_names(['jcrowgey@uw.edu'], None)
     gcal = PatchedGCalI(
         cal_names=cal_names, default_reminders=True, use_legacy_import=True)
-    vcal_path = TEST_DATA_DIR + '/vv.txt'
-    assert gcal.ImportICS(icsFile=open(vcal_path, errors='replace'))
+
+    # Event data for this test: regular event, but use_legacy_import=True
+    # This should force the insert API regardless of event properties
+    ics_file = create_ics_content([
+        {
+            'summary': 'Meeting forced to use legacy import',
+            'has_self_attendee': True,
+            'attendee_email': 'jcrowgey@uw.edu'
+        }
+    ])
+
+    assert gcal.ImportICS(icsFile=ics_file)
+
+    gcal.api_tracker.verify_all_mutating_calls([
+        CallMatcher(
+            'insert',
+            body_has_fields={'start', 'end'},
+            body_fields={'summary': 'Meeting forced to use legacy import'})
+    ])
 
 
-def test_parse_reminder():
-    MINS_PER_DAY = 60 * 24
-    MINS_PER_WEEK = MINS_PER_DAY * 7
+@pytest.mark.parametrize("reminder,expected_time,expected_method", [
+    ('5m email', 5, 'email'),
+    ('2h sms', 120, 'sms'),
+    ('1d popup', 60 * 24, 'popup'),
+    ('1w', 60 * 24 * 7, 'popup'),
+    ('10w', 60 * 24 * 7 * 10, 'popup'),
+])
+def test_parse_reminder(reminder, expected_time, expected_method):
+    tim, method = parse_reminder(reminder)
+    assert (tim, method) == (expected_time, expected_method)
 
-    rem = '5m email'
-    tim, method = parse_reminder(rem)
-    assert method == 'email'
-    assert tim == 5
 
-    rem = '2h sms'
-    tim, method = parse_reminder(rem)
-    assert method == 'sms'
-    assert tim == 120
-
-    rem = '1d popup'
-    tim, method = parse_reminder(rem)
-    assert method == 'popup'
-    assert tim == MINS_PER_DAY
-
-    rem = '1w'
-    tim, method = parse_reminder(rem)
-    assert method == 'popup'
-    assert tim == MINS_PER_WEEK
-
-    rem = '10w'
-    tim, method = parse_reminder(rem)
-    assert method == 'popup'
-    assert tim == MINS_PER_WEEK * 10
-
-    rem = 'invalid reminder'
-    assert parse_reminder(rem) is None
+def test_parse_reminder_invalid():
+    assert parse_reminder('invalid reminder') is None
 
 
 def test_parse_cal_names(PatchedGCalI):

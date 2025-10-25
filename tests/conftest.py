@@ -12,6 +12,7 @@ from gcalcli.argparsers import (get_cal_query_parser, get_color_parser,
                                 get_output_parser)
 from gcalcli.gcal import GoogleCalendarInterface
 from gcalcli.printer import Printer
+from tests._utils import APICallTracker
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
 
@@ -73,10 +74,50 @@ def PatchedGCalIForEvents(PatchedGCalI, monkeypatch):
     return PatchedGCalI
 
 
+
 @pytest.fixture
-def PatchedGCalI(gcali_patches):
+def PatchedGCalI(gcali_patches, monkeypatch):
     gcali_patches.stub_out_cal_service()
-    return gcali_patches.GCalI
+
+    def PatchedGCalIFactory(*args, **kwargs):
+        """Return a GoogleCalendarInterface with API call tracking."""
+        api_tracker = APICallTracker()
+        gc = gcali_patches.GCalI(*args, **kwargs)
+        gc.api_tracker = api_tracker
+
+        def mock_events_resource():
+            """Mock Google Calendar events resource with API call tracking.
+
+            Mimics the Google API client's two-step pattern:
+            1. Method calls (list, insert, import_, etc.) return request objects
+            2. Calling .execute() on those requests performs the actual call
+
+            Example flow:
+                gc.get_events().insert(body={...}).execute()
+                    -> insert() tracked and returns MockRequest
+                    -> execute() returns mock event data
+            """
+            class MockEventsResource:
+                def import_(self, **kwargs):
+                    # import_() returns a request object (via track_call)
+                    # that has an execute() method
+                    return api_tracker.track_call('import', **kwargs)
+
+                def __getattr__(self, method_name):
+                    # Handle other methods like list(), insert(), etc.
+                    def method_call(**kwargs):
+                        # Each method returns a request object (via track_call)
+                        return api_tracker.track_call(method_name, **kwargs)
+                    return method_call
+
+            return MockEventsResource()
+
+        # Replace the real events resource with our mock
+        gc.get_events = lambda: mock_events_resource()
+
+        return gc
+
+    return PatchedGCalIFactory
 
 
 @pytest.fixture

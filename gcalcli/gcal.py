@@ -1573,7 +1573,7 @@ class GoogleCalendarInterface:
         Returns true if the user hasn't opted out and the event is cleanly
         importable.
         """
-        if not self.options.get('use_legacy_import'):
+        if self.options.get('use_legacy_import'):
             return False
         event_includes_self = any(
                 'self' in a or a['email'] == cal['id']
