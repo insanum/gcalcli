@@ -1512,7 +1512,7 @@ class GoogleCalendarInterface:
         return self._iterate_events(
                 self.now, event_list, year_date=True, work=work)
 
-    def Remind(self, minutes, command, use_reminders=False):
+    def Remind(self, minutes, command, nodeclined, use_reminders=False):
         """
         Check for events between now and now+minutes.
 
