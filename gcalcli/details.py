@@ -414,7 +414,10 @@ class Attachments(Handler):
     @classmethod
     def patch(cls, cal, event, fieldname, value):
         # Attachments are read-only for now
-        raise ReadonlyCheckError(fieldname, cls.get(event), value)
+        current_value = cls.get(event)[0]
+
+        if current_value != value:
+            raise ReadonlyCheckError(fieldname, current_value, value)
 
 
 HANDLERS = OrderedDict([('id', ID),

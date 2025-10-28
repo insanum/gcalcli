@@ -1,8 +1,8 @@
 """Tests for detail handlers."""
 
-from gcalcli.details import (
-    Attachments,
-)
+import pytest
+from gcalcli.details import Attachments
+from gcalcli.exceptions import ReadonlyCheckError
 
 
 class TestAttachmentsHandler:
@@ -182,3 +182,38 @@ class TestAttachmentsHandler:
     def test_fieldnames(self):
         """Test fieldnames are correctly defined."""
         assert Attachments.fieldnames == ['attachments']
+
+    def test_patch_with_unchanged_value(self):
+        """Test patch doesn't error when value hasn't changed."""
+        event = {
+            'attachments': [
+                {
+                    'title': 'Notes by Gemini',
+                    'fileUrl': 'https://docs.google.com/document/d/123/edit'
+                }
+            ]
+        }
+        current_value = 'Notes by Gemini|https://docs.google.com/document/d/123/edit'
+        # Should not raise an error when value hasn't changed
+        Attachments.patch(None, event, 'attachments', current_value)
+
+    def test_patch_with_changed_value(self):
+        """Test patch raises error when trying to change value."""
+        event = {
+            'attachments': [
+                {
+                    'title': 'Notes by Gemini',
+                    'fileUrl': 'https://docs.google.com/document/d/123/edit'
+                }
+            ]
+        }
+        new_value = 'Different|https://example.com'
+        # Should raise ReadonlyCheckError when trying to change value
+        with pytest.raises(ReadonlyCheckError):
+            Attachments.patch(None, event, 'attachments', new_value)
+
+    def test_patch_with_no_attachments(self):
+        """Test patch handles events without attachments."""
+        event = {}
+        # Should not raise an error for empty value
+        Attachments.patch(None, event, 'attachments', '')
