@@ -1,11 +1,7 @@
 """Tests for detail handlers."""
 
-import pytest
 from gcalcli.details import (
     Attachments,
-    Attendees,
-    Title,
-    Conference,
 )
 
 
@@ -19,7 +15,7 @@ class TestAttachmentsHandler:
         assert result == ['']
 
     def test_get_with_single_attachment(self):
-        """Test get() returns properly formatted string for single attachment."""
+        """Test get() returns formatted string for single attachment."""
         event = {
             'attachments': [
                 {
@@ -32,7 +28,7 @@ class TestAttachmentsHandler:
         assert result == ['Notes by Gemini|https://docs.google.com/document/d/123/edit']
 
     def test_get_with_multiple_attachments(self):
-        """Test get() returns properly formatted string for multiple attachments."""
+        """Test get() returns formatted string for multiple attachments."""
         event = {
             'attachments': [
                 {
@@ -46,7 +42,10 @@ class TestAttachmentsHandler:
             ]
         }
         result = Attachments.get(event)
-        expected = 'Document 1|https://docs.google.com/document/d/123/edit\fDocument 2|https://docs.google.com/document/d/456/edit'
+        expected = (
+            'Document 1|https://docs.google.com/document/d/123/edit\f'
+            'Document 2|https://docs.google.com/document/d/456/edit'
+        )
         assert result == [expected]
 
     def test_get_with_missing_fields(self):
@@ -93,7 +92,7 @@ class TestAttachmentsHandler:
         assert result == expected
 
     def test_data_with_multiple_attachments(self):
-        """Test data() returns properly formatted dict list for multiple attachments."""
+        """Test data() returns formatted dict list for attachments."""
         event = {
             'attachments': [
                 {

@@ -402,9 +402,14 @@ class Attachments(Handler):
     @classmethod
     def data(cls, event):
         attachments = event.get('attachments', [])
-        return [dict(zip(cls.ATTACHMENT_PROPS.keys(),
-                        [attachment.get(prop, '') for prop in cls.ATTACHMENT_PROPS.values()]))
-                for attachment in attachments]
+        return [
+            dict(zip(
+                cls.ATTACHMENT_PROPS.keys(),
+                [attachment.get(prop, '')
+                 for prop in cls.ATTACHMENT_PROPS.values()]
+            ))
+            for attachment in attachments
+        ]
 
     @classmethod
     def patch(cls, cal, event, fieldname, value):
