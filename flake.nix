@@ -6,14 +6,20 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        
+
         # Python dependencies
         pythonPackages = pkgs.python3Packages;
-        
+
         # Define gcalcli package
         gcalcli = pythonPackages.buildPythonApplication {
           pname = "gcalcli";
@@ -43,9 +49,9 @@
             vobject # Optional dependency included for completeness
           ];
 
-          # Disable tests in the build for now to keep it fast, 
+          # Disable tests in the build for now to keep it fast,
           # can enable properly once environment is stable
-          doCheck = false; 
+          doCheck = false;
         };
 
       in
@@ -57,12 +63,27 @@
           packages = [
             pkgs.python3
             pkgs.poetry # In case we migrate later, or for general use
-            
+
+            # Dependencies for running tests
+            pythonPackages.google-api-python-client
+            pythonPackages.google-auth-oauthlib
+            pythonPackages.python-dateutil
+            pythonPackages.parsedatetime
+            pythonPackages.httplib2
+            pythonPackages.argcomplete
+            pythonPackages.vobject
+            pythonPackages.platformdirs
+            pythonPackages.tomli
+            pythonPackages.pydantic
+            pythonPackages.babel
+            pythonPackages.truststore
+            pythonPackages.pytest
+
             # Dev tools
             pythonPackages.ruff
             pythonPackages.mypy
             pythonPackages.tox
-            
+
             # Build tools
             pythonPackages.setuptools
             pythonPackages.setuptools-scm

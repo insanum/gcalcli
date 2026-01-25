@@ -52,7 +52,7 @@ This project uses [Nix](https://nixos.org/) to enforce a reproducible developmen
 
 4.  **Run tests**:
     ```bash
-    tox
+    nix develop --command pytest
     ```
 
 ## Build the Package
