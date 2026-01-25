@@ -502,7 +502,7 @@ def get_argument_parser():
         'interactively.',
     )
     delete.add_argument(
-        '--iamaexpert', action='store_true', help='Probably not'
+        '--iamaexpert', action='store_true', help='Legacy alias for --yes'
     )
 
     sub.add_parser(

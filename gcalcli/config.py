@@ -70,6 +70,30 @@ class OutputSection(BaseModel):
     )
 
 
+class DefaultSection(BaseModel):
+    model_config = ConfigDict(
+        title='Default Global Options'
+    )
+    
+    interactive: bool = Field(
+        alias='interactive',
+        title='Enable interactive mode (default: true)',
+        default=True
+    )
+
+    color: bool = Field(
+        alias='color',
+        title='Enable color output (default: true)',
+        default=True
+    )
+    
+    conky: bool = Field(
+        alias='conky',
+        title='Enable conky color codes',
+        default=False
+    )
+
+
 class Config(BaseModel):
     """User configuration for gcalcli command-line tool.
 
@@ -84,6 +108,7 @@ class Config(BaseModel):
     auth: AuthSection = Field(default_factory=AuthSection)
     calendars: CalendarsSection = Field(default_factory=CalendarsSection)
     output: OutputSection = Field(default_factory=OutputSection)
+    default: DefaultSection = Field(default_factory=DefaultSection)
 
     @classmethod
     def from_toml(cls, config_file):
@@ -98,6 +123,8 @@ class Config(BaseModel):
             kwargs.update(vars(self.calendars))
         if self.output:
             kwargs.update(vars(self.output))
+        if self.default:
+            kwargs.update(vars(self.default))
         return argparse.Namespace(**kwargs)
 
     @classmethod

@@ -193,17 +193,16 @@ def main():
         opts_from_config = config.Config()
 
     namespace_from_config = opts_from_config.to_argparse_namespace()
-    # Pull week_start aside and set it manually after parse_known_args.
-    # TODO: Figure out why week_start from opts_from_config getting through.
-    week_start = namespace_from_config.week_start
-    namespace_from_config.week_start = None
+
+    # Apply config values as defaults for the parser.
+    # This allows config to override program defaults, while still letting
+    # explicit CLI arguments override config.
+    parser.set_defaults(**vars(namespace_from_config))
+
     if parsed_args.includeRc:
         argv = fromfile_args + argv
-    (parsed_args, unparsed) = parser.parse_known_args(
-        argv, namespace=namespace_from_config
-    )
-    if parsed_args.week_start is None:
-        parsed_args.week_start = week_start
+    (parsed_args, unparsed) = parser.parse_known_args(argv)
+
     if parsed_args.config_folder:
         parsed_args.config_folder = parsed_args.config_folder.expanduser()
 
