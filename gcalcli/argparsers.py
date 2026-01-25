@@ -354,6 +354,30 @@ def get_search_parser():
     return search_parser
 
 
+def get_automation_parser():
+    # Flags for skipping confirmation prompts
+    automation_parser = argparse.ArgumentParser(add_help=False)
+    automation_parser.add_argument(
+        '--yes', '-y',
+        action='store_true',
+        dest='noconfirm',
+        help='Answer "yes" to all prompts (e.g. delete confirmation)'
+    )
+    automation_parser.add_argument(
+        '--force', '-f',
+        action='store_true',
+        dest='noconfirm',
+        help='Alias for --yes'
+    )
+    automation_parser.add_argument(
+        '--no-prompt',
+        action='store_true',
+        dest='noconfirm',
+        help='Alias for --yes'
+    )
+    return automation_parser
+
+
 def handle_unparsed(unparsed, namespace):
     # Attempt a reparse against the program options.
     # Provides some robustness for misplaced global options
@@ -450,6 +474,9 @@ def get_argument_parser():
 
     # tacks on search text
     search_parser = get_search_parser()
+    
+    # automation flags
+    automation_parser = get_automation_parser()
 
     sub = parser.add_subparsers(
         help='Invoking a subcommand with --help prints subcommand usage.',
@@ -496,13 +523,13 @@ def get_argument_parser():
 
     delete = sub.add_parser(
         'delete',
-        parents=[calendars_parser, output_parser, search_parser],
+        parents=[calendars_parser, output_parser, search_parser, automation_parser],
         help='delete events from the calendar',
         description='Case insensitive search for items to delete '
         'interactively.',
     )
     delete.add_argument(
-        '--iamaexpert', action='store_true', help='Probably not'
+        '--iamaexpert', action='store_true', help='Legacy alias for --yes'
     )
 
     sub.add_parser(
@@ -656,7 +683,7 @@ def get_argument_parser():
 
     _import = sub.add_parser(
         'import',
-        parents=[calendar_parser, remind_parser],
+        parents=[calendar_parser, remind_parser, automation_parser],
         help='import an ics/vcal file to a calendar',
         description='Import from an ics/vcal file; a single --calendar '
         'must be specified.  Reads from stdin when no file argument is '

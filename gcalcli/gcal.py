@@ -997,10 +997,17 @@ class GoogleCalendarInterface:
         cal_id = event['gcalcli_cal']['id']
         event_id = event['id']
 
-        if self.expert:
+        if self.expert or self.options.get('noconfirm'):
             self.delete(cal_id, event_id)
             self.printer.msg('Deleted!\n', 'red')
             return
+
+        # Print "Safe Prompt" summary
+        time_str = event['s'].strftime('%Y-%m-%d %H:%M')
+        if is_all_day(event):
+             time_str = event['s'].strftime('%Y-%m-%d')
+        
+        self.printer.msg(f'> Found Event: "{_valid_title(event).strip()}" ({time_str})\n', 'yellow')
 
         self.printer.msg('Delete? [N]o [y]es [q]uit: ', 'magenta')
         val = input()
@@ -1643,7 +1650,7 @@ class GoogleCalendarInterface:
 
             self._add_reminders(event.body, reminders)
 
-            if not verbose:
+            if not verbose or self.options.get('noconfirm'):
                 # Don't prompt, just assume user wants to import.
                 pass
             else:
