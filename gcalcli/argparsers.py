@@ -465,7 +465,7 @@ def get_argument_parser():
 
     sub.add_parser(
         'list',
-        parents=[calendars_parser, color_parser],
+        parents=[calendars_parser, output_parser],
         help='list available calendars',
         description='List available calendars.',
     )

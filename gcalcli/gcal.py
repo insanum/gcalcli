@@ -749,32 +749,59 @@ class GoogleCalendarInterface:
             output = ('\t'.join(row)).replace('\n', r'\n')
             print(output)
 
+    def _json_output(self, data):
+        """Standard JSON dumper with consistent formatting."""
+        print(json.dumps(data, default=str, indent=2))
+
+    def _serialize_event(self, event):
+        """Serialize event to a clean ISO-8601 compatible dict."""
+        # Use full ISO format for times
+        start_iso = event['s'].isoformat()
+        end_iso = event['e'].isoformat()
+        
+        # Determine if all-day (no time component)
+        is_allday = is_all_day(event)
+        if is_allday:
+             # Force date-only Format YYYY-MM-DD
+             start_iso = event['s'].strftime('%Y-%m-%d')
+             # End date is exclusive in API, but usually inclusive in UI. 
+             # Keeping API behavior (exclusive) for machine readability.
+             end_iso = event['e'].strftime('%Y-%m-%d')
+
+        serialized = {
+            "id": event.get("id"),
+            "summary": event.get("summary", "(No title)"),
+            "description": event.get("description", "").strip(),
+            "start": start_iso,
+            "end": end_iso,
+            "allday": is_allday,
+            "location": event.get("location", "").strip(),
+            "htmlLink": event.get("htmlLink"),
+            "status": event.get("status"),
+            "calendar": event.get("gcalcli_cal", {}).get("summary", "unknown"),
+            "calendar_id": event.get("gcalcli_cal", {}).get("id", "unknown"),
+        }
+        
+        # Add attendees if present
+        if "attendees" in event:
+             serialized["attendees"] = [
+                 {"email": a.get("email"), "responseStatus": a.get("responseStatus")}
+                 for a in event["attendees"]
+             ]
+             
+        return serialized
+
     def _json(self, start_datetime, event_list):
-        keys = set(self.details.keys())
-        keys.update(DETAILS_DEFAULT)
-
-        print("[")
-
-        first = True
+        # Legacy-ish wrapper, but we upgrade it to use the new serializer
+        data = []
         for event in event_list:
             if self.options['ignore_started'] and (event['s'] < self.now):
                 continue
             if self.options['ignore_declined'] and self._DeclinedEvent(event):
                 continue
-
-            row = {}
-            #row['raw'] = event
-
-            for key in keys:
-                if key in HANDLERS:
-                    row[key] = HANDLERS[key].data(event)
-
-            if not first:
-                print(",")
-            first = False
-            print(json.dumps(row, default=str))
-
-        print("]")
+            data.append(self._serialize_event(event))
+            
+        self._json_output(data)
 
     def _PrintEvent(self, event, prefix):
 
@@ -1261,6 +1288,10 @@ class GoogleCalendarInterface:
                    if 'self' in a or a['email'] == event['gcalcli_cal']['id'])
 
     def ListAllCalendars(self):
+        if self.options.get('json'):
+            self._json_output(self.all_cals)
+            return
+
         access_len = max(len(cal['accessRole']) for cal in self.all_cals)
         access_len = max(access_len, len('Access'))
 
