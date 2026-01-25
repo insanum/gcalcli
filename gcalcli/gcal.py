@@ -192,6 +192,18 @@ class GoogleCalendarInterface:
         if self.userless_mode:
             return
 
+        # Check for Service Account first (bypasses cache)
+        key_path = self.options.get('service_account')
+        if key_path:
+            self.printer.debug_msg(f'Loading Service Account from {key_path}\n')
+            try:
+                self.credentials = auth.load_service_account(key_path)
+                return
+            except Exception as e:
+                raise GcalcliError(
+                    f'Failed to load service account: {e}'
+                )
+
         # Try loading cached credentials
         oauth_filepath = self.data_file_path('oauth')
         if not oauth_filepath.exists():

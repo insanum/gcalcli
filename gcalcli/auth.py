@@ -2,6 +2,7 @@ from contextlib import closing
 import socket
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from gcalcli.printer import Printer
 
@@ -94,3 +95,9 @@ def creds_from_legacy_json(data):
         )
     }
     return Credentials(data['access_token'], **kwargs)
+
+
+def load_service_account(key_file_path):
+    return service_account.Credentials.from_service_account_file(
+        key_file_path, scopes=["https://www.googleapis.com/auth/calendar"]
+    )

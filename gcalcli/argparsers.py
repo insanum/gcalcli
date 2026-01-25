@@ -24,6 +24,11 @@ PROGRAM_OPTIONS = {
         'type': str,
         'help': 'API client_secret',
     },
+    '--service-account': {
+        'default': None,
+        'type': str,
+        'help': 'Path to Service Account key file (JSON)',
+    },
     '--noauth_local_server': {
         'action': 'store_false',
         'dest': 'auth_local_server',
