@@ -393,3 +393,23 @@ def test_next_cut(PatchedGCalI):
 
     event_title = "樹貞 fun fun fun"
     assert gcal._next_cut(event_title) == (8, 6)
+
+def test_add_event_availability(PatchedGCalI):
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'], printer=None)
+    gcal = PatchedGCalI(
+            cal_names=cal_names, allday=False, default_reminders=True)
+    assert gcal.AddEvent(title='transparent event',
+                         where='anywhere',
+                         start='now',
+                         end='tomorrow',
+                         descr='testing',
+                         who='anyone',
+                         reminders=None,
+                         color='banana',
+                         availability='free')
+
+    gcal.api_tracker.verify_all_mutating_calls([
+        CallMatcher('insert',
+                    body_has_fields={'summary', 'start', 'end', 'transparency'},
+                    body_fields={'transparency': 'transparent'})
+    ])

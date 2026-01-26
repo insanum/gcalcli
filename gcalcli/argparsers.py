@@ -609,6 +609,12 @@ def get_argument_parser():
         'from lavender, sage, grape, flamingo, banana, tangerine, '
         'peacock, graphite, blueberry, basil, tomato.',
     )
+    add.add_argument(
+        '--availability',
+        default='busy',
+        choices=['free', 'busy'],
+        help='Event availability (free/busy status). Default is busy.',
+    )
     add.add_argument('--title', default=None, type=str, help='Event title')
     add.add_argument(
         '--who',

@@ -1464,12 +1464,14 @@ class GoogleCalendarInterface:
 
         return new_event
 
-    def AddEvent(self, title, where, start, end, descr, who, reminders, color):
+    def AddEvent(self, title, where, start, end, descr, who, reminders, color,
+                 availability='busy'):
 
         calendar = self._prompt_for_calendar(self.cals)
 
         event = {}
         event['summary'] = title
+        event['transparency'] = 'transparent' if availability == 'free' else 'opaque'
 
         if self.options['allday']:
             event['start'] = {'date': start}
