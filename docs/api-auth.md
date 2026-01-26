@@ -29,16 +29,23 @@ Once you have the project with Calendar API enabled, you need a way for gcalcli 
 permission to use it on a user's account.
 
 1. [Create OAuth2 consent screen](https://console.developers.google.com/apis/credentials/consent/edit;newAppInternalUser=false) for a "UI/Desktop Application".
-   1. Fill out required App information section
+   1. Select "External" as the User Type (unless you have a Google Workspace account where you can use "Internal")
+   2. Click the "Create" button.
+   3. Fill out required App information section
       1. Specify App name. Example: "gcalcli"
       2. Specify User support email. Example: your@gmail.com
-   2. Fill out required Developer contact information
+   4. Fill out required Developer contact information
       1. Specify Email addresses. Example: your@gmail.com
-   3. Click the "Save and continue" button.
-   4. Scopes: click the "Save and continue" button.
-   5. Test users
-      1. Add your@gmail.com
-      2. Click the "Save and continue" button.
+   5. Click the "Save and continue" button.
+   6. Scopes: click the "Save and continue" button.
+   7. Test users
+      1. Click "Add users" button
+      2. Add the same email address you'll use to authenticate with gcalcli. Example: your@gmail.com
+      3. Click the "Add" button
+      4. Click the "Save and continue" button.
+   8. Summary: Review and click "Back to Dashboard"
+
+   Note: Your app will remain in "Testing" mode, which is correct for personal use. Only test users you add can authenticate with your OAuth client.
 2. [Create OAuth Client ID](https://console.developers.google.com/apis/credentials/oauthclient)
    1. Specify Application type: Desktop app.
    2. Click the "Create" button.
@@ -62,9 +69,15 @@ your client secret, launch a browser to log into Google and grant permission.
 
 If it completes successfully you'll see a list of your Google calendars in the cli.
 
-NOTE: You'll generally see a big scary security warning page during this process and need to click
-"Advanced > Go to gcalcli (unsafe)" during this process because it's running a local setup flow for
-a non-Production client project.
+NOTE: During the OAuth flow, you will see a "Google hasn't verified this app" warning screen. This is expected when using an app in "Testing" mode. Click "Continue" (you may need to click "Advanced" first) to complete the authorization.
+
+## Troubleshooting
+
+### Error 403: access_denied - "Access blocked: gcalcli has not completed the Google verification process"
+
+This error occurs when you try to authenticate before adding your email as a test user in the OAuth consent screen.
+
+**Solution:** Go back to [OAuth consent screen](https://console.developers.google.com/apis/credentials/consent) → Edit App → Test users section → Add the email address you're authenticating with → Save. Then try running gcalcli again.
 
 ## FAQ
 
