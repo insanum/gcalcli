@@ -62,6 +62,7 @@ PROGRAM_OPTIONS = {
         'given',
     },
     '--locale': {'default': '', 'type': str, 'help': 'System locale'},
+    '--timezone': {'default': '', 'type': str, 'help': 'Timezone to use'},
     '--refresh': {
         'action': 'store_true',
         'dest': 'refresh_cache',

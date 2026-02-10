@@ -37,6 +37,7 @@ import pathlib
 import re
 import signal
 import sys
+import time
 from argparse import ArgumentTypeError
 from collections import namedtuple
 
@@ -225,6 +226,10 @@ def main():
             utils.set_locale(parsed_args.locale)
         except ValueError as exc:
             printer.err_msg(str(exc))
+
+    if parsed_args.timezone:
+        os.environ['TZ'] = parsed_args.timezone
+        time.tzset()
 
     cal_names = set_resolved_calendars(parsed_args, printer=printer)
 
