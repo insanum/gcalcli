@@ -707,6 +707,12 @@ def get_argument_parser():
         '--use_reminders', action=DeprecatedStoreTrue, help=argparse.SUPPRESS
     )
 
+    remind.add_argument(
+        '--only-accepted',
+        action='store_true',
+        help='Only remind for accepted or tentatively accepted events',
+    )
+
     config = sub.add_parser(
         'config',
         help='utility commands to work with configuration',
