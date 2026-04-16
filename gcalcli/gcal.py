@@ -1512,7 +1512,8 @@ class GoogleCalendarInterface:
         return self._iterate_events(
                 self.now, event_list, year_date=True, work=work)
 
-    def Remind(self, minutes, command, use_reminders=False):
+    def Remind(self, minutes, command, use_reminders=False,
+               only_accepted=False):
         """
         Check for events between now and now+minutes.
 
@@ -1540,6 +1541,18 @@ class GoogleCalendarInterface:
                 if all(event['s'] - timedelta(minutes=r['minutes']) > self.now
                         for r in event['reminders']['overrides']):
                     # don't remind if all reminders haven't arrived yet
+                    continue
+
+            # if only_accepted, skip if self not accepted or tentative
+            if only_accepted:
+                if 'attendees' not in event:
+                    continue
+                attendee_self = next((a for a in event['attendees'] \
+                    if 'self' in a and a['self']), None)
+                if not attendee_self \
+                        or 'responseStatus' not in attendee_self \
+                        or attendee_self['responseStatus'] not in \
+                        ['accepted', 'tentative']:
                     continue
 
             if self.options.get('military'):

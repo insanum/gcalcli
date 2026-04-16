@@ -328,7 +328,8 @@ def main():
         elif parsed_args.command == 'remind':
             gcal.Remind(
                     parsed_args.minutes, parsed_args.cmd,
-                    use_reminders=parsed_args.use_reminders
+                    use_reminders=parsed_args.use_reminders,
+                    only_accepted=parsed_args.only_accepted
             )
 
         elif parsed_args.command == 'import':
