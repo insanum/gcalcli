@@ -4,9 +4,11 @@ import io
 import os
 import re
 from datetime import datetime
-from json import load
+from json import dumps, load
 
+import httplib2
 import pytest
+from googleapiclient.errors import HttpError
 
 from gcalcli.argparsers import (
     get_cal_query_parser,
@@ -393,3 +395,79 @@ def test_next_cut(PatchedGCalI):
 
     event_title = "樹貞 fun fun fun"
     assert gcal._next_cut(event_title) == (8, 6)
+
+
+def _api_error(code, reason, domain='usageLimits'):
+    """Return an HttpError with the JSON body the Calendar API sends."""
+    body = {'error': {'code': code, 'message': reason,
+                      'errors': [{'domain': domain, 'reason': reason,
+                                  'message': reason}]}}
+    return HttpError(httplib2.Response({'status': code}),
+                     dumps(body).encode())
+
+
+class FailingRequest:
+    """Request whose execute() raises `error` on its first `failures` calls."""
+
+    def __init__(self, error, failures):
+        self.error = error
+        self.failures = failures
+        self.calls = 0
+
+    def execute(self):
+        self.calls += 1
+        if self.calls <= self.failures:
+            raise self.error
+        return {'id': 'event-id'}
+
+
+@pytest.mark.parametrize('code,reason', [
+    (403, 'rateLimitExceeded'),
+    (403, 'userRateLimitExceeded'),
+    (429, 'rateLimitExceeded'),
+])
+def test_retry_with_backoff_retries_rate_limit(PatchedGCalI, monkeypatch,
+                                                code, reason):
+    sleeps = []
+    monkeypatch.setattr('time.sleep', sleeps.append)
+    gcal = PatchedGCalI()
+    request = FailingRequest(_api_error(code, reason), failures=2)
+    assert gcal._retry_with_backoff(request) == {'id': 'event-id'}
+    assert request.calls == 3
+    assert len(sleeps) == 2
+
+
+def test_retry_with_backoff_raises_after_last_attempt(PatchedGCalI,
+                                                      monkeypatch):
+    monkeypatch.setattr('time.sleep', lambda seconds: None)
+    gcal = PatchedGCalI()
+    request = FailingRequest(_api_error(403, 'rateLimitExceeded'),
+                             failures=gcal.max_retries)
+    with pytest.raises(HttpError):
+        gcal._retry_with_backoff(request)
+    assert request.calls == gcal.max_retries
+
+
+def test_retry_with_backoff_does_not_retry_other_errors(PatchedGCalI,
+                                                        monkeypatch):
+    monkeypatch.setattr('time.sleep', lambda seconds: None)
+    gcal = PatchedGCalI()
+    request = FailingRequest(_api_error(409, 'duplicate', domain='global'),
+                             failures=1)
+    with pytest.raises(HttpError):
+        gcal._retry_with_backoff(request)
+    assert request.calls == 1
+
+
+def test_retry_with_backoff_raises_http_error_without_errors_list(
+        PatchedGCalI, monkeypatch):
+    monkeypatch.setattr('time.sleep', lambda seconds: None)
+    gcal = PatchedGCalI()
+    body = {'error': {'code': 429, 'message': 'Too many requests',
+                      'status': 'RESOURCE_EXHAUSTED'}}
+    error = HttpError(httplib2.Response({'status': 429}),
+                      dumps(body).encode())
+    request = FailingRequest(error, failures=1)
+    with pytest.raises(HttpError):
+        gcal._retry_with_backoff(request)
+    assert request.calls == 1
