@@ -109,6 +109,14 @@ pip install .[vobject]
 
 See the manual (`man (1) gcalcli`), or run with `--help`/`-h` for detailed usage.
 
+### TSV export and update
+
+`agenda --tsv` escapes backslashes, tabs, newlines, and carriage returns within
+fields as `\\`, `\t`, `\n`, and `\r`, respectively. Unicode text is preserved.
+`agendaupdate` reverses these escapes when reading TSV input. When editing or
+creating TSV files, use `\\` for a literal backslash, including in text such as
+`\\n` that should remain a backslash followed by `n`.
+
 ### Initial setup
 
 OAuth2 is used for authenticating with your Google account. The resulting token

@@ -725,6 +725,9 @@ class GoogleCalendarInterface:
                 self.printer.msg(week_bottom + '\n', color_border)
 
     def _tsv(self, start_datetime, event_list):
+        escape_table = str.maketrans({
+            '\\': r'\\', '\t': r'\t', '\n': r'\n', '\r': r'\r',
+        })
         keys = set(self.details.keys())
         keys.update(DETAILS_DEFAULT)
 
@@ -746,7 +749,7 @@ class GoogleCalendarInterface:
             for handler in handlers:
                 row.extend(handler.get(event))
 
-            output = ('\t'.join(row)).replace('\n', r'\n')
+            output = '\t'.join(value.translate(escape_table) for value in row)
             print(output)
 
     def _json(self, start_datetime, event_list):
@@ -1347,6 +1350,7 @@ class GoogleCalendarInterface:
 
     def AgendaUpdate(self, file=sys.stdin):
         reader = DictReader(file, dialect=excel_tab)
+        escapes = {r'\\': '\\', r'\t': '\t', r'\n': '\n', r'\r': '\r'}
 
         if len(self.cals) != 1:
             raise GcalcliError('Must specify a single calendar.')
@@ -1354,6 +1358,13 @@ class GoogleCalendarInterface:
         cal = self.cals[0]
 
         for row in reader:
+            # Decode once so escaped backslashes stay literal, and leave
+            # unknown escape sequences and Unicode text untouched.
+            for field, value in row.items():
+                if value is not None:
+                    row[field] = re.sub(
+                        r'\\[\\tnr]', lambda match: escapes[match[0]], value
+                    )
             action = row.get('action', ACTION_DEFAULT)
             if action not in ACTIONS:
                 raise GcalcliError('Action "{}" not supported.'.format(action))

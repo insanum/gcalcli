@@ -53,6 +53,72 @@ def test_agenda(PatchedGCalI):
     assert PatchedGCalI().AgendaQuery(start=opts.start, end=opts.end) == 0
 
 
+@pytest.mark.parametrize('text,escaped', [
+    ('plain text', 'plain text'),
+    ('café 中文', 'café 中文'),
+    ('first\nsecond', r'first\nsecond'),
+    ('first\tsecond', r'first\tsecond'),
+    ('first\r\nsecond', r'first\r\nsecond'),
+    (r'literal\n and \t', r'literal\\n and \\t'),
+    ('a\\\nb\tc\\', r'a\\\nb\tc\\'),
+])
+def test_agenda_tsv_round_trip(
+    capsys, monkeypatch, PatchedGCalI, default_options, text, escaped
+):
+    default_options.update({
+        'tsv': True,
+        'details': {'id': True, 'location': True, 'description': True},
+    })
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'], None)
+    gcal = PatchedGCalI(cal_names=cal_names, **default_options)
+    event = {
+        'id': 'test-event',
+        's': datetime(2026, 1, 1, 10),
+        'e': datetime(2026, 1, 1, 11),
+        'start': {'dateTime': '2026-01-01T10:00:00'},
+        'summary': text,
+        'location': text,
+        'description': text,
+    }
+    monkeypatch.setattr(gcal, '_search_for_events', lambda *args: [event])
+
+    gcal.AgendaQuery()
+    output = capsys.readouterr().out
+    header, row = output.splitlines()
+    fields = dict(zip(header.split('\t'), row.split('\t'), strict=True))
+    for name in ['title', 'location', 'description']:
+        assert fields[name] == escaped
+
+    gcal.AgendaUpdate(io.StringIO(output))
+    gcal.api_tracker.verify_all_mutating_calls([
+        CallMatcher('patch', body_fields={
+            'summary': text,
+            'location': text,
+            'description': text,
+        }),
+    ])
+
+
+def test_agenda_update_tsv_escapes(PatchedGCalI):
+    cal_names = parse_cal_names(['jcrowgey@uw.edu'], None)
+    gcal = PatchedGCalI(cal_names=cal_names)
+    data = (
+        'id\ttitle\tlocation\tdescription\n'
+        'test-event\tline one\\nline two\troom\\t1\t'
+        r'café 中文: \q \u1234 \\n \\t trailing' + '\\\n'
+    )
+
+    gcal.AgendaUpdate(io.StringIO(data))
+
+    gcal.api_tracker.verify_all_mutating_calls([
+        CallMatcher('patch', body_fields={
+            'summary': 'line one\nline two',
+            'location': 'room\t1',
+            'description': 'café 中文: \\q \\u1234 \\n \\t trailing\\',
+        }),
+    ])
+
+
 def test_updates(PatchedGCalI):
     since = datetime(2019, 7, 10)
     assert PatchedGCalI().UpdatesQuery(since) == 0
