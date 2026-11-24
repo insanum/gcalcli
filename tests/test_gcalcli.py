@@ -4,6 +4,7 @@ import io
 import os
 import re
 from datetime import datetime
+from dateutil.tz import tzlocal
 from json import load
 
 import pytest
@@ -20,6 +21,7 @@ from gcalcli.argparsers import (
 from gcalcli.cli import parse_cal_names
 from gcalcli.utils import parse_reminder
 from tests._utils import CallMatcher, create_ics_content
+from tests.conftest import mock_event
 
 TEST_DATA_DIR = os.path.dirname(os.path.abspath(__file__)) + '/data'
 
@@ -393,3 +395,67 @@ def test_next_cut(PatchedGCalI):
 
     event_title = "樹貞 fun fun fun"
     assert gcal._next_cut(event_title) == (8, 6)
+
+
+def test_print_event_reminders_sorted(capsys, default_options, PatchedGCalI):
+    """Reminder overrides are printed sorted by minutes, then method."""
+    default_options.update({'details': {'reminders': True}})
+    gcal = PatchedGCalI(**default_options)
+    event = dict(mock_event[0])
+    event['reminders'] = {
+        'useDefault': False,
+        'overrides': [
+            {'method': 'popup', 'minutes': 30},
+            {'method': 'email', 'minutes': 1440},
+            {'method': 'popup', 'minutes': 10},
+            {'method': 'email', 'minutes': 30},
+            {'method': 'email', 'minutes': 10},
+        ],
+    }
+    gcal._PrintEvent(event, None)
+    captured = capsys.readouterr()
+    assert re.findall(r'Reminder: (\w+) (\d+) minutes', captured.out) == [
+        ('email', '10'),
+        ('popup', '10'),
+        ('email', '30'),
+        ('popup', '30'),
+        ('email', '1440'),
+    ]
+
+
+def test_search_for_events_sorted(PatchedGCalI, monkeypatch):
+    """Events are sorted by start time, then event ID, then calendar ID."""
+    gcal = PatchedGCalI()
+    t1 = datetime(2019, 1, 8, 9, 0, tzinfo=tzlocal())
+    t2 = datetime(2019, 1, 8, 10, 0, tzinfo=tzlocal())
+    # Per calendar, events in arbitrary (API) order.
+    events_by_cal = {
+        'b@example.com': [
+            {'id': 'ev-z', 's': t1},
+            {'id': 'ev-shared', 's': t1},
+            {'id': 'ev-late', 's': t2},
+        ],
+        'a@example.com': [
+            {'id': 'ev-shared', 's': t1},
+            {'id': 'ev-a', 's': t1},
+        ],
+    }
+    # Calendars not in calendar ID order.
+    gcal.cals = [{'id': 'b@example.com'}, {'id': 'a@example.com'}]
+
+    def mocked_get_all_events(self, cal, start, end, search_text):
+        for event in events_by_cal[cal['id']]:
+            yield dict(event, gcalcli_cal=cal)
+
+    monkeypatch.setattr(
+        type(gcal), '_GetAllEvents', mocked_get_all_events)
+
+    event_list = gcal._search_for_events(None, None, None)
+    assert [(e['s'], e['id'], e['gcalcli_cal']['id'])
+            for e in event_list] == [
+        (t1, 'ev-a', 'a@example.com'),
+        (t1, 'ev-shared', 'a@example.com'),
+        (t1, 'ev-shared', 'b@example.com'),
+        (t1, 'ev-z', 'b@example.com'),
+        (t2, 'ev-late', 'b@example.com'),
+    ]
