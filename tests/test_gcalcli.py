@@ -4,6 +4,7 @@ import io
 import os
 import re
 from datetime import datetime
+from dateutil.tz import tzlocal
 from json import load
 
 import pytest
@@ -18,6 +19,7 @@ from gcalcli.argparsers import (
     get_updates_parser,
 )
 from gcalcli.cli import parse_cal_names
+from gcalcli.details import Conference
 from gcalcli.utils import parse_reminder
 from tests._utils import CallMatcher, create_ics_content
 
@@ -393,3 +395,73 @@ def test_next_cut(PatchedGCalI):
 
     event_title = "樹貞 fun fun fun"
     assert gcal._next_cut(event_title) == (8, 6)
+
+
+CONFERENCE_ENTRY_POINTS = {
+    'conferenceSolution': {'key': {'type': 'hangoutsMeet'}},
+    'entryPoints': [
+        {'entryPointType': 'video',
+         'uri': 'https://meet.google.com/aaa-bbbb-ccc'},
+        {'entryPointType': 'phone', 'uri': 'tel:+1-123-268-2601'},
+    ],
+}
+
+# Conference requested via 'createRequest' that is still pending (or has
+# failed): no 'entryPoints'.
+CONFERENCE_CREATE_REQUEST_ONLY = {
+    'createRequest': {
+        'requestId': 'some-request-id',
+        'conferenceSolutionKey': {'type': 'hangoutsMeet'},
+        'status': {'statusCode': 'pending'},
+    },
+}
+
+
+def _conference_event(conference_data):
+    return {
+        's': datetime(2019, 1, 8, 14, 15, tzinfo=tzlocal()),
+        'e': datetime(2019, 1, 8, 15, 15, tzinfo=tzlocal()),
+        'start': {'dateTime': '2019-01-08T14:15:00Z'},
+        'end': {'dateTime': '2019-01-08T15:15:00Z'},
+        'summary': 'Test Event',
+        'gcalcli_cal': {'summary': 'Test Calendar', 'accessRole': 'owner'},
+        'conferenceData': conference_data,
+    }
+
+
+def test_print_event_conference(capsys, default_options, PatchedGCalI):
+    default_options.update({'details': {'conference': True}})
+    gcal = PatchedGCalI(**default_options)
+
+    gcal._PrintEvent(_conference_event(CONFERENCE_ENTRY_POINTS), None)
+    out = capsys.readouterr().out
+    assert ('Conference Link: video: https://meet.google.com/aaa-bbbb-ccc'
+            in out)
+    assert 'Conference Link: phone: tel:+1-123-268-2601' in out
+
+
+def test_print_event_conference_no_entry_points(capsys, default_options,
+                                                PatchedGCalI):
+    default_options.update({'details': {'conference': True}})
+    gcal = PatchedGCalI(**default_options)
+
+    gcal._PrintEvent(_conference_event(CONFERENCE_CREATE_REQUEST_ONLY), None)
+    out = capsys.readouterr().out
+    assert 'Test Event' in out
+    assert 'Conference Link' not in out
+
+    gcal._PrintEvent(_conference_event({'entryPoints': []}), None)
+    out = capsys.readouterr().out
+    assert 'Test Event' in out
+    assert 'Conference Link' not in out
+
+
+def test_conference_handler_get():
+    assert Conference.get({}) == ['', '']
+    assert Conference.get(
+        {'conferenceData': CONFERENCE_ENTRY_POINTS}
+    ) == ['video', 'https://meet.google.com/aaa-bbbb-ccc']
+    assert Conference.get(
+        {'conferenceData': CONFERENCE_CREATE_REQUEST_ONLY}
+    ) == ['', '']
+    assert Conference.get({'conferenceData': {'entryPoints': []}}) == ['', '']

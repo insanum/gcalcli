@@ -213,14 +213,13 @@ class Conference(Handler):
 
     @classmethod
     def get(cls, event):
-        if 'conferenceData' not in event:
+        entry_points = event.get('conferenceData', {}).get('entryPoints')
+        if not entry_points:
             return ['', '']
-
-        data = event['conferenceData']
 
         # only display first entry point for TSV
         # https://github.com/insanum/gcalcli/issues/533
-        entry_point = data['entryPoints'][0]
+        entry_point = entry_points[0]
 
         return [entry_point.get(prop, '')
                 for prop in ENTRY_POINT_PROPS.values()]
